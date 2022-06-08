@@ -1,4 +1,4 @@
-
+einexpr takes einsum further by allowing you to write arbitrary arithmetic expressions using standard Python operators.
 ```python
 import numpy as np
 from einexpr import einexpr, einfunc
