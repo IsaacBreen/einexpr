@@ -1,4 +1,3 @@
-einexpr is like einsum on steriods.
 
 ```python
 import numpy as np
