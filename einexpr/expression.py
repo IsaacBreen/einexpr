@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field, InitVar
 from typing import List, Tuple, Dict, Set, Any, Optional, Union
 import string
+import re
 import math
 
 import numpy as np
@@ -53,7 +54,9 @@ def parse_indices(indices):
     """
     Parses an index string such as into a list of Index objects. E.g. 'x,y[0],y[1]' -> [Index('x'), Index('y', 0), Index('y', 1)]
     """
-    indices = indices.split(',')
+    if isinstance(indices, str):
+        indices = re.split(",| ", indices)
+    indices = [index2 for index1 in indices for index2 in re.split(",| ", index1)]
     indices2 = []
     for i in indices:
         if not i:
@@ -126,11 +129,21 @@ def can_trickle(obj):
     return False
 
 
-def make_ein(x):
+def einexpr(x):
     """
     Returns the given object as an EinsteinExpression if it is not already one.
     """
     return unique_einexpr(x)
+
+
+def einfunc(func):
+    """
+    A decorator that converts function arguments into EinsteinExpressions.
+    """
+    def wrapper(*args, **kwargs):
+        args = [einexpr(arg) for arg in args]
+        return func(*args, **kwargs)
+    return wrapper
 
 
 @intercept_binary_arithmetic(lambda name, _: lambda self, other: EinsteinExpression(name, self, other), pass_existing=True)
@@ -574,7 +587,8 @@ class Shaped:
             self.value = self.value.value
             
     def __getitem__(self, shape):
-        return Shaped(self, parse_indices(shape))
+        value = Shaped(self, parse_indices(shape))
+        return Shaped(value, value.get_shape())
         
     def copy(self):
         return Shaped(self.value.copy(), self.shape)

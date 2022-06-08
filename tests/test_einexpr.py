@@ -1,5 +1,5 @@
-from ein2 import __version__
-from ein2 import make_ein, binary_arithmetic_operations, EinsteinExpression
+from einexpr import __version__
+from einexpr import einexpr, binary_arithmetic_operations, EinsteinExpression
 import numpy as np
 import jax
 import jax.numpy as jnp
@@ -15,8 +15,8 @@ np.random.seed(1234567890)
 tolerance = 1e-3
 
 def test_pow():
-    w = make_ein(np.random.rand(4,2))
-    x = make_ein(np.random.rand(2))
+    w = einexpr(np.random.rand(4,2))
+    x = einexpr(np.random.rand(2))
     expr = w['b,i'] * x['i']
     expr = expr['']
     print(expr)
@@ -44,7 +44,7 @@ def make_random_expr(np_like, max_indices=8, max_index_size=5, max_vars=8, p_lea
         if np.random.rand() < p_leaf:
             var_num = np.random.randint(0, n_vars)
             var = vars[var_num]
-            expr = make_ein(var)[",".join(per_var_indices[var_num])]
+            expr = einexpr(var)[",".join(per_var_indices[var_num])]
             expr_json = {"type": "leaf", "value": var, "indices": per_var_indices[var_num]}
             var_normshaped = np.einsum(f"{''.join(i for i in per_var_indices[var_num])}->{''.join(i for i in index_names if i in per_var_indices[var_num])}", var)
             expand_indices = [n for n, i in enumerate(index_names) if i not in per_var_indices[var_num]]
@@ -104,8 +104,8 @@ def test_random_expr_jax_jit(i, make_random_expr):
 def test_simple_expr_jax_jit():
     @jax.jit
     def add(x,y):
-        x = make_ein(x)
-        y = make_ein(y)
+        x = einexpr(x)
+        y = einexpr(y)
         z = x['i'] + y['i']
         return z[''].eval()
     x = np.random.rand(2)
@@ -116,6 +116,6 @@ def test_simple_expr_jax_jit():
     def add_and_reduce(x,y):
         z = x['i'] + y['i']
         return z['']
-    x = make_ein(np.random.rand(2))['i']
-    y = make_ein(np.random.rand(2))['i']
+    x = einexpr(np.random.rand(2))['i']
+    y = einexpr(np.random.rand(2))['i']
     add_and_reduce(x,y)
