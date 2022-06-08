@@ -38,3 +38,7 @@ print(x_transformed['j'])
 ```
 
 ## Installation
+
+```bash
+pip install einexpr
+```
