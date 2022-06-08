@@ -1,4 +1,7 @@
-einexpr takes einsum further by allowing you to write arbitrary arithmetic expressions using standard Python operators.
+## What is einexpr?
+
+einexpr brings true Einstein summation notation to Python, allowing you to convert your gory tensor manipulations into aesthetically pleasing and easy-to-follow arithmetic expressions with an idiomatic Python style (using standard operators: +, -, /, *, **) and support for your favourite np.* functions. Think einsum + addition + exponentiation + seamless interoperation with Jax. (PyTorch and TensorFlow support on the way.)
+
 ```python
 import numpy as np
 from einexpr import einexpr, einfunc
@@ -33,3 +36,5 @@ def linear(x, W, b):
 x_transformed = linear(x=np.array([1,2]), W=np.array([[1,2],[3,4]]), b=np.array([5,6]))
 print(x_transformed['j'])
 ```
+
+## Installation
