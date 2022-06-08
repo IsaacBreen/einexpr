@@ -1,5 +1,5 @@
 from einexpr import __version__
-from einexpr import einexpr, binary_arithmetic_operations, EinsteinExpression
+from einexpr import einexpr, einfunc, binary_arithmetic_operations, EinsteinExpression
 import numpy as np
 import jax
 import jax.numpy as jnp
@@ -20,7 +20,7 @@ def test_pow():
     expr = w['b,i'] * x['i']
     expr = expr['']
     print(expr)
-    assert np.allclose(expr.eval(), np.einsum('bi,i->', w.eval(), x.eval()), tolerance)
+    assert np.allclose(expr.__array__(), np.einsum('bi,i->', w.__array__(), x.__array__()), tolerance)
 
 
 RandomExpressionData = namedtuple("RandomExpressionData", ["expr", "expr_json", "var"])
@@ -72,12 +72,12 @@ def make_random_expr(np_like, max_indices=8, max_index_size=5, max_vars=8, p_lea
 def test_random_expr(i, np_like, make_random_expr):
     expr, expr_json, var = make_random_expr
     with np.errstate(divide='ignore', invalid='ignore', over='ignore'):
-        if not np.allclose(expr.eval(), var, tolerance) and np.all([~np.isnan(expr.eval()), ~np.isnan(var)]):
+        if not np.allclose(expr.__array__(), var, tolerance) and np.all([~np.isnan(expr.__array__()), ~np.isnan(var)]):
             print(expr)
             pp.pprint(expr_json)
             print(expr.get_shape())
             print(var.shape)
-            raise ValueError(f"Values do not match: {expr.eval()} != {var}")
+            raise ValueError(f"Values do not match: {expr.__array__()} != {var}")
 
 
 # @pytest.mark.skip
@@ -89,7 +89,7 @@ def test_random_expr_jax_jit(i, make_random_expr):
     
     # @jax.jit
     def eval_expr(expr):
-        return expr.eval()
+        return expr.__array__()
     
     with np.errstate(divide='ignore', invalid='ignore', over='ignore'):
         assert eval_expr(expr) is not None
@@ -107,7 +107,7 @@ def test_simple_expr_jax_jit():
         x = einexpr(x)
         y = einexpr(y)
         z = x['i'] + y['i']
-        return z[''].eval()
+        return z[''].__array__()
     x = np.random.rand(2)
     y = np.random.rand(2)
     add(x,y)
@@ -119,3 +119,35 @@ def test_simple_expr_jax_jit():
     x = einexpr(np.random.rand(2))['i']
     y = einexpr(np.random.rand(2))['i']
     add_and_reduce(x,y)
+
+
+def test_intro():
+    X = einexpr(np.array([[1, 2], [3, 4]]))
+    Y = einexpr(np.array([[5, 6], [7, 8]]))
+    a = einexpr(np.array([1,2]))
+    b = einexpr(np.array([3,4]))
+
+    # Dot product
+    x = a['i'] + b['i']
+    print(x[''].__array__())
+
+    # Outer product
+    x = a['i'] * b['j']
+    print(x['i,j'].__array__())
+
+    # Matrix-vector multiplication
+    x = X['i,j'] * a['j']
+    print(x['i'].__array__())
+
+    # Matrix-matrix multiplication
+    x = X['i,j'] * Y['j,k']
+    print(x['i,k'].__array__())
+
+    # Linear transformation
+    @einfunc
+    def linear(x, W, b):
+        print(W)
+        return x['i'] * W['i,j'] + b['j']
+
+    x_transformed = linear(x=np.array([1,2]), W=np.array([[1,2],[3,4]]), b=np.array([5,6]))
+    print(x_transformed['j'].__array__())

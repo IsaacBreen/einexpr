@@ -19,6 +19,8 @@ binary_arithmetic_operations = multiplicitave_operations | additive_operations |
 
 array_types = (np.ndarray, np.generic, jnp.ndarray)
 
+EAGER_MODE = True
+
 def get_np_like_interface(obj):
     """
     Returns the np-like interface of the given object.
@@ -141,7 +143,8 @@ def einfunc(func):
     A decorator that converts function arguments into EinsteinExpressions.
     """
     def wrapper(*args, **kwargs):
-        args = [einexpr(arg) for arg in args]
+        args = [einexpr(arg) if isinstance(arg, array_types) else arg for arg in args]
+        kwargs = {k: einexpr(v) if isinstance(v, array_types) else v for k, v in kwargs.items()}
         return func(*args, **kwargs)
     return wrapper
 
@@ -181,7 +184,7 @@ class EinsteinObject:
         raise NotImplementedError(f"{self.__class__.__name__}")
     
     def __getitem__(self, shape):
-        return Shaped(self, parse_indices(shape))
+        return Shaped(self, parse_indices(shape)).__getitem__(shape)
         
     def __repr__(self):
         raise NotImplementedError(f"{self.__class__.__name__}")
@@ -220,10 +223,10 @@ class EinsteinExpression(EinsteinObject):
             assert all(self.get_dim_sizes()[i] == arg.get_dim_sizes()[i] for i in self.dim_sizes.keys() & arg.get_dim_sizes().keys()), f"Dimension sizes must be the same for all arguments. Got {self.get_dim_sizes()} and {arg.get_dim_sizes()}"
             self.dim_sizes |= arg.get_dim_sizes()
             
-    def eval(self, dim_sizes=None):
+    def __array__(self, dim_sizes=None):
         if dim_sizes is None:
             dim_sizes = self.get_dim_sizes()
-        return getattr(self.args[0].eval(dim_sizes=dim_sizes), self.operation)(*(arg.eval(dim_sizes=dim_sizes) for arg in self.args[1:]))
+        return getattr(self.args[0].__array__(dim_sizes=dim_sizes), self.operation)(*(arg.__array__(dim_sizes=dim_sizes) for arg in self.args[1:]))
     
     @staticmethod
     def broadcast_args(args):
@@ -385,7 +388,7 @@ class IndexSize:
     def copy(self):
         return self
     
-    def eval(self, dim_sizes):
+    def __array__(self, dim_sizes):
         if self.index in dim_sizes:
             return dim_sizes[self.index]
         else:
@@ -421,11 +424,11 @@ class Transposition:
         self.shape = to
         self.permutation = tuple(value.get_shape().index(index) if index in value.get_shape() else np.newaxis for index in to)
         
-    def eval(self, dim_sizes=None):
-        return transpose_and_expand(self.value.eval(dim_sizes=dim_sizes), self.permutation)
+    def __array__(self, dim_sizes=None):
+        return transpose_and_expand(self.value.__array__(dim_sizes=dim_sizes), self.permutation)
     
     def __getitem__(self, shape):
-        return Shaped(self, parse_indices(shape))
+        return Shaped(self, parse_indices(shape)).__getitem__(shape)
     
     def copy(self):
         return Transposition(self.value.copy(), self.shape)
@@ -498,8 +501,8 @@ class EinSum(EinsteinObject):
         out_shape_einstr = "".join(index_map[i] for i in self.target_shape)
         return f"{arg_shape_einstr}->{out_shape_einstr}"
     
-    def eval(self, dim_sizes=None):
-        arg_evals = [arg.eval(dim_sizes=dim_sizes) for arg in self.args]
+    def __array__(self, dim_sizes=None):
+        arg_evals = [arg.__array__(dim_sizes=dim_sizes) for arg in self.args]
         return get_np_like_interface(arg_evals).einsum(self.get_einstr(), *arg_evals)
     
     def copy(self):
@@ -588,13 +591,17 @@ class Shaped:
             
     def __getitem__(self, shape):
         value = Shaped(self, parse_indices(shape))
-        return Shaped(value, value.get_shape())
+        return Shaped(einexpr(value.__array__()), value.get_shape(), coerce=False)
         
     def copy(self):
         return Shaped(self.value.copy(), self.shape)
         
     def __repr__(self):
         return f'{self.__class__.__name__}({self.value!r}, {self.shape!r})'
+    
+    def __str__(self):
+        index_str = ", ".join(f"'{i}'" for i in self.shape)
+        return f"{self.value}[{index_str}]"
     
     def __getattr__(self, name):
         return getattr(self.value, name)
@@ -658,7 +665,7 @@ class EinsteinTensor(EinsteinObject):
     def __init__(self, value):
         self.value = value
         
-    def eval(self, dim_sizes=None):
+    def __array__(self, dim_sizes=None):
         return self.value
         
     def copy(self):

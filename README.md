@@ -10,25 +10,26 @@ b = einexpr(np.array([3,4]))
 
 # Dot product
 x = a['i'] + b['i']
-print(x[''].eval())
+print(x[''])
 
 # Outer product
 x = a['i'] * b['j']
-print(x['i,j'].eval())
+print(x['i j'])
 
 # Matrix-vector multiplication
-x = X['i,j'] * a['j']
-print(x['i'].eval())
+x = X['i j'] * a['j']
+print(x['i'])
 
 # Matrix-matrix multiplication
-x = X['i,j'] * Y['j,k']
-print(x['i,k'].eval())
+x = X['i j'] * Y['j k']
+print(x['i, k'])
 
 # Linear transformation
 @einfunc
 def linear(x, W, b):
-    return x['i'] * W['i,j'] + b['j']
+    print(W)
+    return x['i'] * W['i j'] + b['j']
 
 x_transformed = linear(x=np.array([1,2]), W=np.array([[1,2],[3,4]]), b=np.array([5,6]))
-print(x_transformed['j'].eval())
+print(x_transformed['j'])
 ```

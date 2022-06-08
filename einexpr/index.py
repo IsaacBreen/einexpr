@@ -14,6 +14,12 @@ class Index:
             return f'{type(self).__name__}({self.name!r}, {self.version!r})'
         else:
             return f'{type(self).__name__}({self.name!r})'
+        
+    def __str__(self):
+        if self.version is not None:
+            return f'{self.name}[{self.version}]'
+        else:
+            return f'{self.name}'
     
     def __eq__(self, other):
         return type(self) == type(other) and self.name == other.name and self.version == other.version
