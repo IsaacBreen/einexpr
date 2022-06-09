@@ -95,7 +95,7 @@ def has_definite_shape(value):
     Returns True if the given object has a defined size, False otherwise. If the given value has indices, returns True, and otherwise returns False.
     Also returns True for zero-dimensional values such as int and float.
     """
-    if isinstance(value, (int, float)):
+    if isinstance(value, (int, float)) or isinstance(value, array_types) and value.ndim == 0:
         return True
     if isinstance(value, (EinsteinExpression, Shaped)):
         return True
@@ -112,7 +112,7 @@ def get_indices(x):
     """
     Returns the indices of the given object.
     """
-    if isinstance(x, (int, float)):
+    if isinstance(x, (int, float)) or isinstance(x, array_types) and x.ndim == 0:
         return set()
     elif isinstance(x, EinsteinObject):
         return x.get_inner_indices()
@@ -241,10 +241,10 @@ class EinsteinExpression(EinsteinObject):
         transposed_args = [Transposition(arg, resolved_shape) if resolved_shape != arg.get_shape() else arg for arg in args]
         return transposed_args
     
-    def coerce_into_shape(self, shape, multiply_indices=None, eager_transpose=False, additive_indices_that_collapse_in_parent=None):
+    def coerce_into_shape(self, shape, multiply_indices=None, eager_transpose=False, additive_indices_that_collapse_at_parent=None):
         multiply_indices = multiply_indices or set()
-        additive_indices_that_collapse_in_parent = additive_indices_that_collapse_in_parent or set()
-        unexpanded_collapsing_indices = additive_indices_that_collapse_in_parent - self.get_inner_indices()
+        additive_indices_that_collapse_at_parent = additive_indices_that_collapse_at_parent or set()
+        unexpanded_collapsing_indices = additive_indices_that_collapse_at_parent - self.get_inner_indices()
         if self.operation in multiplicitave_operations:
             args = self.args.copy()
             args = [arg.coerce_into_shape(shape, multiply_indices | self.get_mul_indices()) for arg in args]
@@ -271,7 +271,7 @@ class EinsteinExpression(EinsteinObject):
             initial_inner_indices = {i for arg in self.args for i in arg.get_inner_indices()}
             additive_collapsable_indices = initial_inner_indices - set(shape) - multiply_indices if self.operation in additive_operations else None
             args = self.args
-            args = [arg.coerce_into_shape(shape, multiply_indices | self.get_mul_indices(), additive_indices_that_collapse_in_parent=additive_collapsable_indices) for arg in args]
+            args = [arg.coerce_into_shape(shape, multiply_indices | self.get_mul_indices(), additive_indices_that_collapse_at_parent=additive_collapsable_indices) for arg in args]
             args = self.broadcast_args(args)
             new_expr = EinsteinExpression(self.operation, *args)
             remaining_inner_indices = new_expr.get_inner_indices()
@@ -459,7 +459,7 @@ class Transposition:
 
 
 def unique_einexpr(x):
-    if isinstance(x, (int, float)):
+    if isinstance(x, (int, float)) or isinstance(x, array_types) and x.ndim == 0:
         return Shaped(EinsteinTensor(x), ())
     elif isinstance(x, array_types):
         return EinsteinTensor(x)
@@ -628,13 +628,13 @@ class Shaped:
     def get_shape(self):
         return self.shape
     
-    def coerce_into_shape(self, shape, multiply_indices=None, additive_indices_that_collapse_in_parent=None, **kwargs):
+    def coerce_into_shape(self, shape, multiply_indices=None, additive_indices_that_collapse_at_parent=None, **kwargs):
         """
         Collapse unused dimensions. Do not attempt to expand dimensions - leave that to explicit broadcast methods.
         """
         multiply_indices = multiply_indices or set()
-        additive_indices_that_collapse_in_parent = additive_indices_that_collapse_in_parent or set()
-        unexpanded_collapsing_indices = additive_indices_that_collapse_in_parent - self.get_inner_indices() - multiply_indices
+        additive_indices_that_collapse_at_parent = additive_indices_that_collapse_at_parent or set()
+        unexpanded_collapsing_indices = additive_indices_that_collapse_at_parent - self.get_inner_indices() - multiply_indices
         # The collapsable indices are those that are not in the target shape and are not later involved in multiplication.
         collapsable_indices = set(self.get_shape()) - set(shape) - multiply_indices
         out_shape = tuple(i for i in self.get_shape() if i not in collapsable_indices)
@@ -693,21 +693,21 @@ class EinsteinTensor(EinsteinObject):
         return False
     
     def get_shape(self):
-        assert isinstance(self.value, (int, float)), f"Shape of type {type(self.value)} is not supported"
+        assert isinstance(self.value, (int, float)) or isinstance(self.value, array_types) and self.value.ndim == 0, f"Shape of type {type(self.value)} is not supported"
         return ()
     
     def get_numeric_shape(self):
-        if isinstance(self.value, (int, float)):
+        if isinstance(self.value, (int, float)) or isinstance(self.value, array_types) and self.value.ndim == 0:
             return ()
         return self.value.shape
     
     def ndims(self):
-        if isinstance(self.value, (int, float)):
+        if isinstance(self.value, (int, float)) or isinstance(self.value, array_types) and self.value.ndim == 0:
             return 0
         return len(self.value.shape)
     
     def coerce_into_shape(self, shape, **kwargs):
-        assert isinstance(self.value, (int, float)), f"Cannot coerce type {type(self.value)} into shape {shape}"
+        assert isinstance(self.value, (int, float)) or isinstance(self.value, array_types) and self.value.ndim == 0, f"Cannot coerce type {type(self.value)} into shape {shape}"
         return self
     
     def __getitem__(self, index):
@@ -727,10 +727,11 @@ class EinsteinTensor(EinsteinObject):
         return Shaped(self, shape)
         
     def __repr__(self):
-        if isinstance(self.value, array_types):
-            return f"ndarray({self.value.shape}, {self.value.dtype})"
-        else:
-            return repr(self.value)
+        # if isinstance(self.value, array_types):
+        #     return f"ndarray({self.value}, {self.value.dtype})"
+        # else:
+        #      return repr(self.value)
+        return repr(self.value)
     
     def debug_dict(self):
         return {

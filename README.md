@@ -30,7 +30,6 @@ print(x['i, k'])
 # Linear transformation
 @einfunc
 def linear(x, W, b):
-    print(W)
     return x['i'] * W['i j'] + b['j']
 
 x_transformed = linear(x=np.array([1,2]), W=np.array([[1,2],[3,4]]), b=np.array([5,6]))
