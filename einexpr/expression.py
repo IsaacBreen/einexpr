@@ -241,10 +241,10 @@ class EinsteinExpression(EinsteinObject):
         transposed_args = [Transposition(arg, resolved_shape) if resolved_shape != arg.get_shape() else arg for arg in args]
         return transposed_args
     
-    def coerce_into_shape(self, shape, multiply_indices=None, eager_transpose=False, additive_indices_that_collapse_in_parent=None):
+    def coerce_into_shape(self, shape, multiply_indices=None, eager_transpose=False, additive_indices_that_collapse_at_parent=None):
         multiply_indices = multiply_indices or set()
-        additive_indices_that_collapse_in_parent = additive_indices_that_collapse_in_parent or set()
-        unexpanded_collapsing_indices = additive_indices_that_collapse_in_parent - self.get_inner_indices()
+        additive_indices_that_collapse_at_parent = additive_indices_that_collapse_at_parent or set()
+        unexpanded_collapsing_indices = additive_indices_that_collapse_at_parent - self.get_inner_indices()
         if self.operation in multiplicitave_operations:
             args = self.args.copy()
             args = [arg.coerce_into_shape(shape, multiply_indices | self.get_mul_indices()) for arg in args]
@@ -271,7 +271,7 @@ class EinsteinExpression(EinsteinObject):
             initial_inner_indices = {i for arg in self.args for i in arg.get_inner_indices()}
             additive_collapsable_indices = initial_inner_indices - set(shape) - multiply_indices if self.operation in additive_operations else None
             args = self.args
-            args = [arg.coerce_into_shape(shape, multiply_indices | self.get_mul_indices(), additive_indices_that_collapse_in_parent=additive_collapsable_indices) for arg in args]
+            args = [arg.coerce_into_shape(shape, multiply_indices | self.get_mul_indices(), additive_indices_that_collapse_at_parent=additive_collapsable_indices) for arg in args]
             args = self.broadcast_args(args)
             new_expr = EinsteinExpression(self.operation, *args)
             remaining_inner_indices = new_expr.get_inner_indices()
@@ -628,13 +628,12 @@ class Shaped:
     def get_shape(self):
         return self.shape
     
-    def coerce_into_shape(self, shape, multiply_indices=None, additive_indices_that_collapse_in_parent=None, **kwargs):
+    def coerce_into_shape(self, shape, multiply_indices=None, additive_indices_that_collapse_at_parent=None, **kwargs):
         """
         Collapse unused dimensions. Do not attempt to expand dimensions - leave that to explicit broadcast methods.
         """
         multiply_indices = multiply_indices or set()
-        additive_indices_that_collapse_in_parent = additive_indices_that_collapse_in_parent or set()
-        unexpanded_collapsing_indices = additive_indices_that_collapse_in_parent - self.get_inner_indices() - multiply_indices
+        additive_indices_that_collapse_at_parent = additive_indices_that_collapse_at_parent or set()
         # The collapsable indices are those that are not in the target shape and are not later involved in multiplication.
         collapsable_indices = set(self.get_shape()) - set(shape) - multiply_indices
         out_shape = tuple(i for i in self.get_shape() if i not in collapsable_indices)
