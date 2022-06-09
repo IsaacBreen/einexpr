@@ -634,6 +634,7 @@ class Shaped:
         """
         multiply_indices = multiply_indices or set()
         additive_indices_that_collapse_at_parent = additive_indices_that_collapse_at_parent or set()
+        unexpanded_collapsing_indices = additive_indices_that_collapse_at_parent - self.get_inner_indices() - multiply_indices
         # The collapsable indices are those that are not in the target shape and are not later involved in multiplication.
         collapsable_indices = set(self.get_shape()) - set(shape) - multiply_indices
         out_shape = tuple(i for i in self.get_shape() if i not in collapsable_indices)
