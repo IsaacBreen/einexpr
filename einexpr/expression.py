@@ -95,7 +95,7 @@ def has_definite_shape(value):
     Returns True if the given object has a defined size, False otherwise. If the given value has indices, returns True, and otherwise returns False.
     Also returns True for zero-dimensional values such as int and float.
     """
-    if isinstance(value, (int, float)):
+    if isinstance(value, (int, float)) or isinstance(value, array_types) and value.ndim == 0:
         return True
     if isinstance(value, (EinsteinExpression, Shaped)):
         return True
@@ -112,7 +112,7 @@ def get_indices(x):
     """
     Returns the indices of the given object.
     """
-    if isinstance(x, (int, float)):
+    if isinstance(x, (int, float)) or isinstance(x, array_types) and x.ndim == 0:
         return set()
     elif isinstance(x, EinsteinObject):
         return x.get_inner_indices()
@@ -459,7 +459,7 @@ class Transposition:
 
 
 def unique_einexpr(x):
-    if isinstance(x, (int, float)):
+    if isinstance(x, (int, float)) or isinstance(x, array_types) and x.ndim == 0:
         return Shaped(EinsteinTensor(x), ())
     elif isinstance(x, array_types):
         return EinsteinTensor(x)
@@ -693,21 +693,21 @@ class EinsteinTensor(EinsteinObject):
         return False
     
     def get_shape(self):
-        assert isinstance(self.value, (int, float)), f"Shape of type {type(self.value)} is not supported"
+        assert isinstance(self.value, (int, float)) or isinstance(self.value, array_types) and self.value.ndim == 0, f"Shape of type {type(self.value)} is not supported"
         return ()
     
     def get_numeric_shape(self):
-        if isinstance(self.value, (int, float)):
+        if isinstance(self.value, (int, float)) or isinstance(self.value, array_types) and self.value.ndim == 0:
             return ()
         return self.value.shape
     
     def ndims(self):
-        if isinstance(self.value, (int, float)):
+        if isinstance(self.value, (int, float)) or isinstance(self.value, array_types) and self.value.ndim == 0:
             return 0
         return len(self.value.shape)
     
     def coerce_into_shape(self, shape, **kwargs):
-        assert isinstance(self.value, (int, float)), f"Cannot coerce type {type(self.value)} into shape {shape}"
+        assert isinstance(self.value, (int, float)) or isinstance(self.value, array_types) and self.value.ndim == 0, f"Cannot coerce type {type(self.value)} into shape {shape}"
         return self
     
     def __getitem__(self, index):
@@ -727,10 +727,11 @@ class EinsteinTensor(EinsteinObject):
         return Shaped(self, shape)
         
     def __repr__(self):
-        if isinstance(self.value, array_types):
-            return f"ndarray({self.value.shape}, {self.value.dtype})"
-        else:
-            return repr(self.value)
+        # if isinstance(self.value, array_types):
+        #     return f"ndarray({self.value}, {self.value.dtype})"
+        # else:
+        #      return repr(self.value)
+        return repr(self.value)
     
     def debug_dict(self):
         return {
