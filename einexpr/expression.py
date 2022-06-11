@@ -12,9 +12,10 @@ from .utils import deprecated
 from .index import Index
 
 
-multiplicitave_operations = set(["__mul__", "__rmul__", "__truediv__", "__rtruediv__"])
-additive_operations = set(["__add__", "__radd__", "__sub__", "__rsub__"])
-power_operations = set(["__pow__", "__rpow__"])
+unary_arithmetic_operations = {"__neg__", "__pos__", "__invert__"}
+multiplicitave_operations = {"__mul__", "__rmul__", "__truediv__", "__rtruediv__"}
+additive_operations = {"__add__", "__radd__", "__sub__", "__rsub__"}
+power_operations = {"__pow__", "__rpow__"}
 binary_arithmetic_operations = multiplicitave_operations | additive_operations | power_operations
 
 array_types = (np.ndarray, np.generic, jnp.ndarray)
@@ -40,9 +41,9 @@ def get_np_like_interface(obj):
     else:
         raise TypeError(f"Unrecognized type: {type(obj)}")
 
-def intercept_binary_arithmetic(func, pass_existing=False):
+def intercept_arithmetic(func, pass_existing=False):
     def decorator(cls):
-        names = ["__add__", "__radd__", "__sub__", "__rsub__", "__mul__", "__rmul__", "__truediv__", "__rtruediv__", "__pow__", "__rpow__"]
+        names = unary_arithmetic_operations | binary_arithmetic_operations
         for name in names:
             if pass_existing:
                 setattr(cls, name, func(name, getattr(cls, name) if hasattr(cls, name) else None))
@@ -149,7 +150,7 @@ def einfunc(func):
     return wrapper
 
 
-@intercept_binary_arithmetic(lambda name, _: lambda self, other: EinsteinExpression(name, self, other), pass_existing=True)
+@intercept_arithmetic(lambda name, _: lambda *args: EinsteinExpression(name, *args), pass_existing=True)
 class EinsteinObject:
     def copy(self):
         raise NotImplementedError(f"{self.__class__.__name__}")
@@ -196,6 +197,12 @@ class EinsteinObject:
     @staticmethod
     def is_tricklable(self=None):
         raise NotImplementedError(f"{self.__class__.__name__}")
+    
+    def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
+        return EinsteinExpression(getattr(ufunc, method), *inputs, **kwargs)
+    
+    # def __array_function__(self, func, types, args, kwargs):
+    #     return EinsteinExpression(func, *args, **kwargs)
 
 
 @dataclass()
@@ -209,11 +216,13 @@ class EinsteinExpression(EinsteinObject):
     shape: Tuple[str, ...] = None
     dim_sizes: Dict[str, int] = None
 
-    def __init__(self, operation, *args):
+    def __init__(self, operation, *args, **kwargs):
         self.operation = operation
         for arg in args:
-            assert has_definite_shape(arg), f"Argument {arg} must be shaped (indexed) before it can be used in an EinsteinExpression, e.g. x[a,b,c]*2 instead of x*2"
+            if not has_definite_shape(arg):
+                raise ValueError(f"Argument {arg} must be shaped (indexed) before it can be used in an EinsteinExpression, e.g. x[a,b,c]*2 instead of x*2")
         self.args = [unique_einexpr(arg) for arg in args]
+        self.kwargs = kwargs
         self.inner_indices = {i for arg in self.args for i in arg.get_inner_indices()}
         self.outer_indices = set()
         self.mul_indices = {i for arg in self.args for i in arg.get_inner_indices()} if operation in multiplicitave_operations | power_operations else set()
@@ -226,7 +235,10 @@ class EinsteinExpression(EinsteinObject):
     def __array__(self, dim_sizes=None):
         if dim_sizes is None:
             dim_sizes = self.get_dim_sizes()
-        return getattr(self.args[0].__array__(dim_sizes=dim_sizes), self.operation)(*(arg.__array__(dim_sizes=dim_sizes) for arg in self.args[1:]))
+        if isinstance(self.operation, str):
+            return getattr(self.args[0].__array__(dim_sizes=dim_sizes), self.operation)(*(arg.__array__(dim_sizes=dim_sizes) for arg in self.args[1:]), **self.kwargs)
+        else:
+            return self.operation(*(arg.__array__(dim_sizes=dim_sizes) for arg in self.args), **self.kwargs)
     
     @staticmethod
     def broadcast_args(args):
@@ -244,7 +256,6 @@ class EinsteinExpression(EinsteinObject):
     def coerce_into_shape(self, shape, multiply_indices=None, eager_transpose=False, additive_indices_that_collapse_at_parent=None):
         multiply_indices = multiply_indices or set()
         additive_indices_that_collapse_at_parent = additive_indices_that_collapse_at_parent or set()
-        unexpanded_collapsing_indices = additive_indices_that_collapse_at_parent - self.get_inner_indices()
         if self.operation in multiplicitave_operations:
             args = self.args.copy()
             args = [arg.coerce_into_shape(shape, multiply_indices | self.get_mul_indices()) for arg in args]
@@ -264,8 +275,6 @@ class EinsteinExpression(EinsteinObject):
                 out_shape = tuple(noncollapsable_indices)
                 new_expr = EinSum(out_shape, arg_shapes, args)
             new_expr = Shaped(new_expr, out_shape, coerce=False)
-            if unexpanded_collapsing_indices:
-                new_expr = math.prod((new_expr, *(IndexSize(index) for index in unexpanded_collapsing_indices)))
             return new_expr
         else:
             initial_inner_indices = {i for arg in self.args for i in arg.get_inner_indices()}
@@ -276,6 +285,8 @@ class EinsteinExpression(EinsteinObject):
             new_expr = EinsteinExpression(self.operation, *args)
             remaining_inner_indices = new_expr.get_inner_indices()
             remaining_noncollapsable_indices = remaining_inner_indices & (set(shape) | multiply_indices)
+            # unexpanded_collapsing_indices = additive_indices_that_collapse_at_parent - self.get_inner_indices()
+            unexpanded_collapsing_indices = set()
             # Collapse on all indices except those that are involved in multiplication higher up in the expression and those in the target shape.
             if eager_transpose or remaining_noncollapsable_indices != remaining_inner_indices or unexpanded_collapsing_indices:
                 # Collapse and reshape
@@ -363,7 +374,7 @@ class EinsteinExpression(EinsteinObject):
         return cls(*aux_data, *children)
 
 
-@intercept_binary_arithmetic(lambda name, _: lambda self, other: EinsteinExpression(name, self, other), pass_existing=True)
+@intercept_arithmetic(lambda name, _: lambda *args: EinsteinExpression(name, *args), pass_existing=True)
 @register_pytree_node_class
 class IndexSize:
     def __init__(self, index):
@@ -413,7 +424,7 @@ class IndexSize:
         return cls(*aux_data)
 
 
-@intercept_binary_arithmetic(lambda name, _: lambda self, other: EinsteinExpression(name, self, other), pass_existing=True)
+@intercept_arithmetic(lambda name, _: lambda *args: EinsteinExpression(name, *args), pass_existing=True)
 @register_pytree_node_class
 class Transposition:
     """
@@ -567,9 +578,9 @@ def broadcastable(args):
         return False
 
 
-@intercept_binary_arithmetic(lambda name, _: lambda self, other: EinsteinExpression(name, self, other), pass_existing=True)
+@intercept_arithmetic(lambda name, _: lambda *args: EinsteinExpression(name, *args), pass_existing=True)
 @register_pytree_node_class
-class Shaped:
+class Shaped(EinsteinObject):
     """
     A class that represents a shaped object.
     """
@@ -604,6 +615,7 @@ class Shaped:
         return f"{self.value}[{index_str}]"
     
     def __getattr__(self, name):
+        # if hasattr(self.value, name):
         return getattr(self.value, name)
     
     def get_inner_indices(self):
@@ -634,7 +646,8 @@ class Shaped:
         """
         multiply_indices = multiply_indices or set()
         additive_indices_that_collapse_at_parent = additive_indices_that_collapse_at_parent or set()
-        unexpanded_collapsing_indices = additive_indices_that_collapse_at_parent - self.get_inner_indices() - multiply_indices
+        # unexpanded_collapsing_indices = additive_indices_that_collapse_at_parent - self.get_inner_indices() - multiply_indices
+        unexpanded_collapsing_indices = set()
         # The collapsable indices are those that are not in the target shape and are not later involved in multiplication.
         collapsable_indices = set(self.get_shape()) - set(shape) - multiply_indices
         out_shape = tuple(i for i in self.get_shape() if i not in collapsable_indices)
