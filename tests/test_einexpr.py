@@ -192,25 +192,25 @@ def test_random_expr(seed, np_like, make_random_expr):
             raise ValueError(f"Values do not match: {expr.__array__()} != {var}")
 
 
-@pytest.mark.xfail
-@pytest.mark.parametrize("seed", range(1*N_TRIALS_MULTIPLIER))
-@pytest.mark.parametrize("np_like", [jnp])
-def test_random_expr_jax_jit(seed, make_random_expr):
-    expr, expr_json, var = make_random_expr
-    assert not any(x is None for x in make_random_expr), f"One of the expressions from {make_random_expr} is None"
+# @pytest.mark.xfail
+# @pytest.mark.parametrize("seed", range(1*N_TRIALS_MULTIPLIER))
+# @pytest.mark.parametrize("np_like", [jnp])
+# def test_random_expr_jax_jit(seed, make_random_expr):
+#     expr, expr_json, var = make_random_expr
+#     assert not any(x is None for x in make_random_expr), f"One of the expressions from {make_random_expr} is None"
     
-    # @jax.jit
-    def eval_expr(expr):
-        return expr.__array__()
+#     # @jax.jit
+#     def eval_expr(expr):
+#         return expr.__array__()
     
-    with np.errstate(divide='ignore', invalid='ignore', over='ignore'):
-        assert eval_expr(expr) is not None
-        if not np.allclose(eval_expr(expr), var, tolerance) and np.all([~np.isnan(eval_expr(expr)), ~np.isnan(var)]):
-            print(expr)
-            pp.pprint(expr_json)
-            print(expr.get_shape())
-            print(var.shape)
-            raise ValueError(f"Values do not match: {eval_expr(expr)} != {var}")
+#     with np.errstate(divide='ignore', invalid='ignore', over='ignore'):
+#         assert eval_expr(expr) is not None
+#         if not np.allclose(eval_expr(expr), var, tolerance) and np.all([~np.isnan(eval_expr(expr)), ~np.isnan(var)]):
+#             print(expr)
+#             pp.pprint(expr_json)
+#             print(expr.get_shape())
+#             print(var.shape)
+#             raise ValueError(f"Values do not match: {eval_expr(expr)} != {var}")
 
 
 def test_simple_expr_jax_jit():

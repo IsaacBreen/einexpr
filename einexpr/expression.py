@@ -201,8 +201,8 @@ class EinsteinObject:
     def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
         return EinsteinExpression(getattr(ufunc, method), *inputs, **kwargs)
     
-    def __array_function__(self, func, types, args, kwargs):
-        return EinsteinExpression(func, *args, **kwargs)
+    # def __array_function__(self, func, types, args, kwargs):
+    #     return EinsteinExpression(func, *args, **kwargs)
 
 
 @dataclass()
