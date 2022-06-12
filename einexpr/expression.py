@@ -9,7 +9,7 @@ import jax.numpy as jnp
 from jax.tree_util import register_pytree_node, register_pytree_node_class
 
 from .utils import deprecated
-from .index import Index
+from .index import Index, AnonymousIndex, NamedIndex
 
 
 unary_arithmetic_operations = {"__neg__", "__pos__", "__invert__"}
@@ -66,9 +66,9 @@ def parse_indices(indices):
             continue
         if '[' in i:
             i = i.split('[')
-            indices2.append(Index(i[0], i[1][:-1]))
+            indices2.append(NamedIndex(i[0], i[1][:-1]))
         else:
-            indices2.append(Index(i))
+            indices2.append(NamedIndex(i))
     return indices2
 
 
