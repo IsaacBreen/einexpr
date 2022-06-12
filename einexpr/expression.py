@@ -150,6 +150,10 @@ def einfunc(func):
     return wrapper
 
 
+def make_shaped_expr(expr, shape, coerce=True):
+    return Shaped(expr, shape=shape, coerce=coerce)
+
+
 @intercept_arithmetic(lambda name, _: lambda *args: EinsteinExpression(name, *args), pass_existing=True)
 class EinsteinObject:
     def copy(self):
@@ -185,7 +189,7 @@ class EinsteinObject:
         raise NotImplementedError(f"{self.__class__.__name__}")
     
     def __getitem__(self, shape):
-        return Shaped(self, parse_indices(shape)).__getitem__(shape)
+        return make_shaped_expr(self, parse_indices(shape)).__getitem__(shape)
         
     def __repr__(self):
         raise NotImplementedError(f"{self.__class__.__name__}")
@@ -274,7 +278,7 @@ class EinsteinExpression(EinsteinObject):
                 arg_shapes = [arg.get_shape() for arg in args]
                 out_shape = tuple(noncollapsable_indices)
                 new_expr = EinSum(out_shape, arg_shapes, args)
-            new_expr = Shaped(new_expr, out_shape, coerce=False)
+            new_expr = make_shaped_expr(new_expr, shape=out_shape, coerce=False)
             return new_expr
         else:
             initial_inner_indices = {i for arg in self.args for i in arg.get_inner_indices()}
@@ -295,7 +299,7 @@ class EinsteinExpression(EinsteinObject):
                 new_expr = EinSum(new_shape, [arg.get_shape() for arg in args], args)
             else:
                 new_shape = new_expr.get_shape()
-            new_expr = Shaped(new_expr, new_shape, coerce=False)
+            new_expr = make_shaped_expr(new_expr, shape=new_shape, coerce=False)
             return new_expr
     
     def copy(self):
@@ -439,7 +443,7 @@ class Transposition:
         return transpose_and_expand(self.value.__array__(dim_sizes=dim_sizes), self.permutation)
     
     def __getitem__(self, shape):
-        return Shaped(self, parse_indices(shape)).__getitem__(shape)
+        return make_shaped_expr(self, shape=parse_indices(shape)).__getitem__(shape)
     
     def copy(self):
         return Transposition(self.value.copy(), self.shape)
@@ -471,7 +475,7 @@ class Transposition:
 
 def unique_einexpr(x):
     if isinstance(x, (int, float)) or isinstance(x, array_types) and x.ndim == 0:
-        return Shaped(EinsteinTensor(x), ())
+        return make_shaped_expr(EinsteinTensor(x), shape=())
     elif isinstance(x, array_types):
         return EinsteinTensor(x)
     elif isinstance(x, (EinsteinObject, Shaped, Transposition)):
@@ -601,11 +605,11 @@ class Shaped(EinsteinObject):
             self.value = self.value.value
             
     def __getitem__(self, shape):
-        value = Shaped(self, parse_indices(shape))
-        return Shaped(einexpr(value.__array__()), value.get_shape(), coerce=False)
+        value = make_shaped_expr(self, shape=parse_indices(shape))
+        return make_shaped_expr(einexpr(value.__array__()), shape=value.get_shape(), coerce=False)
         
     def copy(self):
-        return Shaped(self.value.copy(), self.shape)
+        return make_shaped_expr(self.value.copy(), shape=self.shape)
         
     def __repr__(self):
         return f'{self.__class__.__name__}({self.value!r}, {self.shape!r})'
@@ -654,7 +658,7 @@ class Shaped(EinsteinObject):
         if out_shape != self.get_shape() or unexpanded_collapsing_indices:
             sizes_of_collapsing_indices = {IndexSize(index) for index in unexpanded_collapsing_indices}
             args = [self, *sizes_of_collapsing_indices]
-            return Shaped(EinSum(out_shape, [arg.get_shape() for arg in args], [self, *sizes_of_collapsing_indices]), out_shape)
+            return make_shaped_expr(EinSum(out_shape, [arg.get_shape() for arg in args], [self, *sizes_of_collapsing_indices]), shape=out_shape)
         else:
             return self
             
@@ -737,7 +741,7 @@ class EinsteinTensor(EinsteinObject):
             raise TypeError("Index must be an int, list, or tuple.")
         if isinstance(self.value, array_types):
             assert len(shape) == len(self.value.shape), f"Shape {shape} does not match tensor shape {self.value.shape}"
-        return Shaped(self, shape)
+        return make_shaped_expr(self, shape=shape)
         
     def __repr__(self):
         # if isinstance(self.value, array_types):
