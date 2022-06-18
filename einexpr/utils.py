@@ -1,5 +1,7 @@
 import warnings
 import functools
+from typing import Iterator, Set, Any
+from itertools import chain, combinations
 
 def deprecated(func):
     """This is a decorator which can be used to mark functions
@@ -27,3 +29,10 @@ def enhanced_decorator(decorator_to_enhance):
         else:
             raise TypeError(f"decorator_maker() takes either a one positional argument (the function to decorate) or zero or more keyword arguments (got positional arguments {args} and keyword arguments {kwargs}")
     return enchanced_decorator
+
+
+def powerset(iterable) -> Iterator[Set[Any]]:
+    "powerset([1,2,3]) --> () (1,) (2,) (3,) (1,2) (1,3) (2,3) (1,2,3)"
+    s = list(iterable)
+    return chain.from_iterable(combinations(s, r) for r in range(len(s)+1))
+
