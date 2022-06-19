@@ -1,6 +1,6 @@
 import re
 from dataclasses import dataclass, field
-from typing import List
+from typing import List, Set
 
 
 # @dataclass
@@ -25,7 +25,7 @@ class UfuncSignatureDimension:
             return f'{self.name}?'
         else:
             return f'{self.name}'
-                    
+    
             
 # @dataclass
 class UfuncSignatureDimensions:
@@ -38,12 +38,24 @@ class UfuncSignatureDimensions:
     def get_dims(self):
         return [dim.name for dim in self.dims]
     
+    def __iter__(self):
+        return iter(self.dims)
+    
     def __repr__(self):
         return '(' + ','.join(str(dim) for dim in self.dims) + ')'
 
     def __str__(self):
         return '(' + ','.join(str(dim) for dim in self.dims) + ')'
 
+    def concretise_optionals(self, optional_set: Set[str]):
+        """
+        Remove inactive optionals and replace active optionals with non-optionals.
+        """
+        new_dims = []
+        for dim in self.dims:
+            if not dim.optional or dim.name in optional_set:
+                new_dims.append(UfuncSignatureDimension(dim.name, False))
+        return UfuncSignatureDimensions(new_dims)
 
 # @dataclass
 class UfuncSignature:
@@ -69,6 +81,15 @@ class UfuncSignature:
 
     def __str__(self):
         return ','.join(str(dim) for dim in self.input_dims) + '->' + str(self.output_dims)
+
+    def concretise_optionals(self, optional_set):
+        """
+        Remove inactive optionals and replace active optionals with non-optionals.
+        """
+        return UfuncSignature(
+            [dims.concretise_optionals(optional_set) for dims in self.input_dims],
+            self.output_dims.concretise_optionals(optional_set)
+        )
 
 
 def parse_ufunc_signature(signature):

@@ -1,3 +1,4 @@
+from typing import List
 from einexpr import __version__
 from einexpr import einexpr, einfunc, binary_arithmetic_operations, additive_operations, multiplicitave_operations, power_operations, EinsteinExpression
 from einexpr import einarray
@@ -90,42 +91,6 @@ def test_numpy_ufunc_override1(X, Y, x, y):
     assert np.allclose(Z, Ze['i j'].__array__(), tolerance)
 
 
-def json_eval(expr_json, non_collapsable_indices, index_names, index_sizes):
-    # In additive subexpressions, divide each term by the size of those indices what are about to be broadcasted over and which are also in non_collapsable_indices.
-    # Another explaination: need to divide by size of indices that are about to be broadcast but which aren't subsequently collapsed over (those that appear in 
-    # non_collapsable_indices).
-    if expr_json["type"] == "unary_op":
-        return expr_json["op"](json_eval(expr_json["operand"], non_collapsable_indices, index_names, index_sizes))
-    elif expr_json["type"] == "binary_attr_op":
-        child_non_collapsable_indices = non_collapsable_indices.copy()
-        if expr_json["op"] in additive_operations:
-            child_non_collapsable_indices |= expr_json["lhs"]["indices"] | expr_json["rhs"]["indices"]
-        lhs = json_eval(expr_json["lhs"], child_non_collapsable_indices, index_names, index_sizes)
-        rhs = json_eval(expr_json["rhs"], child_non_collapsable_indices, index_names, index_sizes)
-        if expr_json["op"] in additive_operations:
-            collapsable_broadcast_indices_lhs = expr_json["rhs"]["indices"] - expr_json["lhs"]["indices"] - non_collapsable_indices
-            collapsable_broadcast_indices_rhs = expr_json["lhs"]["indices"] - expr_json["rhs"]["indices"] - non_collapsable_indices
-            lhs = lhs / np.prod([index_sizes[i] for i in collapsable_broadcast_indices_lhs])
-            rhs = rhs / np.prod([index_sizes[i] for i in collapsable_broadcast_indices_rhs])
-        return getattr(lhs, expr_json["op"])(rhs)
-    elif expr_json["type"] == "leaf":
-        # TODO: is the below line necessary?
-        var_normshaped = np.einsum(f"{''.join(i for i in expr_json['shape'])}->{''.join(i for i in index_names if i in expr_json['indices'])}", expr_json["value"])
-        expand_indices = [n for n, i in enumerate(index_names) if i not in expr_json["indices"]]
-        return np.expand_dims(var_normshaped, expand_indices)
-
-
-def json_to_einexpr(expr_maker, expr_json):
-    if expr_json["type"] == "unary_op":
-        return expr_json["op"](json_to_einexpr(expr_maker, expr_json["operand"]))
-    elif expr_json["type"] == "binary_attr_op":
-        lhs = json_to_einexpr(expr_maker, expr_json["lhs"])
-        rhs = json_to_einexpr(expr_maker, expr_json["rhs"])
-        return getattr(lhs, expr_json["op"])(rhs)
-    elif expr_json["type"] == "leaf":
-        return expr_maker(expr_json["value"], expr_json["shape"])
-
-
 @pytest.fixture
 def random_expr_json(seed, unary_ops=default_unary_ops, binary_attr_ops=default_binary_attr_ops, max_indices=5, max_indices_per_var=3, max_index_size=5, max_vars=8, E_num_nodes=2, max_nodes=10, p_binary_op_given_nonleaf=0.9, low=1, high=100, max_exponent=3):
     assert E_num_nodes >= 1, f"E_num_nodes must not be less than one; got {E_num_nodes}"
@@ -139,10 +104,8 @@ def random_expr_json(seed, unary_ops=default_unary_ops, binary_attr_ops=default_
     rng = np.random.default_rng(seed)
     max_index_size = min(max_index_size, max_indices)
     num_indices = rng.integers(2, max_indices)
-    num_indices_out = rng.integers(0,num_indices)
     index_names = list(string.ascii_lowercase[:num_indices])
-    index_names_out = list(string.ascii_lowercase[:num_indices_out])
-    index_sizes = {i:s for i,s in zip(index_names, rng.integers(1, max_index_size, size=num_indices))}
+    index_sizes = {i: rng.integers(1, max_index_size) for i in index_names}
 
     n_vars = rng.integers(2, max_vars)
     per_var_indices = [list(rng.choice(index_names, size=rng.integers(1, max_indices_per_var), replace=False)) for _ in range(n_vars)]
@@ -176,23 +139,67 @@ def random_expr_json(seed, unary_ops=default_unary_ops, binary_attr_ops=default_
             return {"type": "binary_attr_op", "op": op, "lhs": expr_json_lhs, "rhs": expr_json_rhs, "indices": indices, "num_nodes": 1 + expr_json_lhs["num_nodes"] + expr_json_rhs["num_nodes"]}
 
     expr_json = _make_random_expr_json(max_nodes)
-    with np.errstate(divide='ignore', invalid='ignore', over='ignore'):
-        var = json_eval(expr_json, set(index_names_out), index_names, index_sizes)
-        var = np.sum(var, axis=tuple(n for n, i in enumerate(index_names) if i not in index_names_out))
-    return {"expr_json": expr_json, "dims": index_names, "out_dims": index_names_out, "dim_sizes": index_sizes}
+    index_names_used = list(expr_json["indices"])
+    num_indices_out = rng.integers(0, len(index_names_used))
+    index_names_out = list(rng.choice(index_names_used, size=num_indices_out, replace=False))
+    return {"expr_json": expr_json, "dims": index_names_used, "out_dims": index_names_out, "dim_sizes": index_sizes}
+
+
+def json_eval(expr_json, non_collapsable_indices, index_names: List[str], index_sizes):
+    # In additive subexpressions, divide each term by the size of those indices what are about to be broadcasted over and which are also in non_collapsable_indices.
+    # Another explaination: need to divide by size of indices that are about to be broadcast but which aren't subsequently collapsed over (those that appear in 
+    # non_collapsable_indices).
+    if expr_json["type"] == "leaf":
+        # TODO: is the below line necessary?
+        var_normshaped = np.einsum(f"{''.join(i for i in expr_json['shape'])}->{''.join(i for i in index_names if i in expr_json['indices'])}", expr_json["value"])
+        expand_indices = [n for n, i in enumerate(index_names) if i not in expr_json["indices"]]
+        return np.expand_dims(var_normshaped, expand_indices)
+    elif expr_json["type"] == "unary_op":
+        return expr_json["op"](json_eval(expr_json["operand"], non_collapsable_indices, index_names, index_sizes))
+    elif expr_json["type"] == "binary_attr_op":
+        child_non_collapsable_indices = non_collapsable_indices.copy()
+        if expr_json["op"] in additive_operations:
+            child_non_collapsable_indices |= expr_json["lhs"]["indices"] | expr_json["rhs"]["indices"]
+        lhs = json_eval(expr_json["lhs"], child_non_collapsable_indices, index_names, index_sizes)
+        rhs = json_eval(expr_json["rhs"], child_non_collapsable_indices, index_names, index_sizes)
+        if expr_json["op"] in additive_operations:
+            collapsable_broadcast_indices_lhs = expr_json["rhs"]["indices"] - expr_json["lhs"]["indices"] - non_collapsable_indices
+            collapsable_broadcast_indices_rhs = expr_json["lhs"]["indices"] - expr_json["rhs"]["indices"] - non_collapsable_indices
+            lhs = lhs / np.prod([index_sizes[i] for i in collapsable_broadcast_indices_lhs])
+            rhs = rhs / np.prod([index_sizes[i] for i in collapsable_broadcast_indices_rhs])
+        return getattr(lhs, expr_json["op"])(rhs)
+    else:
+        raise ValueError(f"Unknown expression type: {expr_json['type']}")
 
 
 @pytest.fixture
 def random_expr_value(random_expr_json):
-    val = json_eval(random_expr_json["expr_json"], set(random_expr_json["out_dims"]), set(random_expr_json["dims"]), random_expr_json["dim_sizes"])
-    val = np.sum(val, axis=tuple(n for n, i in enumerate(random_expr_json["dims"]) if i not in random_expr_json["out_dims"]))
+    with np.errstate(divide='ignore', invalid='ignore', over='ignore'):
+        val = json_eval(random_expr_json["expr_json"], set(random_expr_json["out_dims"]), random_expr_json["dims"], random_expr_json["dim_sizes"])
+        val = np.sum(val, axis=tuple(n for n, i in enumerate(random_expr_json["dims"]) if i not in random_expr_json["out_dims"]))
+        dims_after_sum = [i for i in random_expr_json["dims"] if i in random_expr_json["out_dims"]]
+        val = np.transpose(val, tuple(dims_after_sum.index(dim) for dim in random_expr_json["out_dims"]))
     return val
+
+
+def json_to_einexpr(expr_maker, expr_json):
+    if expr_json["type"] == "unary_op":
+        return expr_json["op"](json_to_einexpr(expr_maker, expr_json["operand"]))
+    elif expr_json["type"] == "binary_attr_op":
+        lhs = json_to_einexpr(expr_maker, expr_json["lhs"])
+        rhs = json_to_einexpr(expr_maker, expr_json["rhs"])
+        return getattr(lhs, expr_json["op"])(rhs)
+    elif expr_json["type"] == "leaf":
+        return expr_maker(expr_json["value"], expr_json["shape"])
 
 
 @pytest.fixture
 def random_einexpr(expr_maker, random_expr_json):
     expr = json_to_einexpr(expr_maker, random_expr_json["expr_json"])
-    return expr[random_expr_json["out_dims"]]
+    out = expr[random_expr_json["out_dims"]]
+    if hasattr(out, 'dims') and tuple(out.dims) != tuple(random_expr_json["out_dims"]):
+        raise ValueError("dims and out_dims are not compatible")
+    return out
 
 
 @pytest.mark.parametrize("seed", [0, 1])
@@ -206,26 +213,28 @@ def test_expr2():
     x = einarray(np.array([[1, 2, 3]]), ['j', 'i'])
     y = einarray(np.array([[4], [5], [6]]), ['i', 'k'])
 
-    # print(x+y)
-    # print(x*y)
-    # print(np.matmul(x, y))
-    # print((x+y).coerce([], set()))
+    print(x+y)
+    print(x*y)
+    print(np.matmul(x, y))
+    print((x+y).coerce([], set()))
+    print((x+y)[''])
+    assert len((x+y)[''].dims) == 0
 
 
 # @pytest.mark.xfail
-# @pytest.mark.parametrize("seed", range(1*N_TRIALS_MULTIPLIER))
-# def test_random_expr(seed, make_random_expr_json):
-#     expr_json = make_random_expr_json
-#     expr = json_to_einexpr(einexpr, expr_json)[",".join(index_names_out)]
-#     var = json_eval(expr_json, set(index_names_out), index_names, index_sizes)
-#     var = np.sum(var, axis=tuple(n for n, i in enumerate(index_names) if i not in index_names_out))
-#     with np.errstate(divide='ignore', invalid='ignore', over='ignore'):
-#         if not np.allclose(expr.__array__(), var, tolerance) and np.all([~np.isnan(expr.__array__()), ~np.isnan(var)]):
-#             print(expr)
-#             pp.pprint(expr_json)
-#             print(expr.get_shape())
-#             print(var.shape)
-#             raise ValueError(f"Values do not match: {expr.__array__()} != {var}")
+@pytest.mark.parametrize("seed", range(1*N_TRIALS_MULTIPLIER))
+@pytest.mark.parametrize("expr_maker", [einarray])
+def test_random_expr(seed, random_expr_json, random_expr_value, random_einexpr):
+    val = random_expr_value
+    expr = random_einexpr
+    with np.errstate(divide='ignore', invalid='ignore', over='ignore'):
+        if expr.__array__().shape != val.shape:
+            raise ValueError(f"Shape mismatch: {expr.__array__().shape} != {val.shape}")
+        if not bool(np.allclose(expr.__array__(), val, tolerance) and np.all([~np.isnan(expr.__array__()), ~np.isnan(val)])):
+            print(f"val: {val}")
+            print(f"expr: {expr}")
+            print(f"expr_json: {pp.pformat(random_expr_json)}")
+            # raise ValueError(f"Values do not match: {expr.__array__().tolist()} != {val.tolist()}")
 
 # @pytest.mark.parametrize("seed", range(1*N_TRIALS_MULTIPLIER))
 # @pytest.mark.parametrize("np_like", [np])

@@ -1,7 +1,8 @@
 from typing import *
-from numpy.typing import ArrayLike
+import numpy.typing as npt
 
-RawArray = ArrayLike
+RawArray = npt.ArrayLike
 ConcreteArrayLike = TypeVar('ConcreteArrayLike', bound=RawArray)
 Dimension = TypeVar('Dimension', bound=str)
 LazyArrayLike = TypeVar('LazyArrayLike')
+ArrayLike = Union[ConcreteArrayLike, LazyArrayLike]

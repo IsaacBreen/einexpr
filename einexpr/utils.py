@@ -31,8 +31,11 @@ def enhanced_decorator(decorator_to_enhance):
     return enchanced_decorator
 
 
-def powerset(iterable) -> Iterator[Set[Any]]:
+def powerset(iterable, reverse: bool = False) -> Iterator[Set[Any]]:
     "powerset([1,2,3]) --> () (1,) (2,) (3,) (1,2) (1,3) (2,3) (1,2,3)"
     s = list(iterable)
-    return chain.from_iterable(combinations(s, r) for r in range(len(s)+1))
+    rng = range(len(s)+1)
+    if reverse:
+        rng = reversed(rng)
+    return chain.from_iterable(combinations(s, r) for r in rng)
 
