@@ -1,6 +1,7 @@
+from ssl import OP_NO_SSLv3
 from typing import List
 from einexpr import __version__
-from einexpr import einexpr, einfunc, binary_arithmetic_operations, additive_operations, multiplicitave_operations, power_operations, EinsteinExpression
+from einexpr import einexpr, einfunc
 from einexpr import einarray
 import numpy as np
 import jax
@@ -15,7 +16,18 @@ pp = pprint.PrettyPrinter(indent=4)
 tolerance = 1e-6
 default_dtype = None
 
-default_binary_attr_ops = binary_arithmetic_operations
+unary_arithmetic_magics_str = {"__neg__", "__pos__", "__invert__"}
+
+binary_arithmetic_magics_str = dict(
+    multiply = {"__mul__", "__rmul__", "__truediv__", "__rtruediv__"},
+    add = {"__add__", "__radd__", "__sub__", "__rsub__"},
+    power = {"__pow__", "__rpow__"},
+    )
+
+binary_arithmetic_magics = {key: {lambda x, y: getattr(x, op)(y) for op in ops} for key, ops in binary_arithmetic_magics_str.items()}
+binary_arithmetic_magics['power'] = {lambda x, y: getattr(np.abs(x), '__pow__')(np.abs(y)), lambda x, y: getattr(np.abs(x), '__rpow__')(np.abs(y))}
+
+default_binary_ops = {op for ops in binary_arithmetic_magics.values() for op in ops}
 default_unary_ops = [np.abs]
 
 RandomExpressionData = namedtuple("RandomExpressionData", ["expr", "expr_json", "var"])
@@ -92,7 +104,7 @@ def test_numpy_ufunc_override1(X, Y, x, y):
 
 
 @pytest.fixture
-def random_expr_json(seed, unary_ops=default_unary_ops, binary_attr_ops=default_binary_attr_ops, max_indices=5, max_indices_per_var=3, max_index_size=5, max_vars=8, E_num_nodes=2, max_nodes=10, p_binary_op_given_nonleaf=0.9, low=1, high=100, max_exponent=3):
+def random_expr_json(seed, unary_ops=default_unary_ops, binary_ops=default_binary_ops, max_indices=5, max_indices_per_var=3, max_index_size=5, max_vars=8, E_num_nodes=2, max_nodes=10, p_binary_op_given_nonleaf=0.9, low=1, high=100, max_exponent=3):
     assert E_num_nodes >= 1, f"E_num_nodes must not be less than one; got {E_num_nodes}"
     p_leaf_given_not_unary = E_num_nodes / (2*E_num_nodes - 1)
     x = p_binary_op_given_nonleaf
@@ -115,7 +127,7 @@ def random_expr_json(seed, unary_ops=default_unary_ops, binary_attr_ops=default_
     
     def _make_random_expr_json(max_nodes):
         if max_nodes >= 2:
-            node_type = rng.choice(["leaf", "unary_op", "binary_attr_op"], p=[p_leaf, p_unary_op, p_binary_op])
+            node_type = rng.choice(["leaf", "unary_op", "binary_op"], p=[p_leaf, p_unary_op, p_binary_op])
         elif max_nodes == 1:
             p_norm = p_leaf + p_unary_op
             node_type = rng.choice(["leaf", "unary_op"], p=[p_leaf/p_norm, p_unary_op/p_norm])
@@ -128,15 +140,15 @@ def random_expr_json(seed, unary_ops=default_unary_ops, binary_attr_ops=default_
             op = rng.choice(list(unary_ops))
             expr_json = _make_random_expr_json(max_nodes)
             return {"type": "unary_op", "op": op, "indices": expr_json["indices"], "operand": expr_json, "num_nodes": expr_json["num_nodes"]}
-        elif node_type == "binary_attr_op":
-            op = rng.choice(list(binary_attr_ops))
+        elif node_type == "binary_op":
+            op = rng.choice(list(binary_ops))
             expr_json_lhs = _make_random_expr_json(max_nodes)
             expr_json_rhs = _make_random_expr_json(max_nodes - expr_json_lhs["num_nodes"])
-            if op in power_operations:
+            if op in binary_arithmetic_magics["power"]:
                 expr_json_rhs = {"type": "unary_op", "op": np.abs, "indices": expr_json_rhs["indices"], "operand": expr_json_rhs, "num_nodes": expr_json_rhs["num_nodes"]}
                 # expr_json_rhs = {"type": "unary_op", "op": lambda x: np.clip(x, 0, max_exponent), "indices": expr_json_rhs["indices"], "operand": expr_json_rhs, "num_nodes": expr_json_rhs["num_nodes"]}
             indices = expr_json_lhs["indices"] | expr_json_rhs["indices"]
-            return {"type": "binary_attr_op", "op": op, "lhs": expr_json_lhs, "rhs": expr_json_rhs, "indices": indices, "num_nodes": 1 + expr_json_lhs["num_nodes"] + expr_json_rhs["num_nodes"]}
+            return {"type": "binary_op", "op": op, "lhs": expr_json_lhs, "rhs": expr_json_rhs, "indices": indices, "num_nodes": 1 + expr_json_lhs["num_nodes"] + expr_json_rhs["num_nodes"]}
 
     expr_json = _make_random_expr_json(max_nodes)
     index_names_used = list(expr_json["indices"])
@@ -156,18 +168,18 @@ def json_eval(expr_json, non_collapsable_indices, index_names: List[str], index_
         return np.expand_dims(var_normshaped, expand_indices)
     elif expr_json["type"] == "unary_op":
         return expr_json["op"](json_eval(expr_json["operand"], non_collapsable_indices, index_names, index_sizes))
-    elif expr_json["type"] == "binary_attr_op":
+    elif expr_json["type"] == "binary_op":
         child_non_collapsable_indices = non_collapsable_indices.copy()
-        if expr_json["op"] in additive_operations:
+        if expr_json["op"] in binary_arithmetic_magics["add"]:
             child_non_collapsable_indices |= expr_json["lhs"]["indices"] | expr_json["rhs"]["indices"]
         lhs = json_eval(expr_json["lhs"], child_non_collapsable_indices, index_names, index_sizes)
         rhs = json_eval(expr_json["rhs"], child_non_collapsable_indices, index_names, index_sizes)
-        if expr_json["op"] in additive_operations:
+        if expr_json["op"] in binary_arithmetic_magics["add"]:
             collapsable_broadcast_indices_lhs = expr_json["rhs"]["indices"] - expr_json["lhs"]["indices"] - non_collapsable_indices
             collapsable_broadcast_indices_rhs = expr_json["lhs"]["indices"] - expr_json["rhs"]["indices"] - non_collapsable_indices
             lhs = lhs / np.prod([index_sizes[i] for i in collapsable_broadcast_indices_lhs])
             rhs = rhs / np.prod([index_sizes[i] for i in collapsable_broadcast_indices_rhs])
-        return getattr(lhs, expr_json["op"])(rhs)
+        return expr_json["op"](lhs, rhs)
     else:
         raise ValueError(f"Unknown expression type: {expr_json['type']}")
 
@@ -185,12 +197,14 @@ def random_expr_value(random_expr_json):
 def json_to_einexpr(expr_maker, expr_json):
     if expr_json["type"] == "unary_op":
         return expr_json["op"](json_to_einexpr(expr_maker, expr_json["operand"]))
-    elif expr_json["type"] == "binary_attr_op":
+    elif expr_json["type"] == "binary_op":
         lhs = json_to_einexpr(expr_maker, expr_json["lhs"])
         rhs = json_to_einexpr(expr_maker, expr_json["rhs"])
-        return getattr(lhs, expr_json["op"])(rhs)
+        return expr_json["op"](lhs, rhs)
     elif expr_json["type"] == "leaf":
         return expr_maker(expr_json["value"], expr_json["shape"])
+    else:
+        raise ValueError(f"Unknown expression type: {expr_json['type']}")
 
 
 @pytest.fixture
