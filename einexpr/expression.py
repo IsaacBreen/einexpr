@@ -7,7 +7,7 @@ from itertools import zip_longest
 from itertools import chain, combinations
 
 from .parse_numpy_ufunc_signature import parse_ufunc_signature
-from .dim_calcs import broadcast_dims, dims_are_aligned, parse_dims, calculate_output_dims_from_signature
+from .dim_calcs import broadcast_dims, compute_noncore_dims, dims_are_aligned, parse_dims, calculate_output_dims_from_signature
 from .raw_ops import align_to_dims, align_arrays
 from .types import ArrayLike, ConcreteArrayLike, Dimension, LazyArrayLike, RawArrayLike
 
@@ -52,7 +52,8 @@ class lazy_ufunc(LazyArrayLike, np.lib.mixins.NDArrayOperatorsMixin):
             if dims_to_collapse:
                 inputs = [reduce_sum(inp, set(inp.dims) & dims_to_collapse) for inp in inputs]
             # Return the result.
-            raw_input_arrays, output_dims = align_arrays(*inputs, return_dims=True)
+            signature = parse_ufunc_signature(self.ufunc.signature or ','.join(['()']*len(inputs)) + '->()')
+            raw_input_arrays, output_dims = align_arrays(*inputs, signature=signature, return_output_dims=True)
             out = einarray(getattr(self.ufunc, self.method)(*raw_input_arrays, **self.kwargs), output_dims)
             if force_align and not dims_are_aligned(dims, output_dims):
                 # Align the output to the given dimensions.
@@ -146,16 +147,14 @@ class einarray(ConcreteArrayLike, np.lib.mixins.NDArrayOperatorsMixin):
             # Multiplication and multiplication can be done efficiently using an einsum, but we need to know for sure what the output dims are before we can do that.
             return lazy_ufunc(ufunc, method, *inputs, **kwargs)
         else:
-            # TODO: repeated code; would be nice to abstract this out.
             # Force lazy_ufunc inputs to be concrete arrays without collapsing any dimensions.
             all_dims = {dim for inp in inputs for dim in inp.get_dims_unordered()}
             inputs = [inp.coerce([], all_dims, force_align=False) for inp in inputs]
-            # Calculate the output dimensions
+            # Align input arrays
             signature = parse_ufunc_signature(ufunc.signature or ','.join(['()']*len(inputs)) + '->()')
-            output_dims = calculate_output_dims_from_signature(signature, *(inp.dims for inp in inputs))
-            # Apply the ufunc to the concrete arrays.
-            return einarray(getattr(ufunc, method)(*(inp.__array__() for inp in inputs), **kwargs), dims=output_dims)
-
+            raw_arrays, output_dims = align_arrays(*inputs, signature=signature, return_output_dims=True)
+            # Apply the ufunc to the raw arrays.
+            return einarray(getattr(ufunc, method)(*raw_arrays, **kwargs), dims=output_dims)
     def __array__(self, dtype: Optional[npt.DTypeLike] = None) -> ConcreteArrayLike:
         return self.a
 

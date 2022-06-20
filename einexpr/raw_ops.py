@@ -7,7 +7,7 @@ from einexpr.types import Dimension
 from .utils import powerset
 from .parse_numpy_ufunc_signature import UfuncSignature, UfuncSignatureDimensions, parse_ufunc_signature
 from .types import ConcreteArrayLike, RawArray
-from .dim_calcs import calculate_transexpand, dims_after_alignment, calculate_signature_transexpands
+from .dim_calcs import calculate_output_dims_from_signature, calculate_transexpand, dims_after_alignment, calculate_signature_transexpands
 
 
 def apply_transexpand(a: RawArray, transpose: List[int]) -> ConcreteArrayLike:
@@ -17,7 +17,9 @@ def apply_transexpand(a: RawArray, transpose: List[int]) -> ConcreteArrayLike:
     if not transpose:
         return a
     else:
-        return np.expand_dims(np.transpose(a, [i for i in transpose if i is not None]), [n for n, i in enumerate(transpose) if i is None])
+        transpose_arg = [i for i in transpose if i is not None]
+        expand_arg = [n for n, i in enumerate(transpose) if i is None]
+        return np.expand_dims(np.moveaxis(a, transpose_arg, range(len(transpose_arg))), expand_arg)
 
 
 def align_to_dims(a: ConcreteArrayLike, dims: Sequence[Dimension], expand: bool = False) -> RawArray:
@@ -34,14 +36,18 @@ def align_to_dims(a: ConcreteArrayLike, dims: Sequence[Dimension], expand: bool 
         return apply_transexpand(a.__array__(), calculate_transexpand([dim for dim in a.dims if dim in dims], dims))
     
     
-def align_arrays(*arrays: ConcreteArrayLike, signature: Optional[UfuncSignature] = None, return_dims: bool = False) -> Union[List[RawArray], Tuple[List[RawArray], List[Dimension]]]:
+def align_arrays(*arrays: ConcreteArrayLike, signature: Optional[UfuncSignature] = None, return_output_dims: bool = False) -> Union[List[RawArray], Tuple[List[RawArray], List[Dimension]]]:
     """
     Aligns the given arrays to common dimensions.
     """
     if not arrays:
-        return [], [] if return_dims else []
+        return [], [] if return_output_dims else []
     else:
-        dims = dims_after_alignment(*[array.dims for array in arrays])
-        raw_arrays = [align_to_dims(array, dims, expand=True) for array in arrays]
-        assert all(array.ndim == len(dims) for array in raw_arrays)
-        return raw_arrays, dims if return_dims else raw_arrays
+        # Calculate the transpositions and expansions necessesary to align the arrays
+        transexpands = calculate_signature_transexpands(signature, *(a.dims for a in arrays))
+        # Apply these
+        raw_aligned_arrays = [apply_transexpand(a.__array__(), transexpand) for a, transexpand in zip(arrays, transexpands)]
+        if return_output_dims:
+            return raw_aligned_arrays, calculate_output_dims_from_signature(signature, *(a.dims for a in arrays))
+        else:
+            return raw_aligned_arrays

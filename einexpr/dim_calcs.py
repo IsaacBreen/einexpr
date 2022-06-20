@@ -7,7 +7,7 @@ from einexpr.types import Dimension
 from .utils import powerset
 from .parse_numpy_ufunc_signature import UfuncSignature, UfuncSignatureDimensions, parse_ufunc_signature
 from .types import ConcreteArrayLike, RawArray
-
+from .utils import assert_outputs
 
 def broadcast_dims(*ein_dims: Sequence[Dimension]) -> List[Dimension]:
     """
@@ -16,7 +16,8 @@ def broadcast_dims(*ein_dims: Sequence[Dimension]) -> List[Dimension]:
     broad = max(ein_dims, key=len)
     for dims in ein_dims:
         if tuple(broad[-len(dims):]) != tuple(dims):
-            raise ValueError(f"The dimensions {dims} are not broadcastable to {broad}.")
+            return
+            # raise ValueError(f"The dimensions {dims} are not broadcastable to {broad}.")
     return broad
 
 
@@ -119,6 +120,15 @@ def compute_core_dims(signature: UfuncSignature, *input_dims: List[Dimension]) -
     return input_core_dims, output_core_dims
 
 
+def compute_noncore_dims(signature: UfuncSignature, *input_dims: List[Dimension]) -> List[Dimension]:
+    """
+    Returns the noncore input and output dimensions of the given signature with the given input dimensions.
+    """
+    input_core_dims, _ = compute_core_dims(signature, *input_dims)
+    input_noncore_dims = [dims[:-len(core_dims)] if core_dims else dims for dims, core_dims in zip(input_dims, input_core_dims)]
+    return input_noncore_dims
+
+
 def calculate_signature_transexpands(signature: UfuncSignature, *input_dims: List[Dimension]) -> List[Dimension]:
     """
     Returns the transpositions and expansions required to align to the core dimensions of the given signature with the given input dimensions.
@@ -127,8 +137,8 @@ def calculate_signature_transexpands(signature: UfuncSignature, *input_dims: Lis
     input_noncore_dims = [dims[:-len(core_dims)] if core_dims else dims for dims, core_dims in zip(input_dims, input_core_dims)]
     aligned_noncore_dims = dims_after_alignment(*input_noncore_dims)
     input_noncore_dims_transexpand = [calculate_transexpand(noncore_dims, aligned_noncore_dims) for noncore_dims in input_noncore_dims]
-    input_dims_transexpand = [[*noncore_dims, *range(1+len(noncore_dims), len(inp_dims))] for inp_dims, noncore_dims in zip(input_dims, input_noncore_dims_transexpand)]
-    return input_dims_transexpand
+    assert all(i==j for transexpand in input_noncore_dims_transexpand for j,i in enumerate(sorted(i for i in transexpand if i is not None)))
+    return input_noncore_dims_transexpand
 
 
 def calculate_output_dims_from_signature(signature: UfuncSignature, *input_dims: List[Dimension]) -> List[Dimension]:
