@@ -9,7 +9,7 @@ from itertools import chain, combinations
 from .parse_numpy_ufunc_signature import parse_ufunc_signature
 from .dim_calcs import broadcast_dims, dims_are_aligned, parse_dims, calculate_output_dims_from_signature
 from .raw_ops import align_to_dims, align_arrays
-from .types import ArrayLike, ConcreteArrayLike, Dimension, LazyArrayLike
+from .types import ArrayLike, ConcreteArrayLike, Dimension, LazyArrayLike, RawArrayLike
 
 import numpy as np
 import numpy.typing as npt
@@ -30,7 +30,7 @@ def reduce_sum(a: ConcreteArrayLike, dims: Union[Container[Dimension], Iterator[
     return einarray(np.sum(a.__array__(), axis=tuple(i for i, dim in enumerate(a.dims) if dim in dims)), [dim for dim in a.dims if dim not in dims])
 
 
-class lazy_ufunc(Lazy, np.lib.mixins.NDArrayOperatorsMixin):
+class lazy_ufunc(LazyArrayLike, np.lib.mixins.NDArrayOperatorsMixin):
     def __init__(self, ufunc: Callable, method: str, *inputs, **kwargs):
         self.ufunc = ufunc
         self.method = method
@@ -111,12 +111,12 @@ class lazy_ufunc(Lazy, np.lib.mixins.NDArrayOperatorsMixin):
         return f"lazy_ufunc({self.ufunc}, {self.method}, {self.inputs}, {self.kwargs})"
 
 
-class einarray(np.lib.mixins.NDArrayOperatorsMixin):
+class einarray(ConcreteArrayLike, np.lib.mixins.NDArrayOperatorsMixin):
     def __init__(self, a: ConcreteArrayLike, dims: Sequence[Dimension]) -> None:
         if isinstance(a, (int, float, complex, np.number)):
             a = np.array(a)
         # if not isinstance(a, ConcreteArrayLike):
-        if not isinstance(a, (np.ndarray, einarray)):
+        if not isinstance(a, (RawArrayLike, ConcreteArrayLike)):
             raise ValueError(f"The array must be a concrete array. Got {a} of type {type(a)}.")
         if a.ndim != len(dims):
             raise ValueError(f"The number {a.ndim} of dimensions in the array does not match the number {len(dims)} of dimensions passed to the constructor.")
