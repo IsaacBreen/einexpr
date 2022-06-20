@@ -22,7 +22,7 @@ def apply_transexpand(a: RawArray, transpose: List[int]) -> ConcreteArrayLike:
         return np.expand_dims(np.moveaxis(a, transpose_arg, range(len(transpose_arg))), expand_arg)
 
 
-def align_to_dims(a: ConcreteArrayLike, dims: Sequence[Dimension], expand: bool = False) -> RawArray:
+def align_to_dims(a: ConcreteArrayLike, dims: List[Dimension], expand: bool = False) -> RawArray:
     """
     Aligns the given arrays to the given dimensions and expands along dimensions that each input array does not have.
     """

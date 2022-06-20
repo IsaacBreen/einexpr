@@ -40,7 +40,7 @@ class lazy_ufunc(LazyArrayLike, np.lib.mixins.NDArrayOperatorsMixin):
     def get_dims_unordered(self) -> Set[Dimension]:
         return {dim for inp in self.inputs if hasattr(inp, "get_dims_unordered") for dim in inp.get_dims_unordered()}
 
-    def coerce(self, dims: Sequence[Dimension], do_not_collapse: Set[Dimension], force_align: bool = True) -> ConcreteArrayLike:
+    def coerce(self, dims: List[Dimension], do_not_collapse: Set[Dimension], force_align: bool = True) -> ConcreteArrayLike:
         """
         Coerce the lazy array to a concrete array of the given dimensions, ignoring dimensions that do not appear in self.inputs and collapsing those that don't appear in either dims or do_not_collapse.
         """
@@ -113,7 +113,7 @@ class lazy_ufunc(LazyArrayLike, np.lib.mixins.NDArrayOperatorsMixin):
 
 
 class einarray(ConcreteArrayLike, np.lib.mixins.NDArrayOperatorsMixin):
-    def __init__(self, a: ConcreteArrayLike, dims: Sequence[Dimension]) -> None:
+    def __init__(self, a: ConcreteArrayLike, dims: List[Dimension]) -> None:
         if isinstance(a, (int, float, complex, np.number)):
             a = np.array(a)
         # if not isinstance(a, ConcreteArrayLike):
@@ -127,7 +127,7 @@ class einarray(ConcreteArrayLike, np.lib.mixins.NDArrayOperatorsMixin):
     def get_dims_unordered(self) -> Set[Dimension]:
         return set(self.dims)
     
-    def coerce(self, dims: Sequence[Dimension], do_not_collapse: Set[Dimension], force_align: bool = True) -> ConcreteArrayLike:
+    def coerce(self, dims: List[Dimension], do_not_collapse: Set[Dimension], force_align: bool = True) -> ConcreteArrayLike:
         # Collapse all dimensions except those in contained in dims or do_not_collapse.
         dims_to_collapse = set(self.dims) - set(dims) - do_not_collapse
         out = reduce_sum(self, dims_to_collapse)
@@ -137,7 +137,7 @@ class einarray(ConcreteArrayLike, np.lib.mixins.NDArrayOperatorsMixin):
             out_dims = [dim for dim in dims if dim in out.dims] + [dim for dim in out.dims if dim not in dims and dim in do_not_collapse]
             return einarray(align_to_dims(out, out_dims), out_dims)
         
-    def __getitem__(self, dims: Sequence[Dimension]) -> ConcreteArrayLike:
+    def __getitem__(self, dims: List[Dimension]) -> ConcreteArrayLike:
         return self.coerce(dims, set())
     
     def __array_ufunc__(self, ufunc: Callable, method: str, *inputs, **kwargs) -> ConcreteArrayLike:

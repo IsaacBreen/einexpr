@@ -9,7 +9,7 @@ from .parse_numpy_ufunc_signature import UfuncSignature, UfuncSignatureDimension
 from .types import ConcreteArrayLike, RawArray
 from .utils import assert_outputs
 
-def broadcast_dims(*ein_dims: Sequence[Dimension]) -> List[Dimension]:
+def broadcast_dims(*ein_dims: List[Dimension]) -> List[Dimension]:
     """
     Returns the broadcast of the given dimensions.
     """
@@ -21,7 +21,7 @@ def broadcast_dims(*ein_dims: Sequence[Dimension]) -> List[Dimension]:
     return broad
 
 
-def dims_after_alignment(*ein_dims: Sequence[Dimension]) -> List[Dimension]:
+def dims_after_alignment(*ein_dims: List[Dimension]) -> List[Dimension]:
     """
     Returns a single list of dimensions that contains all the dimensions of the given inputs.
     """
@@ -40,7 +40,7 @@ def dims_are_aligned(dims1: List[Dimension], dims2: List[Dimension]) -> bool:
     return [dim for dim in dims1 if dim in dims2] == [dim for dim in dims2 if dim in dims1]
 
 
-def calculate_transexpand(dims_from: Sequence[Dimension], dims_to: Sequence[Dimension]) -> List[Dimension]:
+def calculate_transexpand(dims_from: List[Dimension], dims_to: List[Dimension]) -> List[Dimension]:
     """
     Returns lists of the transpositions and expansions required to align to given dimensions. Broadcast dimensions - those
     that will need to be expanded - are represented by None.
