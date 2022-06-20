@@ -1,7 +1,8 @@
 import warnings
 import functools
-from typing import Iterator, Set, Any
+from typing import Callable, Iterator, Set, Any
 from itertools import chain, combinations
+import inspect
 
 def deprecated(func):
     """This is a decorator which can be used to mark functions
@@ -39,3 +40,16 @@ def powerset(iterable, reverse: bool = False) -> Iterator[Set[Any]]:
         rng = reversed(rng)
     return chain.from_iterable(combinations(s, r) for r in rng)
 
+
+def assert_outputs(assertion: Callable[Any, bool], make_message = None):
+    def wrapper(func):
+        @functools.wraps(func)
+        def wrapped_func(*args, **kwargs):
+            result = func(*args, **kwargs)
+            if make_message:
+                assert assertion(result), make_message(result)
+            else:
+                assert assertion(result), f"Output assertion failed. Result: {result}. Assertion: {inspect.getsource(assertion)}Call: {func.__name__}({','.join(map(repr, args))}, {','.join(f'{k}={v!r}' for k,v in kwargs.items())})."
+            return result
+        return wrapped_func
+    return wrapper
