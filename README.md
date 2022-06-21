@@ -32,7 +32,11 @@ print(x['i, k'])
 def linear(x, W, b):
     return x['i'] * W['i j'] + b['j']
 
-x_transformed = linear(x=np.array([1,2]), W=np.array([[1,2],[3,4]]), b=np.array([5,6]))
+# Call it
+x_transformed = linear(x=a, W=X, b=b)
+# We can even mix up the labels. @einfunc will map to the right labels for you.
+x_transformed = linear(x=[1,2], W=[[1,2],[3,4]], b=[5,6])
+
 print(x_transformed['j'])
 ```
 
