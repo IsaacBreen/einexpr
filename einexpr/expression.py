@@ -14,6 +14,8 @@ from .types import ArrayLike, ConcreteArrayLike, Dimension, LazyArrayLike, RawAr
 import numpy as np
 import numpy.typing as npt
 
+import torch as pt
+
 
 class Lazy:
     pass
@@ -113,16 +115,37 @@ class lazy_ufunc(LazyArrayLike, np.lib.mixins.NDArrayOperatorsMixin):
 
 
 class einarray(ConcreteArrayLike, np.lib.mixins.NDArrayOperatorsMixin):
-    def __init__(self, a: ConcreteArrayLike, dims: List[Dimension]) -> None:
+    def __init__(self, a: Union[RawArrayLike, ConcreteArrayLike], dims: List[Dimension] = None, copy: bool=True, backend: Literal["numpy", "torch"] = None) -> None:
+        
         if isinstance(a, (int, float, complex, np.number)):
             a = np.array(a)
-        # if not isinstance(a, ConcreteArrayLike):
-        if not isinstance(a, (RawArrayLike, ConcreteArrayLike)):
-            raise ValueError(f"The array must be a concrete array. Got {a} of type {type(a)}.")
-        if a.ndim != len(dims):
-            raise ValueError(f"The number {a.ndim} of dimensions in the array does not match the number {len(dims)} of dimensions passed to the constructor.")
-        self.a = a
-        self.dims = tuple(dims)
+            # Set self.a and self.dims
+        if isinstance(a, ConcreteArrayLike):
+            if tuple(dims) != a.dims:
+                raise ValueError(f"The dimensions passed to the constructor must match the dimensions of the concrete array. Got {dims} but the array has dimensions {a.dims}.")
+            self.a = a.a
+            self.dims = a.dims
+        elif isinstance(a, RawArrayLike):
+            if a.ndim != len(dims):
+                raise ValueError(f"The number {a.ndim} of dimensions in the array does not match the number {len(dims)} of dimensions passed to the constructor.")
+            self.a = a
+            self.dims = dims
+        else:
+            raise ValueError(f"The array must be a raw or concrete array. Got {a} of type {type(a)}.")
+        # Convert self.a to the specified backend
+        if backend is None:
+            if isinstance(self.a, RawArrayLike):
+                # Just use raw array as-is
+                self.a = a
+            else:
+                # The user may have passed a list array (e.g. a=[[1,2],[3,4]]). We hope that self.a can be converted into np.array.
+                self.a = np.array(self.a, copy=copy)
+        elif backend == "numpy":
+            self.a = np.array(self.a.a, copy=copy)
+        elif backend == "torch":
+            self.a = pt.asarray(self.a.a, copy=copy)
+        else:
+            raise ValueError(f"The backend must be either 'numpy' or 'torch'. Got {backend}.")
         
     def get_dims_unordered(self) -> Set[Dimension]:
         return set(self.dims)
