@@ -3,10 +3,9 @@
 einexpr brings true Einstein summation notation to Python, allowing you to convert your gory tensor manipulations into aesthetically pleasing and easy-to-follow arithmetic expressions with an idiomatic Python style (using standard operators: +, -, /, *, **) and support for your favourite np.* functions. Think einsum + addition + exponentiation + seamless interoperation with Jax. (PyTorch and TensorFlow support on the way.)
 
 ```python
-import numpy as np
 from einexpr import einexpr, einfunc
 
-X = einarray([[1, 2], [3, 4]])
+X = einarray([[1, 2], [3, 4]]) # pass backend='[numpy|jax|torch]' (default: numpy)
 Y = einarray([[5, 6], [7, 8]])
 a = einarray([1,2])
 b = einarray([3,4])
