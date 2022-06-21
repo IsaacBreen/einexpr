@@ -26,14 +26,6 @@ print(x['i'])
 # Matrix-matrix multiplication
 x = X['i j'] * Y['j k']
 print(x['i, k'])
-
-# Linear transformation
-@einfunc
-def linear(x, W, b):
-    return x['i'] * W['i j'] + b['j']
-
-x_transformed = linear(x=np.array([1,2]), W=np.array([[1,2],[3,4]]), b=np.array([5,6]))
-print(x_transformed['j'])
 ```
 
 ## Installation
