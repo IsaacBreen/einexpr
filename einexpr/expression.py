@@ -36,7 +36,19 @@ class lazy_ufunc(LazyArrayLike, np.lib.mixins.NDArrayOperatorsMixin):
         self.method = method
         self.inputs = inputs
         self.kwargs = kwargs
+    
+    @property
+    def dims(self) -> List[Dimension]:
+        return self.get_dims_unordered()
         
+    def dims_are_inferrable(self) -> bool:
+        """
+        Return True if the dimensions of the output of this lazy ufunc can be inferred without ambiguity by broadcasting the dimensions of the inputs.
+        """
+        if not all(isinstance(inp, ConcreteArrayLike) or isinstance(inp, LazyArrayLike) and inp.dims_are_inferrable() for inp in self.inputs):
+            return False
+
+
     def get_dims_unordered(self) -> Set[Dimension]:
         return {dim for inp in self.inputs if hasattr(inp, "get_dims_unordered") for dim in inp.get_dims_unordered()}
 
@@ -155,6 +167,12 @@ class einarray(ConcreteArrayLike, np.lib.mixins.NDArrayOperatorsMixin):
             raw_arrays, output_dims = align_arrays(*inputs, signature=signature, return_output_dims=True)
             # Apply the ufunc to the raw arrays.
             return einarray(getattr(ufunc, method)(*raw_arrays, **kwargs), dims=output_dims)
+        
+    # def __array_function__(self, func: Callable, types: Sequence[Type], args: Sequence[Any], kwargs: Dict[str, Any]) -> Any:
+    #     if any(isinstance(arg, LazyArrayLike) for arg in args):
+    #         raise TypeError(f"Arrays passed to {func} must be explicitly shaped or broadcastable; you passed a lazy_ufunc which is neither. You can shape it by indexing it (e.g. a['i','j']).")
+    #     return func(*args, **kwargs)
+    
     def __array__(self, dtype: Optional[npt.DTypeLike] = None) -> ConcreteArrayLike:
         return self.a
 
