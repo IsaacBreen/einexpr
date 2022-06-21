@@ -6,10 +6,10 @@ einexpr brings true Einstein summation notation to Python, allowing you to conve
 import numpy as np
 from einexpr import einexpr, einfunc
 
-X = einexpr(np.array([[1, 2], [3, 4]]))
-Y = einexpr(np.array([[5, 6], [7, 8]]))
-a = einexpr(np.array([1,2]))
-b = einexpr(np.array([3,4]))
+X = einarray([[1, 2], [3, 4]])
+Y = einarray([[5, 6], [7, 8]])
+a = einarray([1,2])
+b = einarray([3,4])
 
 # Dot product
 x = a['i'] + b['i']
