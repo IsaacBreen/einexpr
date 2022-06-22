@@ -38,19 +38,7 @@ class lazy_ufunc(LazyArrayLike, np.lib.mixins.NDArrayOperatorsMixin):
         self.method = method
         self.inputs = inputs
         self.kwargs = kwargs
-    
-    @property
-    def dims(self) -> List[Dimension]:
-        return self.get_dims_unordered()
         
-    def dims_are_inferrable(self) -> bool:
-        """
-        Return True if the dimensions of the output of this lazy ufunc can be inferred without ambiguity by broadcasting the dimensions of the inputs.
-        """
-        if not all(isinstance(inp, ConcreteArrayLike) or isinstance(inp, LazyArrayLike) and inp.dims_are_inferrable() for inp in self.inputs):
-            return False
-
-
     def get_dims_unordered(self) -> Set[Dimension]:
         return {dim for inp in self.inputs if hasattr(inp, "get_dims_unordered") for dim in inp.get_dims_unordered()}
 
