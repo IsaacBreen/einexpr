@@ -104,7 +104,6 @@ class lazy_ufunc(LazyArrayLike, np.lib.mixins.NDArrayOperatorsMixin):
         if ufunc in [np.add, np.subtract, np.multiply, np.divide]:
             return lazy_ufunc(ufunc, method, *inputs, **kwargs)
         else:
-            # Use einarray.__array_ufunc__
             return einarray.__array_ufunc__(self, ufunc, method, *inputs, **kwargs)
     
     def __array__(self, dtype: Optional[npt.DTypeLike] = None) -> ConcreteArrayLike:
@@ -116,36 +115,29 @@ class lazy_ufunc(LazyArrayLike, np.lib.mixins.NDArrayOperatorsMixin):
 
 class einarray(ConcreteArrayLike, np.lib.mixins.NDArrayOperatorsMixin):
     def __init__(self, a: Union[RawArrayLike, ConcreteArrayLike], dims: List[Dimension] = None, copy: bool=True, backend: Literal["numpy", "torch"] = None) -> None:
-        
         if isinstance(a, (int, float, complex, np.number)):
             a = np.array(a)
-            # Set self.a and self.dims
         if isinstance(a, ConcreteArrayLike):
             if tuple(dims) != a.dims:
                 raise ValueError(f"The dimensions passed to the constructor must match the dimensions of the concrete array. Got {dims} but the array has dimensions {a.dims}.")
-            self.a = a.a
-            self.dims = a.dims
-        elif isinstance(a, RawArrayLike):
-            if a.ndim != len(dims):
-                raise ValueError(f"The number {a.ndim} of dimensions in the array does not match the number {len(dims)} of dimensions passed to the constructor.")
-            self.a = a
-            self.dims = dims
-        else:
-            raise ValueError(f"The array must be a raw or concrete array. Got {a} of type {type(a)}.")
+            a = a.a
         # Convert self.a to the specified backend
         if backend is None:
-            if isinstance(self.a, RawArrayLike):
+            if isinstance(a, RawArrayLike):
                 # Just use raw array as-is
                 self.a = a
             else:
                 # The user may have passed a list array (e.g. a=[[1,2],[3,4]]). We hope that self.a can be converted into np.array.
-                self.a = np.array(self.a, copy=copy)
+                self.a = np.array(a, copy=copy)
         elif backend == "numpy":
-            self.a = np.array(self.a.a, copy=copy)
+            self.a = np.array(a, copy=copy)
         elif backend == "torch":
-            self.a = pt.asarray(self.a.a, copy=copy)
+            self.a = pt.asarray(a, copy=copy)
         else:
             raise ValueError(f"The backend must be either 'numpy' or 'torch'. Got {backend}.")
+        if a.ndim != len(dims):
+            raise ValueError(f"The number {a.ndim} of dimensions in the array does not match the number {len(dims)} of dimensions passed to the constructor.")
+        self.dims = dims
         
     def get_dims_unordered(self) -> Set[Dimension]:
         return set(self.dims)
@@ -178,6 +170,7 @@ class einarray(ConcreteArrayLike, np.lib.mixins.NDArrayOperatorsMixin):
             raw_arrays, output_dims = align_arrays(*inputs, signature=signature, return_output_dims=True)
             # Apply the ufunc to the raw arrays.
             return einarray(getattr(ufunc, method)(*raw_arrays, **kwargs), dims=output_dims)
+    
     def __array__(self, dtype: Optional[npt.DTypeLike] = None) -> ConcreteArrayLike:
         return self.a
 
