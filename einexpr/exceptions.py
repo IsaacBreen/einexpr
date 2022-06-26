@@ -1,0 +1,2 @@
+class AmbiguousDimensionException(Exception):
+    pass

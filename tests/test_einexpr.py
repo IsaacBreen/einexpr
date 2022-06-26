@@ -3,6 +3,7 @@ from typing import List
 from einexpr import __version__
 from einexpr import einexpr, einfunc
 from einexpr import einarray
+from einexpr import AmbiguousDimensionException
 import numpy as np
 import jax
 import jax.numpy as jnp
@@ -333,3 +334,22 @@ def test_list_to_einarray():
     x = einarray([1,2,3], ['i'])
     y = x+x
     y.dims
+    
+
+def test_ambiguous_matmul():
+    a = einarray([1,2,3], ['i'])
+    b = einarray([4,5,6,7], ['j'])
+    c = einarray([8,9,10,11], ['j'])
+    X = a*b
+    try:
+        Y = np.matmul(X, a)
+    except AmbiguousDimensionException:
+        pass
+    else:
+        raise Exception("Expected ValueError for ambiguous dims")
+    try:
+        Y = np.matmul(a, X)
+    except AmbiguousDimensionException:
+        pass
+    else:
+        raise Exception("Expected ValueError for ambiguous dims")

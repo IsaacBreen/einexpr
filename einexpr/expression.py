@@ -15,7 +15,8 @@ from itertools import chain, combinations
 from .parse_numpy_ufunc_signature import parse_ufunc_signature
 from .dim_calcs import *
 from .raw_ops import align_to_dims, align_arrays
-from .types import ArrayLike, ConcreteArrayLike, Dimension, LazyArrayLike, RawArrayLike, DimensionlessLike, ConcreteLike
+from .types import *
+from .exceptions import *
 
 import numpy as np
 import numpy.typing as npt
@@ -37,11 +38,18 @@ def reduce_sum(a: ConcreteArrayLike, dims: Union[Container[Dimension], Iterator[
         raise ValueError(f"The dimensions {dims} must be a subset of the dimensions {a.dims} of the input array.")
     return einarray(np.sum(a.__array__(), axis=tuple(i for i, dim in enumerate(a.dims) if dim in dims)), [dim for dim in a.dims if dim not in dims])
 
+
+def process_inp(inp):
+    if isinstance(inp, DimensionlessLike):
+        return einarray(inp)
+    else:
+        return inp
+
 class lazy_ufunc(LazyArrayLike, np.lib.mixins.NDArrayOperatorsMixin):
     def __init__(self, ufunc: Callable, method: str, *inputs, **kwargs):
         self.ufunc = ufunc
         self.method = method
-        self.inputs = inputs
+        self.inputs = [process_inp(inp) for inp in inputs]
         self.kwargs = kwargs
     
     @property
@@ -56,9 +64,9 @@ class lazy_ufunc(LazyArrayLike, np.lib.mixins.NDArrayOperatorsMixin):
     def ambiguous_dims(self) -> Set[Dimension]:
         # Align input arrays
         signature = parse_ufunc_signature(self.ufunc.signature or ','.join(['()']*len(self.inputs)) + '->()')
-        # Collect ambiguous dimensions
+        # Collect ambiguous dimensions. Assume non-core dimensions are unambiguous.
         inp_core_dims = compute_core_dims(signature, *(inp.dims for inp in self.inputs))
-        ambiguous_dims = calculate_unambiguous_get_final_aligned_dims(*inp_core_dims)
+        ambiguous_dims = calculate_ambiguous_get_final_aligned_dims(*inp_core_dims)
         ambiguous_dims |= {dim for inp in self.inputs if isinstance(inp, ArrayLike) for dim in inp.ambiguous_dims}
         return ambiguous_dims
 
@@ -154,7 +162,7 @@ class einarray(ConcreteArrayLike, np.lib.mixins.NDArrayOperatorsMixin):
             self.a = self.a.a
         # Convert self.a to the specified backend
         if backend is None:
-            if isinstance(self.a, RawArrayLike):
+            if isinstance(self.a, (RawArrayLike, DimensionlessLike)):
                 # Just use raw array as-is
                 self.a = self.a
             else:
@@ -167,12 +175,14 @@ class einarray(ConcreteArrayLike, np.lib.mixins.NDArrayOperatorsMixin):
             self.a = pt.asarray(self.a, copy=copy)
         else:
             raise ValueError(f"The backend must be either 'numpy' or 'torch'. Got {backend}.")
-        if not isinstance(self.dims, (tuple, list)):
+        if isinstance(self.a, DimensionlessLike):
+            self.dims = ()
+        elif not isinstance(self.dims, (tuple, list)):
             if dims == self.dims:
                 raise ValueError(f"The dimensions passed to the constructor must be a list or tuple. Got value {dims!r} of type {type(dims).__name__}.")
             else:
                 raise ValueError(f"Possible internal error. Dimensions must be a list or tuple. The value of the dims argument is {dims!r} of type {type(dims).__name__}, and {self.dims!r} of type {type(self.dims).__name__} was inferred.")
-        if self.a.ndim != len(self.dims):
+        if isinstance(self.a, RawArrayLike) and self.a.ndim != len(self.dims):
             raise ValueError(f"The number {self.a.ndim} of dimensions in the array does not match the number {len(self.dims)} of dimensions passed to the constructor.")
         if not self.ambiguous_dims.issubset(self.dims):
             raise ValueError(f"The ambiguous dimensions {self.ambiguous_dims} are must be a subset of the dimensions {self.dims}.")
@@ -201,16 +211,29 @@ class einarray(ConcreteArrayLike, np.lib.mixins.NDArrayOperatorsMixin):
             # Multiplication and multiplication can be done efficiently using an einsum, but we need to know for sure what the output dims are before we can do that.
             return lazy_ufunc(ufunc, method, *inputs, **kwargs)
         else:
+            inputs = [process_inp(inp) for inp in inputs]
             # Force lazy_ufunc inputs to be concrete arrays without collapsing any dimensions.
             all_dims = {dim for inp in inputs for dim in inp.get_dims_unordered()}
-            inputs = [inp.coerce([], all_dims, force_align=False) for inp in inputs]
-            # Align input arrays
             signature = parse_ufunc_signature(ufunc.signature or ','.join(['()']*len(inputs)) + '->()')
-            raw_arrays, output_dims = align_arrays(*inputs, signature=signature, return_output_dims=True)
             # Collect ambiguous dimensions
             inp_core_dims = compute_core_dims(signature, *(inp.dims for inp in inputs))
-            ambiguous_dims = calculate_unambiguous_get_final_aligned_dims(*inp_core_dims)
+            ambiguous_dims = calculate_ambiguous_get_final_aligned_dims(*inp_core_dims)
             ambiguous_dims |= {dim for inp in inputs if isinstance(inp, ArrayLike) for dim in inp.ambiguous_dims}
+            # All potential noncore dimensions must be unambiguous. (This is an assumption of calculate_output_dims_from_signature.)
+            signature = parse_ufunc_signature(ufunc.signature or ','.join(['()']*len(inputs)) + '->()')
+            inp_potential_noncore_dims = [inp.dims[-len(inp_signature):] if len(inp_signature) > 0 else [] for inp, inp_signature in zip(inputs, signature.input_dims)]
+            all_potential_noncore_dims = {dim for dims in inp_potential_noncore_dims for dim in dims}
+            if ambiguous_dims & all_potential_noncore_dims:
+                # TODO: Put mapping method into UfuncSignature
+                sig_inp_dims_tuple, sig_out_dims_tuple = concretize_signature(signature, *(inp.dims for inp in inputs)).to_tuple()
+                dim_map = {sig_dim: arg_dim for arg_dims, sig_dims in zip(inp_potential_noncore_dims, sig_inp_dims_tuple) for arg_dim, sig_dim in zip(arg_dims, sig_dims)}
+                mapped_inp_signature_str = ','.join('(' + ','.join(dim_map[dim] for dim in inp_dims) + ')' for inp_dims in sig_inp_dims_tuple)
+                mapped_out_signature_str = '(' + ','.join(dim_map[dim] for dim in sig_out_dims_tuple) + ')'
+                mapped_signature_sr = mapped_inp_signature_str + '->' + mapped_out_signature_str
+                raise AmbiguousDimensionException(f"Any potentially noncore dimensions must be unambiguous. The signature {signature} for ufunc {ufunc.__name__!r} maps to {mapped_signature_sr}, but the dimensions {list_to_english(ambiguous_dims)} are ambiguous.")
+            # Align input arrays
+            inputs = [inp.coerce([], all_dims, force_align=False) for inp in inputs]
+            raw_arrays, output_dims = align_arrays(*inputs, signature=signature, return_output_dims=True)
             # Apply the ufunc to the raw arrays.
             return einarray(getattr(ufunc, method)(*raw_arrays, **kwargs), dims=output_dims, ambiguous_dims=ambiguous_dims)
     

@@ -5,3 +5,4 @@ from .index import *
 from .parse_numpy_ufunc_signature import *
 from .dim_calcs import *
 from .types import *
+from .exceptions import *

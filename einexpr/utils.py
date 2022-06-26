@@ -1,7 +1,7 @@
 from __future__ import annotations
 import warnings
 import functools
-from typing import Callable, Iterable, Iterator, Sequence, Set, Any, TypeVar, Union
+from typing import *
 from itertools import chain, combinations
 import inspect
 from collections import Counter
@@ -189,3 +189,14 @@ def get_all_scs_with_nonunique_elems_removed(*Xs) -> Set:
     for X in Xs[1:]:
         SCS = {remove_duplicates(new_substr) for current_substr in SCS for new_substr in get_all_scs_with_unique_elems_pairwise(current_substr, X)}
     return SCS
+
+
+def list_to_english(lst: List) -> str:
+    lst = list(lst)
+    match len(lst):
+        case 0:
+            return ''
+        case 1:
+            return str(lst[0])
+        case default:
+            return ', '.join(str(item) for item in lst[:-1]) + ' and ' + str(lst[-1])

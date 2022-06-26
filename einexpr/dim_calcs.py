@@ -2,6 +2,7 @@ import regex as re
 from itertools import zip_longest
 from typing import Dict, List, Set, Tuple, Sequence, Any
 import numpy as np
+from einexpr.exceptions import AmbiguousDimensionException
 
 
 from einexpr.types import Dimension
@@ -25,7 +26,7 @@ def get_unique_broadcast(*dims: List[Dimension]) -> Set[Dimension]:
     if len(scs) == 0:
         raise ValueError("No valid broadcast found.")
     if len(scs) > 1:
-        raise ValueError("Multiple valid broadcasts found.")
+        raise AmbiguousDimensionException("Multiple valid broadcasts found.")
     return scs.pop()
 
 
@@ -77,7 +78,7 @@ def compute_active_signature_optionals(signature: UfuncSignature, *input_dims: L
         raise ValueError(f"The number {len(input_dims)} of input dimensions passed as arguments ({input_dims}) does not match the number ({len(signature.input_dims)}) of input dimensions specified in the signature {signature}.")
     optional_dim_names = {dim.name for dims in (signature.output_dims, *signature.input_dims) for dim in dims.dims if dim.optional}
     for active_optionals in powerset(optional_dim_names, reverse=True):
-        break_flag = False
+        break_flag = False # break on failure
         dim_map = {}
         for inp, ufunc_inp_sigs in zip_longest(input_dims, signature.input_dims):
             inp_dims = list(inp)
@@ -93,9 +94,9 @@ def compute_active_signature_optionals(signature: UfuncSignature, *input_dims: L
                     dim_map[sig_dim.name] = inp_dim
             else:
                 if not inp_dims: # not inp_dims
-                    # The rest of the signature dims must be optional and not already in the dim_map
+                    # The rest of the signature dims must be an inactive optional and not already in the dim_map
                     for sig_dim in sig_dims:
-                        if sig_dim.name in dim_map:
+                        if sig_dim.name in optional_dim_names or sig_dim.name in dim_map:
                             # Try another set of optionals
                             break_flag = True
                             break
@@ -154,16 +155,16 @@ def calculate_signature_align_transexpands(signature: UfuncSignature, *input_dim
     return input_core_dims_transexpand
 
 
-def calculate_unambiguous_get_final_aligned_dims(*dims: List[Dimension]) -> Set[Dimension]:
+def calculate_ambiguous_get_final_aligned_dims(*dims: List[Dimension]) -> Set[Dimension]:
     aligned_dims = get_each_aligned_dims(*dims)
     scs = list(get_all_scs_with_unique_elems(*aligned_dims))
     if len(scs) == 0:
         raise ValueError(f"No valid alignments for the given dimensions {dims}.")
     first_broadcasted_dims = np.array(scs[0])
-    unambiguous_positions = np.ones((len(first_broadcasted_dims),), dtype=bool)
+    ambiguous_positions = np.zeros((len(first_broadcasted_dims),), dtype=bool)
     for broadcasted_dims in scs[1:]:
-        unambiguous_positions &= first_broadcasted_dims == np.array(list(broadcasted_dims))
-    return set(first_broadcasted_dims[unambiguous_positions].tolist())
+        ambiguous_positions |= first_broadcasted_dims != np.array(list(broadcasted_dims))
+    return set(first_broadcasted_dims[ambiguous_positions].tolist())
 
 
 def calculate_output_dims_from_signature(signature: UfuncSignature, *input_dims: List[Dimension]) -> List[Dimension]:

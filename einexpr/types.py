@@ -21,7 +21,7 @@ class LazyArrayLike:
 
 DimensionlessLike = Union[int, float]
 
-RawArrayLike = Union[DimensionlessLike, np.ndarray]
+RawArrayLike = Union[np.ndarray]
     
 ArrayLike = Union[ConcreteArrayLike, LazyArrayLike]
 ConcreteLike = Union[DimensionlessLike, ConcreteArrayLike]
