@@ -41,6 +41,9 @@ class UfuncSignatureDimensions:
     def __iter__(self):
         return iter(self.dims)
     
+    def __len__(self):
+        return len(self.dims)
+    
     def __repr__(self):
         return '(' + ','.join(str(dim) for dim in self.dims) + ')'
 
@@ -56,6 +59,7 @@ class UfuncSignatureDimensions:
             if not dim.optional or dim.name in optional_set:
                 new_dims.append(UfuncSignatureDimension(dim.name, False))
         return UfuncSignatureDimensions(new_dims)
+    
 
 # @dataclass
 class UfuncSignature:
@@ -75,6 +79,9 @@ class UfuncSignature:
                 if dim.name not in names:
                     names.append(dim.name)
         return names
+    
+    def to_tuple(self):
+        return (tuple(inp.get_dims() for inp in self.input_dims), self.output_dims.get_dims())
     
     def __repr__(self):
         return ','.join(str(dim) for dim in self.input_dims) + '->' + str(self.output_dims)
@@ -127,6 +134,9 @@ def parse_ufunc_signature(signature):
             ])
         )
     """
+    # Verify that the user has passed a valid signature and not a None value.
+    if signature is None:
+        raise ValueError('The signature must not be None. Do you want to parse the signature of an element-wise ufunc (e.g. np.add)? If so, you cannot pass the signature directly as UfuncSignature(np.add.signature), since the value of np.add.signature is None. The reason is that it is not possible for me to infer how many arguments you want to call such a ufunc. You are responsible for constructing an element-wise ufunc with your desired number of arguments. For example, with for a two-argument signature you should pass \'(),()->()\'.')
     # Split the signature into its parts (e.g. '(m?,n),(n,p?)->(m?,p?)' to ['(m?,n)', '(n,p?)', '(m?,p?)'])
     parts = re.split(r'->', signature)
     if len(parts) == 1:

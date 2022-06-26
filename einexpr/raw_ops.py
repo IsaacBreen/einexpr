@@ -7,7 +7,7 @@ from einexpr.types import Dimension
 from .utils import powerset
 from .parse_numpy_ufunc_signature import UfuncSignature, UfuncSignatureDimensions, parse_ufunc_signature
 from .types import ConcreteArrayLike, RawArray
-from .dim_calcs import calculate_output_dims_from_signature, calculate_transexpand, dims_after_alignment, calculate_signature_transexpands
+from .dim_calcs import calculate_output_dims_from_signature, calculate_transexpand, get_final_aligned_dims, calculate_signature_align_transexpands
 
 
 def apply_transexpand(a: RawArray, transpose: List[int]) -> ConcreteArrayLike:
@@ -44,7 +44,7 @@ def align_arrays(*arrays: ConcreteArrayLike, signature: Optional[UfuncSignature]
         return [], [] if return_output_dims else []
     else:
         # Calculate the transpositions and expansions necessesary to align the arrays
-        transexpands = calculate_signature_transexpands(signature, *(a.dims for a in arrays))
+        transexpands = calculate_signature_align_transexpands(signature, *(a.dims for a in arrays))
         # Apply these
         raw_aligned_arrays = [apply_transexpand(a.__array__(), transexpand) for a, transexpand in zip(arrays, transexpands)]
         if return_output_dims:

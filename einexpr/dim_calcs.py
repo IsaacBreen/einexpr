@@ -5,35 +5,56 @@ import numpy as np
 
 
 from einexpr.types import Dimension
-from .utils import findAllSCS, powerset
+from .utils import get_all_scs_with_unique_elems, powerset
 from .parse_numpy_ufunc_signature import UfuncSignature, UfuncSignatureDimensions, parse_ufunc_signature
 from .types import ConcreteArrayLike, RawArray
-from .utils import assert_outputs, findAllSCS
+from .utils import *
 
 
-def broadcast_dims(*ein_dims: List[Dimension]) -> List[Dimension]:
+def get_unambiguous_broadcast_dims(*dims: List[Dimension]) -> List[Dimension]:
+    scs = iter(get_all_scs_with_unique_elems(*dims))
+    first_broadcasted_dims = np.array(list(next(scs)))
+    unambiguous_positions = np.ones((len(first_broadcasted_dims),), dtype=bool)
+    for broadcasted_dims in scs:
+        unambiguous_positions &= first_broadcasted_dims == np.array(list(broadcasted_dims))
+    return first_broadcasted_dims[unambiguous_positions].tolist()
+
+
+def get_unique_broadcast(*dims: List[Dimension]) -> Set[Dimension]:
+    scs = get_all_scs_with_unique_elems(*dims)
+    if len(scs) == 0:
+        raise ValueError("No valid broadcast found.")
+    if len(scs) > 1:
+        raise ValueError("Multiple valid broadcasts found.")
+    return scs.pop()
+
+
+def get_any_broadcast(*dims: List[Dimension]) -> Set[Dimension]:
     """
-    Returns the broadcast of the given dimensions.
+    Use this when you need a broadcast but don't care about its uniqueness. The broadcast chosen is deterministic and depends only on the order dimensions within each argument and the order in which the arguments are passed.
     """
-    broad = max(ein_dims, key=len)
-    for dims in ein_dims:
-        if tuple(broad[-len(dims):]) != tuple(dims):
-            return
-            # raise ValueError(f"The dimensions {dims} are not broadcastable to {broad}.")
-    return broad
+    scs = get_all_scs_with_unique_elems(*dims)
+    if len(scs) == 0:
+        raise ValueError("No valid broadcast found.")
+    return sorted(scs).pop()
 
 
-def dims_after_alignment(*ein_dims: List[Dimension]) -> List[Dimension]:
+def get_final_aligned_dims(*ein_dims: List[Dimension]) -> List[Dimension]:
     """
-    Returns a single list of dimensions that contains all the dimensions of the given inputs.
+    Aligns and broadcasts the given dimensions.
     """
-    aligned = list(max(ein_dims, key=len))
-    for dims in ein_dims:
-        for dim in dims:
-            if dim not in aligned:
-                aligned.append(dim)
-    return aligned
+    scs = get_all_scs_with_nonunique_elems_removed(*ein_dims)
+    if len(scs) == 0:
+        raise ValueError("No valid alignment found.")
+    return sorted(scs).pop()
 
+
+def get_each_aligned_dims(*ein_dims: List[Dimension]) -> List[List[Dimension]]:
+    """
+    Returns a list of lists of dimensions, each of which is aligned with the other.
+    """
+    aligned_final = get_final_aligned_dims(*ein_dims)
+    return [[dim for dim in aligned_final if dim in dims] for dims in ein_dims]
 
 def dims_are_aligned(dims1: List[Dimension], dims2: List[Dimension]) -> bool:
     """
@@ -102,15 +123,6 @@ def get_dim_map(signature: UfuncSignature, *input_dims: List[Dimension]) -> Dict
     return {sig_dim.name: inp_dim for sig_dims, inp_dims in zip(concrete_signature.input_dims, input_dims) for sig_dim, inp_dim in zip(reversed(sig_dims.dims), reversed(inp_dims))}
 
 
-def calculate_noncore_output_dims_from_signature_and_einarrays(signature: UfuncSignature, *input_dims: ConcreteArrayLike) -> List[str]:
-    """
-    The core dimensions of the input arrays must be broadcastable.
-    """
-    concrete_signature = concretize_signature(signature, *input_dims)
-    dim_map = get_dim_map(concrete_signature, *input_dims)
-    return [dim_map[sig_dim.name] for sig_dim in concrete_signature.output_dims.dims]
-
-
 def compute_noncore_dims(signature: UfuncSignature, *input_dims: List[Dimension]) -> List[Dimension]:
     """
     Returns the noncore input and output dimensions of the given signature with the given input dimensions.
@@ -131,16 +143,27 @@ def compute_core_dims(signature: UfuncSignature, *input_dims: List[Dimension]) -
     return input_core_dims
 
 
-def calculate_signature_transexpands(signature: UfuncSignature, *input_dims: List[Dimension]) -> List[Dimension]:
+def calculate_signature_align_transexpands(signature: UfuncSignature, *input_dims: List[Dimension]) -> List[Dimension]:
     """
-    Returns the transpositions and expansions required to align to the noncore dimensions of the given signature with the given input dimensions.
+    Returns the transpositions and expansions required to align to the core dimensions of the given signature with the given input dimensions.
     """
-    input_noncore_dims, output_noncore_dims = compute_noncore_dims(signature, *input_dims)
-    input_core_dims = [dims[:-len(noncore_dims)] if noncore_dims else dims for dims, noncore_dims in zip(input_dims, input_noncore_dims)]
-    aligned_core_dims = dims_after_alignment(*input_core_dims)
+    input_core_dims = compute_core_dims(signature, *input_dims)
+    aligned_core_dims = get_final_aligned_dims(*input_core_dims)
     input_core_dims_transexpand = [calculate_transexpand(core_dims, aligned_core_dims) for core_dims in input_core_dims]
     assert all(i==j for transexpand in input_core_dims_transexpand for j,i in enumerate(sorted(i for i in transexpand if i is not None)))
     return input_core_dims_transexpand
+
+
+def calculate_unambiguous_get_final_aligned_dims(*dims: List[Dimension]) -> Set[Dimension]:
+    aligned_dims = get_each_aligned_dims(*dims)
+    scs = list(get_all_scs_with_unique_elems(*aligned_dims))
+    if len(scs) == 0:
+        raise ValueError(f"No valid alignments for the given dimensions {dims}.")
+    first_broadcasted_dims = np.array(scs[0])
+    unambiguous_positions = np.ones((len(first_broadcasted_dims),), dtype=bool)
+    for broadcasted_dims in scs[1:]:
+        unambiguous_positions &= first_broadcasted_dims == np.array(list(broadcasted_dims))
+    return set(first_broadcasted_dims[unambiguous_positions].tolist())
 
 
 def calculate_output_dims_from_signature(signature: UfuncSignature, *input_dims: List[Dimension]) -> List[Dimension]:
@@ -149,7 +172,7 @@ def calculate_output_dims_from_signature(signature: UfuncSignature, *input_dims:
     """
     input_noncore_dims, output_noncore_dims = compute_noncore_dims(signature, *input_dims)
     input_core_dims = [dims[:-len(noncore_dims)] if noncore_dims else dims for dims, noncore_dims in zip(input_dims, input_noncore_dims)]
-    aligned_core_dims = dims_after_alignment(*input_core_dims)
+    aligned_core_dims = get_final_aligned_dims(*input_core_dims)
     return [*aligned_core_dims, *output_noncore_dims]
 
 
@@ -175,21 +198,3 @@ def parse_dims(dims_raw: str) -> List[Dimension]:
         if not str.isidentifier(dim):
             raise ValueError(f"The dimension {dim} is not a valid identifier.")
     return dims
-
-
-def get_unambiguous_broadcast_dims(*dims: List[Dimension]) -> List[Dimension]:
-    scs = iter(findAllSCS(*dims))
-    first_broadcasted_dims = np.array(list(next(scs)))
-    unambiguous_positions = np.ones((len(first_broadcasted_dims),), dtype=bool)
-    for broadcasted_dims in scs:
-        unambiguous_positions &= first_broadcasted_dims == np.array(list(broadcasted_dims))
-    return first_broadcasted_dims[unambiguous_positions].tolist()
-
-
-def get_unique_broadcast(*dims: List[Dimension]) -> Set[Dimension]:
-    scs = findAllSCS(*dims)
-    if len(scs) == 0:
-        raise ValueError("No valid broadcast found.")
-    if len(scs) > 1:
-        raise ValueError("Multiple valid broadcasts found.")
-    return set(scs.pop())
