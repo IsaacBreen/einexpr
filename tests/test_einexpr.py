@@ -327,3 +327,9 @@ def test_intro():
 
     x_transformed = linear(x=np.array([1,2]), W=np.array([[1,2],[3,4]]), b=np.array([5,6]))
     print(x_transformed['j'].__array__())
+
+
+def test_list_to_einarray():
+    x = einarray([1,2,3], ['i'])
+    y = x+x
+    y.dims
