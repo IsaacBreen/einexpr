@@ -100,7 +100,7 @@ def SCS(X, Y, m, n, lookup):
  
     if lookup[m][n - 1] < lookup[m - 1][n]:
         scs = SCS(X, Y, m, n - 1, lookup)
-        return {s + Y[n - 1] for s in scs}
+        return {(*s, Y[n - 1]) for s in scs}
  
     # if the top cell value is the same as the left cell, then go in both
     # top and left directions
@@ -141,7 +141,7 @@ def SCSLength(X, Y, m, n, lookup):
  
  
 # Function to find all shortest common supersequence of string `X` and `Y`
-def findAllSCS_pairwise(X, Y):
+def get_all_scs_with_unique_elems_pairwise(X, Y):
  
     m = len(X)
     n = len(Y)
@@ -156,8 +156,36 @@ def findAllSCS_pairwise(X, Y):
     return SCS(X, Y, m, n, lookup)
  
 
-def findAllSCS(*Xs):
+def get_all_scs_with_unique_elems(*Xs) -> Set:
+    """
+    Filters out all SCSs that contain duplicate elements.
+    """
+    Xs = [tuple(x) if isinstance(x, list) else x for x in Xs]
     SCS = {Xs[0]}
     for X in Xs[1:]:
-        SCS = {new_substr for current_substr in SCS for new_substr in findAllSCS_pairwise(current_substr, X) if len(new_substr) == len(set(new_substr))}
+        SCS = {new_substr for current_substr in SCS for new_substr in get_all_scs_with_unique_elems_pairwise(current_substr, X)}
+        n_unique = len(set(next(iter(SCS))))
+        SCS = {substr for substr in SCS if len(substr) == n_unique}
+    return SCS
+
+
+def remove_duplicates(lst):
+    """
+    Removes duplicate elements from an iterable.
+    """
+    lst2 = []
+    for x in lst:
+        if x not in lst2:
+            lst2.append(x)
+    return tuple(lst2)
+
+
+def get_all_scs_with_nonunique_elems_removed(*Xs) -> Set:
+    """
+    Removes duplicate elements from SCSs.
+    """
+    Xs = [tuple(x) if isinstance(x, list) else x for x in Xs]
+    SCS = {Xs[0]}
+    for X in Xs[1:]:
+        SCS = {remove_duplicates(new_substr) for current_substr in SCS for new_substr in get_all_scs_with_unique_elems_pairwise(current_substr, X)}
     return SCS
