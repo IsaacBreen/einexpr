@@ -19,7 +19,9 @@ class LazyArrayLike:
     def __init__(self, *args, **kwargs):
         raise NotImplementedError
 
+DimensionlessLike = Union[int, float]
 
-RawArrayLike = Union[int, float, np.ndarray]
+RawArrayLike = Union[DimensionlessLike, np.ndarray]
     
 ArrayLike = Union[ConcreteArrayLike, LazyArrayLike]
+ConcreteLike = Union[DimensionlessLike, ConcreteArrayLike]

@@ -7,9 +7,9 @@ from itertools import zip_longest
 from itertools import chain, combinations
 
 from .parse_numpy_ufunc_signature import parse_ufunc_signature
-from .dim_calcs import broadcast_dims, compute_noncore_dims, dims_are_aligned, parse_dims, calculate_output_dims_from_signature
+from .dim_calcs import broadcast_dims, compute_noncore_dims, dims_are_aligned, parse_dims, calculate_output_dims_from_signature, get_unambiguous_broadcast_dims, get_unique_broadcast
 from .raw_ops import align_to_dims, align_arrays
-from .types import ArrayLike, ConcreteArrayLike, Dimension, LazyArrayLike, RawArrayLike
+from .types import ArrayLike, ConcreteArrayLike, Dimension, LazyArrayLike, RawArrayLike, DimensionlessLike, ConcreteLike
 
 import numpy as np
 import numpy.typing as npt
@@ -31,33 +31,33 @@ def reduce_sum(a: ConcreteArrayLike, dims: Union[Container[Dimension], Iterator[
         raise ValueError(f"The dimensions {dims} must be a subset of the dimensions {a.dims} of the input array.")
     return einarray(np.sum(a.__array__(), axis=tuple(i for i, dim in enumerate(a.dims) if dim in dims)), [dim for dim in a.dims if dim not in dims])
 
-
 class lazy_ufunc(LazyArrayLike, np.lib.mixins.NDArrayOperatorsMixin):
-    def __init__(self, ufunc: Callable, method: str, *inputs, **kwargs):
+    def __init__(self, ufunc: Callable, method: str, *inputs, _ambiguous_dims: List[Dimension] = None, **kwargs):
         self.ufunc = ufunc
         self.method = method
         self.inputs = inputs
         self.kwargs = kwargs
+        self._ambiguous_dims = _ambiguous_dims or []
     
     @property
     def dims(self) -> List[Dimension]:
-        return self.get_dims_unordered()
+        """
+        Return the dimensions of the lazy_ufunc.
+        Raises an error if the dimensions of the output of this lazy ufunc cannot be inferred unambiguously with strict ordering.
+        """
+        # All potential non-core dimensions must be unambiguous.
         
-    def dims_are_inferrable(self) -> bool:
-        """
-        Return True if the dimensions of the output of this lazy ufunc can be inferred without ambiguity by broadcasting the dimensions of the inputs.
-        """
-        if not all(isinstance(inp, ConcreteArrayLike) or isinstance(inp, LazyArrayLike) and inp.dims_are_inferrable() for inp in self.inputs):
-            return False
-
+        return get_unique_broadcast(*(input.dims for input in self.inputs))
+    
 
     def get_dims_unordered(self) -> Set[Dimension]:
         return {dim for inp in self.inputs if hasattr(inp, "get_dims_unordered") for dim in inp.get_dims_unordered()}
 
-    def coerce(self, dims: List[Dimension], do_not_collapse: Set[Dimension], force_align: bool = True) -> ConcreteArrayLike:
+    def coerce(self, dims: List[Dimension], do_not_collapse: Set[Dimension] = None, force_align: bool = True) -> ConcreteArrayLike:
         """
         Coerce the lazy array to a concrete array of the given dimensions, ignoring dimensions that do not appear in self.inputs and collapsing those that don't appear in either dims or do_not_collapse.
         """
+        do_not_collapse = do_not_collapse or set()
         if self.ufunc in [np.add, np.subtract]:
             # Coerce the inputs into the same dimensions.
             inputs = [inp.coerce(dims, do_not_collapse, force_align=False) for inp in self.inputs]
@@ -127,29 +127,30 @@ class lazy_ufunc(LazyArrayLike, np.lib.mixins.NDArrayOperatorsMixin):
 
 class einarray(ConcreteArrayLike, np.lib.mixins.NDArrayOperatorsMixin):
     def __init__(self, a: Union[RawArrayLike, ConcreteArrayLike], dims: List[Dimension] = None, copy: bool=True, backend: Literal["numpy", "torch"] = None) -> None:
-        if isinstance(a, (int, float, complex, np.number)):
-            a = np.array(a)
-        if isinstance(a, ConcreteArrayLike):
-            if tuple(dims) != a.dims:
-                raise ValueError(f"The dimensions passed to the constructor must match the dimensions of the concrete array. Got {dims} but the array has dimensions {a.dims}.")
-            a = a.a
+        self.a = a
+        self.dims = dims
+        if isinstance(self.a, LazyArrayLike):
+            self.a = self.a.coerce(self.dims)
+        if isinstance(self.a, ArrayLike):
+            if self.dims != self.a.dims:
+                raise ValueError(f"The dimensions passed to the constructor must match the dimensions of the concrete array. Got {self.dims} but the array has dimensions {self.a.dims}.")
+            self.a = self.a.a
         # Convert self.a to the specified backend
         if backend is None:
-            if isinstance(a, RawArrayLike):
+            if isinstance(self.a, RawArrayLike):
                 # Just use raw array as-is
-                self.a = a
+                self.a = self.a
             else:
                 # The user may have passed a list array (e.g. a=[[1,2],[3,4]]). We hope that self.a can be converted into np.array.
-                self.a = np.array(a, copy=copy)
+                self.a = np.array(self.a, copy=copy)
         elif backend == "numpy":
-            self.a = np.array(a, copy=copy)
+            self.a = np.array(self.a, copy=copy)
         elif backend == "torch":
-            self.a = pt.asarray(a, copy=copy)
+            self.a = pt.asarray(self.a, copy=copy)
         else:
             raise ValueError(f"The backend must be either 'numpy' or 'torch'. Got {backend}.")
-        if a.ndim != len(dims):
-            raise ValueError(f"The number {a.ndim} of dimensions in the array does not match the number {len(dims)} of dimensions passed to the constructor.")
-        self.dims = dims
+        if self.a.ndim != len(self.dims):
+            raise ValueError(f"The number {self.a.ndim} of dimensions in the array does not match the number {len(self.dims)} of dimensions passed to the constructor.")
         
     def get_dims_unordered(self) -> Set[Dimension]:
         return set(self.dims)

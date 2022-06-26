@@ -1,13 +1,15 @@
 import regex as re
 from itertools import zip_longest
 from typing import Dict, List, Set, Tuple, Sequence, Any
+import numpy as np
 
 
 from einexpr.types import Dimension
-from .utils import powerset
+from .utils import findAllSCS, powerset
 from .parse_numpy_ufunc_signature import UfuncSignature, UfuncSignatureDimensions, parse_ufunc_signature
 from .types import ConcreteArrayLike, RawArray
-from .utils import assert_outputs
+from .utils import assert_outputs, findAllSCS
+
 
 def broadcast_dims(*ein_dims: List[Dimension]) -> List[Dimension]:
     """
@@ -122,7 +124,7 @@ def compute_core_dims(signature: UfuncSignature, *input_dims: List[Dimension]) -
 
 def compute_noncore_dims(signature: UfuncSignature, *input_dims: List[Dimension]) -> List[Dimension]:
     """
-    Returns the noncore input and output dimensions of the given signature with the given input dimensions.
+    Returns the noncore input dimensions of the given signature with the given input dimensions.
     """
     input_core_dims, _ = compute_core_dims(signature, *input_dims)
     input_noncore_dims = [dims[:-len(core_dims)] if core_dims else dims for dims, core_dims in zip(input_dims, input_core_dims)]
@@ -173,3 +175,21 @@ def parse_dims(dims_raw: str) -> List[Dimension]:
         if not str.isidentifier(dim):
             raise ValueError(f"The dimension {dim} is not a valid identifier.")
     return dims
+
+
+def get_unambiguous_broadcast_dims(*dims: List[Dimension]) -> List[Dimension]:
+    scs = iter(findAllSCS(*dims))
+    first_broadcasted_dims = np.array(list(next(scs)))
+    unambiguous_positions = np.ones((len(first_broadcasted_dims),), dtype=bool)
+    for broadcasted_dims in scs:
+        unambiguous_positions &= first_broadcasted_dims == np.array(list(broadcasted_dims))
+    return first_broadcasted_dims[unambiguous_positions].tolist()
+
+
+def get_unique_broadcast(*dims: List[Dimension]) -> Set[Dimension]:
+    scs = findAllSCS(*dims)
+    if len(scs) == 0:
+        raise ValueError("No valid broadcast found.")
+    if len(scs) > 1:
+        raise ValueError("Multiple valid broadcasts found.")
+    return set(scs.pop())
