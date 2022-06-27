@@ -5,10 +5,10 @@ import numpy as np
 from einexpr.exceptions import AmbiguousDimensionException
 
 
-from einexpr.types import Dimension
+from einexpr.typing import Dimension
 from .utils import get_all_scs_with_unique_elems, powerset
 from .parse_numpy_ufunc_signature import UfuncSignature, UfuncSignatureDimensions, parse_ufunc_signature
-from .types import ConcreteArrayLike, RawArray
+from .typing import ConcreteArrayLike, RawArrayLike
 from .utils import *
 
 
@@ -181,6 +181,8 @@ def parse_dims(dims_raw: str) -> List[Dimension]:
     """
     Parses an dimensions string such as into a list of Dimension types.
     """
+    if not dims_raw:
+        return []
     if isinstance(dims_raw, str):
         dims_raw = re.split(",| ", dims_raw)
     # Parse elements of dims_raw if they are not already split into individual dimensions

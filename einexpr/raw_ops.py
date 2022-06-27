@@ -3,14 +3,14 @@ from typing import List, Optional, Tuple, Sequence, Any, Union
 
 import numpy as np
 
-from einexpr.types import Dimension
+from einexpr.typing import Dimension
 from .utils import powerset
 from .parse_numpy_ufunc_signature import UfuncSignature, UfuncSignatureDimensions, parse_ufunc_signature
-from .types import ConcreteArrayLike, RawArray
+from .typing import ConcreteArrayLike, RawArrayLike
 from .dim_calcs import calculate_output_dims_from_signature, calculate_transexpand, get_final_aligned_dims, calculate_signature_align_transexpands
 
 
-def apply_transexpand(a: RawArray, transpose: List[int]) -> ConcreteArrayLike:
+def apply_transexpand(a: RawArrayLike, transpose: List[int]) -> ConcreteArrayLike:
     """
     Returns a new array with the given transpose.
     """
@@ -22,7 +22,7 @@ def apply_transexpand(a: RawArray, transpose: List[int]) -> ConcreteArrayLike:
         return np.expand_dims(np.moveaxis(a, transpose_arg, range(len(transpose_arg))), expand_arg)
 
 
-def align_to_dims(a: ConcreteArrayLike, dims: List[Dimension], expand: bool = False) -> RawArray:
+def align_to_dims(a: ConcreteArrayLike, dims: List[Dimension], expand: bool = False) -> RawArrayLike:
     """
     Aligns the given arrays to the given dimensions and expands along dimensions that each input array does not have.
     """
@@ -36,7 +36,7 @@ def align_to_dims(a: ConcreteArrayLike, dims: List[Dimension], expand: bool = Fa
         return apply_transexpand(a.__array__(), calculate_transexpand([dim for dim in a.dims if dim in dims], dims))
     
     
-def align_arrays(*arrays: ConcreteArrayLike, signature: Optional[UfuncSignature] = None, return_output_dims: bool = False) -> Union[List[RawArray], Tuple[List[RawArray], List[Dimension]]]:
+def align_arrays(*arrays: ConcreteArrayLike, signature: Optional[UfuncSignature] = None, return_output_dims: bool = False) -> Union[List[RawArrayLike], Tuple[List[RawArrayLike], List[Dimension]]]:
     """
     Aligns the given arrays to common dimensions.
     """

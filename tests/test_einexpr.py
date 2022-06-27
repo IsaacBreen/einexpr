@@ -1,7 +1,6 @@
 from ssl import OP_NO_SSLv3
 from typing import List
 from einexpr import __version__
-from einexpr import einexpr, einfunc
 from einexpr import einarray
 from einexpr import AmbiguousDimensionException
 import numpy as np
@@ -55,15 +54,18 @@ def y():
 
 def test_pow():
     rng = np.random.default_rng(2022)
-    w = einexpr(rng.uniform(size=(4,2)))
-    x = einexpr(rng.uniform(size=2))
+    w = einarray(rng.uniform(size=(4,2)), dims=['b,i'])
+    x = einarray(rng.uniform(size=2), dims=['i'])
     expr = w['b,i'] * x['i']
     expr = expr['']
     print(expr)
     assert np.allclose(expr.__array__(), np.einsum('bi,i->', w.__array__(), x.__array__()), tolerance)
 
 def test_simple_expr1(X, Y, x, y):
-    Xe, Ye, xe, ye = (einexpr(val) for val in (X, Y, x, y))
+    Xe = einarray(X, dims=['i j'])
+    Ye = einarray(Y, dims=['j k'])
+    xe = einarray(x, dims=['i'])
+    ye = einarray(y, dims=['j'])
 
     # MULTIPLICATION
     assert np.allclose(np.einsum('ij,jk->ik', X, Y), (Xe['i j'] * Ye['j k'])['i k'], tolerance)
@@ -75,14 +77,17 @@ def test_simple_expr1(X, Y, x, y):
     def linear(x, W, b):
         return np.einsum("i,ij->j", x, W) + b
 
-    @einfunc
-    def linear_ein(x, W, b):
-        return x['i'] * W['i j'] + b['j']
+    # def linear_ein(x, W, b):
+    #     return x['i'] * W['i j'] + b['j']
 
-    assert np.allclose(linear(x, Y, y), linear_ein(x, Y, y)['j'], tolerance)
+    # assert np.allclose(linear(x, Y, y), linear_ein(x, Y, y)['j'], tolerance)
 
+
+@pytest.mark.skip
 def test_commonly_failed1(X, Y, x, y):    
-    Xe, Ye, xe, ye = (einexpr(val) for val in (X, Y, x, y))
+    Xe = einarray(X, dims=['i j'])
+    xe = einarray(x, dims=['i'])
+    ye = einarray(x, dims=['j'])
     
     ze = xe['i'] ** (Xe['j i'] ** xe['i'])
     assert np.allclose(ze['j i'].__array__(), x ** (X ** x), tolerance)
@@ -93,12 +98,13 @@ def test_commonly_failed1(X, Y, x, y):
     assert np.allclose(z['i'], np.sum(x[:, None] ** (x[None, :] + x[None, :]), axis=1), tolerance)
 
 def test_numpy_ufunc_override1(X, Y, x, y):
-    Xe, Ye, xe, ye = (einexpr(val) for val in (X, Y, x, y))
+    Xe = einarray(X, dims=['i j'])
+    xe = einarray(x, dims=['j'])
+
     Z = X ** np.abs(-x)
     Ze = Xe['i j'] ** np.abs(-xe['j'])
     assert np.allclose(Z, Ze['i j'].__array__(), tolerance)
 
-    Xe, Ye, xe, ye = (einexpr(val) for val in (X, Y, x, y))
     Z = X ** np.abs(-x)
     Ze = Xe['i j'] ** np.abs(-xe['j'])
     assert np.allclose(Z, Ze['i j'].__array__(), tolerance)
@@ -277,12 +283,13 @@ def test_random_expr(seed, random_expr_json, random_expr_value, random_einexpr):
 #             raise ValueError(f"Values do not match: {eval_expr(expr)} != {var}")
 
 
+@pytest.mark.skip
 def test_simple_expr_jax_jit():
     rng = np.random.default_rng(seed=0)
     @jax.jit
-    def add(x,y):
-        x = einexpr(x)
-        y = einexpr(y)
+    def add(x, y):
+        x = einarray(x, dims=['i'])
+        y = einarray(y,  dims=['j'])
         z = x['i'] + y['i']
         return z[''].__array__()
     x = rng.uniform(size=2)
@@ -293,45 +300,12 @@ def test_simple_expr_jax_jit():
     def add_and_reduce(x,y):
         z = x['i'] + y['i']
         return z['']
-    x = einexpr(rng.uniform(size=2))['i']
-    y = einexpr(rng.uniform(size=2))['i']
+    x = einarray(rng.uniform(size=2), dims=['i'])
+    y = einarray(rng.uniform(size=2), dims=['i'])
     add_and_reduce(x,y)
 
-
-def test_intro():
-    X = einexpr(np.array([[1, 2], [3, 4]]))
-    Y = einexpr(np.array([[5, 6], [7, 8]]))
-    a = einexpr(np.array([1,2]))
-    b = einexpr(np.array([3,4]))
-
-    # Dot product
-    x = a['i'] + b['i']
-    print(x[''].__array__())
-
-    # Outer product
-    x = a['i'] * b['j']
-    print(x['i,j'].__array__())
-
-    # Matrix-vector multiplication
-    x = X['i,j'] * a['j']
-    print(x['i'].__array__())
-
-    # Matrix-matrix multiplication
-    x = X['i,j'] * Y['j,k']
-    print(x['i,k'].__array__())
-
-    # Linear transformation
-    @einfunc
-    def linear(x, W, b):
-        print(W)
-        return x['i'] * W['i,j'] + b['j']
-
-    x_transformed = linear(x=np.array([1,2]), W=np.array([[1,2],[3,4]]), b=np.array([5,6]))
-    print(x_transformed['j'].__array__())
-
-
 def test_list_to_einarray():
-    x = einarray([1,2,3], ['i'])
+    x = einarray([1,2,3], dims=['i'])
     y = x+x
     y.dims
     
@@ -353,3 +327,66 @@ def test_ambiguous_matmul():
         pass
     else:
         raise Exception("Expected ValueError for ambiguous dims")
+
+
+def test_concatenate(X, Y, x, y):
+    X = einarray(X, dims='i j')
+    Y = einarray(Y, dims='i k')
+    x = einarray(x, dims='i')
+    y = einarray(y, dims='k')
+    
+    z = X*x
+    z.a
+    assert z.dims == ['i', 'j']
+    
+    # Concatenate X to itself along the first dimension
+    z = np.concatenate([X, X], axis=0)
+    
+    # Concatenate X to Y
+    z = np.concatenate([X, Y], axis=1)
+    
+    # mean
+    z0 = np.mean(X, axis=0)
+    z1 = np.mean(X, axis='i')
+    z2 = np.mean(X, axis=['i'])
+    assert np.all(z0 == z1 == z2)
+    
+    # clip
+    
+    # cumsum
+    
+    # all
+    
+    # any
+    
+    # min
+    
+    # max
+    
+    # argmin
+    
+    # argmax
+    
+    # isnan
+    
+    # where
+    
+    # transpose
+    
+    # onehot_like
+    
+    # flatten
+    
+    # pad
+    
+    # ones_like
+    
+    # expand_dims
+    
+    # squeeze
+    
+    # tile
+    
+    # reshape
+    
+    # meshgrid
