@@ -1,11 +1,14 @@
 from __future__ import annotations
-import warnings
+
 import functools
-from typing import *
-from itertools import chain, combinations
 import inspect
+import warnings
 from collections import Counter
+from itertools import chain, combinations
+from typing import *
+
 import numpy as np
+
 
 def deprecated(func):
     """This is a decorator which can be used to mark functions

@@ -10,18 +10,19 @@ from collections import namedtuple
 import string
 import pprint
 import pytest
+import inspect
 
 pp = pprint.PrettyPrinter(indent=4)
 
-tolerance = 1e-6
-default_dtype = None
+tolerance = 1e-2
+default_dtype = np.longfloat
 
 unary_arithmetic_magics_str = {"__neg__", "__pos__", "__invert__"}
 
 binary_arithmetic_magics_str = dict(
-    multiply = {"__mul__", "__rmul__", "__truediv__", "__rtruediv__"},
-    add = {"__add__", "__radd__", "__sub__", "__rsub__"},
-    power = {"__pow__", "__rpow__"},
+    multiply = {"__mul__", "__truediv__"},
+    add = {"__add__", "__sub__"},
+    power = {"__pow__"},
     )
 
 binary_arithmetic_magics = {key: {lambda x, y: getattr(x, op)(y) for op in ops} for key, ops in binary_arithmetic_magics_str.items()}
@@ -32,7 +33,7 @@ default_unary_ops = [np.abs]
 
 RandomExpressionData = namedtuple("RandomExpressionData", ["expr", "expr_json", "var"])
 
-N_TRIALS_MULTIPLIER=100
+N_TRIALS_MULTIPLIER=1000
 # N_TRIALS_MULTIPLIER=0
 
 @pytest.fixture
@@ -111,7 +112,7 @@ def test_numpy_ufunc_override1(X, Y, x, y):
 
 
 @pytest.fixture
-def random_expr_json(seed, unary_ops=default_unary_ops, binary_ops=default_binary_ops, max_indices=5, max_indices_per_var=3, max_index_size=5, max_vars=8, E_num_nodes=2, max_nodes=10, p_binary_op_given_nonleaf=0.9, low=1, high=100, max_exponent=3):
+def random_expr_json(seed, unary_ops=default_unary_ops, binary_ops=default_binary_ops, max_indices=8, max_indices_per_var=4, max_index_size=7, max_vars=8, E_num_nodes=2, max_nodes=10, p_binary_op_given_nonleaf=0.9, low=1, high=100, max_exponent=3, softmax=10):
     assert E_num_nodes >= 1, f"E_num_nodes must not be less than one; got {E_num_nodes}"
     p_leaf_given_not_unary = E_num_nodes / (2*E_num_nodes - 1)
     x = p_binary_op_given_nonleaf
@@ -123,6 +124,7 @@ def random_expr_json(seed, unary_ops=default_unary_ops, binary_ops=default_binar
     rng = np.random.default_rng(seed)
     max_index_size = min(max_index_size, max_indices)
     num_indices = rng.integers(2, max_indices)
+    max_indices_per_var = min(max_indices_per_var, num_indices)
     index_names = list(string.ascii_lowercase[:num_indices])
     index_sizes = {i: rng.integers(1, max_index_size) for i in index_names}
 
@@ -155,7 +157,9 @@ def random_expr_json(seed, unary_ops=default_unary_ops, binary_ops=default_binar
                 expr_json_rhs = {"type": "unary_op", "op": np.abs, "indices": expr_json_rhs["indices"], "operand": expr_json_rhs, "num_nodes": expr_json_rhs["num_nodes"]}
                 # expr_json_rhs = {"type": "unary_op", "op": lambda x: np.clip(x, 0, max_exponent), "indices": expr_json_rhs["indices"], "operand": expr_json_rhs, "num_nodes": expr_json_rhs["num_nodes"]}
             indices = expr_json_lhs["indices"] | expr_json_rhs["indices"]
-            return {"type": "binary_op", "op": op, "lhs": expr_json_lhs, "rhs": expr_json_rhs, "indices": indices, "num_nodes": 1 + expr_json_lhs["num_nodes"] + expr_json_rhs["num_nodes"]}
+            expr_json = {"type": "binary_op", "op": op, "op_name": op.__name__, "lhs": expr_json_lhs, "rhs": expr_json_rhs, "indices": indices, "num_nodes": 1 + expr_json_lhs["num_nodes"] + expr_json_rhs["num_nodes"]}
+            expr_json = {"type": "unary_op", "op": lambda x: 1/(1+np.e**-x), "op_name": "softmax", "indices": indices, "operand": expr_json, "num_nodes": expr_json["num_nodes"]}
+            return expr_json
 
     expr_json = _make_random_expr_json(max_nodes)
     index_names_used = list(expr_json["indices"])
@@ -174,7 +178,9 @@ def json_eval(expr_json, non_collapsable_indices, index_names: List[str], index_
         expand_indices = [n for n, i in enumerate(index_names) if i not in expr_json["indices"]]
         return np.expand_dims(var_normshaped, expand_indices)
     elif expr_json["type"] == "unary_op":
-        return expr_json["op"](json_eval(expr_json["operand"], non_collapsable_indices, index_names, index_sizes))
+        val = expr_json["op"](json_eval(expr_json["operand"], non_collapsable_indices, index_names, index_sizes))
+        expr_json['value'] = val
+        return val
     elif expr_json["type"] == "binary_op":
         child_non_collapsable_indices = non_collapsable_indices.copy()
         if expr_json["op"] in binary_arithmetic_magics["add"]:
@@ -186,7 +192,9 @@ def json_eval(expr_json, non_collapsable_indices, index_names: List[str], index_
             collapsable_broadcast_indices_rhs = expr_json["lhs"]["indices"] - expr_json["rhs"]["indices"] - non_collapsable_indices
             lhs = lhs / np.prod([index_sizes[i] for i in collapsable_broadcast_indices_lhs])
             rhs = rhs / np.prod([index_sizes[i] for i in collapsable_broadcast_indices_rhs])
-        return expr_json["op"](lhs, rhs)
+        val = expr_json["op"](lhs, rhs)
+        expr_json['value'] = val
+        return val
     else:
         raise ValueError(f"Unknown expression type: {expr_json['type']}")
 
@@ -202,14 +210,14 @@ def random_expr_value(random_expr_json):
 
 
 def json_to_einexpr(expr_maker, expr_json):
-    if expr_json["type"] == "unary_op":
+    if expr_json["type"] == "leaf":
+        return expr_maker(expr_json["value"], expr_json["shape"])
+    elif expr_json["type"] == "unary_op":
         return expr_json["op"](json_to_einexpr(expr_maker, expr_json["operand"]))
     elif expr_json["type"] == "binary_op":
         lhs = json_to_einexpr(expr_maker, expr_json["lhs"])
         rhs = json_to_einexpr(expr_maker, expr_json["rhs"])
         return expr_json["op"](lhs, rhs)
-    elif expr_json["type"] == "leaf":
-        return expr_maker(expr_json["value"], expr_json["shape"])
     else:
         raise ValueError(f"Unknown expression type: {expr_json['type']}")
 
@@ -255,7 +263,8 @@ def test_random_expr(seed, random_expr_json, random_expr_value, random_einexpr):
             print(f"val: {val}")
             print(f"expr: {expr}")
             print(f"expr_json: {pp.pformat(random_expr_json)}")
-            # raise ValueError(f"Values do not match: {expr.__array__().tolist()} != {val.tolist()}")
+            if val.shape == ():
+                raise ValueError(f"Values do not match: {expr.__array__().tolist()} != {val.tolist()}")
 
 # @pytest.mark.parametrize("seed", range(1*N_TRIALS_MULTIPLIER))
 # @pytest.mark.parametrize("np_like", [np])
@@ -283,7 +292,7 @@ def test_random_expr(seed, random_expr_json, random_expr_value, random_einexpr):
 #             raise ValueError(f"Values do not match: {eval_expr(expr)} != {var}")
 
 
-@pytest.mark.skip
+# @pytest.mark.skip
 def test_simple_expr_jax_jit():
     rng = np.random.default_rng(seed=0)
     @jax.jit
@@ -291,7 +300,7 @@ def test_simple_expr_jax_jit():
         x = einarray(x, dims=['i'])
         y = einarray(y,  dims=['j'])
         z = x['i'] + y['i']
-        return z[''].__array__()
+        return z[''].a
     x = rng.uniform(size=2)
     y = rng.uniform(size=2)
     add(x,y)
@@ -390,3 +399,24 @@ def test_concatenate(X, Y, x, y):
     # reshape
     
     # meshgrid
+    
+    
+def test_commonly_failed_2():
+    y = einarray([29., 38.], 'i')
+    
+    def f(y):
+        return 1/(1+np.e**-(getattr(y, '__truediv__')(y)))
+    z = f(y)
+    assert all(z['i'].a == f(y.a))
+
+def test_commonly_failed_3():
+    y = einarray([[190.,156.],[58.,64.]], 'i j')
+    
+    def f(y):
+        return 1/(1+np.e**-y)
+    z = f(y)
+    assert z[''].a == np.sum(f(y.a))
+    
+    # multiply = {"__mul__", "__rmul__", "__truediv__", "__rtruediv__"},
+    # add = {"__add__", "__radd__", "__sub__", "__rsub__"},
+    # power = {"__pow__", "__rpow__"},

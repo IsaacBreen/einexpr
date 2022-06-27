@@ -201,3 +201,10 @@ def parse_dims(dims_raw: str) -> List[Dimension]:
         if not str.isidentifier(dim):
             raise ValueError(f"The dimension {dim} is not a valid identifier.")
     return dims
+
+
+# def get_signature(func: Callable, *inputs: Any, **kwargs: Any) -> UfuncSignature:
+#     """
+#     Returns the signature of the given function.
+#     """
+#     if 

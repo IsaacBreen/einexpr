@@ -4,25 +4,23 @@ Definitions:
 - Core dimension: (numpy) A dimension that is not in the 
 """
 
-import typing
-from typing import *
-import string
-import re
 import math
-from itertools import zip_longest
-from itertools import chain, combinations
-
-from .backends import *
-from .parse_numpy_ufunc_signature import parse_ufunc_signature
-from .dim_calcs import *
-from .raw_ops import align_to_dims, align_arrays
-from .typing import *
-from .exceptions import *
+import re
+import string
+import typing
+from itertools import chain, combinations, zip_longest
+from typing import *
 
 import numpy as np
 import numpy.typing as npt
-
 import torch as pt
+
+from .backends import *
+from .dim_calcs import *
+from .exceptions import *
+from .parse_numpy_ufunc_signature import parse_ufunc_signature
+from .raw_ops import align_arrays, align_to_dims
+from .typing import *
 
 
 class Lazy:
@@ -72,11 +70,12 @@ class lazy_func(LazyArrayLike, np.lib.mixins.NDArrayOperatorsMixin):
     def get_dims_unordered(self) -> Set[Dimension]:
         return {dim for inp in self.inputs if hasattr(inp, "get_dims_unordered") for dim in inp.get_dims_unordered()}
 
-    def coerce(self, dims: List[Dimension], do_not_collapse: Set[Dimension] = None, force_align: bool = True) -> ConcreteArrayLike:
+    def coerce(self, dims: List[Dimension], do_not_collapse: Set[Dimension] = None, force_align: bool = True, ambiguous_dims: Set[Dimension] = None) -> ConcreteArrayLike:
         """
         Coerce the lazy array to a concrete array of the given dimensions, ignoring dimensions that do not appear in self.inputs and collapsing those that don't appear in either dims or do_not_collapse.
         """
         do_not_collapse = do_not_collapse or set()
+        ambiguous_dims = ambiguous_dims or set()
         if self.func in [np.add.__call__, np.subtract.__call__]:
             # Coerce the inputs into the same dimensions.
             inputs = [inp.coerce(dims, do_not_collapse, force_align=False) for inp in self.inputs]
@@ -86,21 +85,17 @@ class lazy_func(LazyArrayLike, np.lib.mixins.NDArrayOperatorsMixin):
                 inputs = [reduce_sum(inp, set(inp.dims) & dims_to_collapse) for inp in inputs]
             # Return the result.
             raw_input_arrays, output_dims = align_arrays(*inputs, signature=self.signature, return_output_dims=True)
-            out = einarray(self.func(*raw_input_arrays, **self.kwargs), output_dims)
+            out = einarray(self.func(*raw_input_arrays, **self.kwargs), output_dims, ambiguous_dims=ambiguous_dims)
             if force_align and not dims_are_aligned(dims, output_dims):
                 # Align the output to the given dimensions.
                 return out[[dim for dim in dims if dim in out.dims]]
             else:
                 return out
-        elif self.func in [np.multiply.__call__, np.divide.__call__]:
+        elif self.func in [np.multiply.__call__, np.divide.__call__, np.true_divide.__call__, ]:
             # Prevent collapsing along dimensions shared by two or more inputs.
-            dims_used_at_least_once = set()
-            dims_used_at_least_twice = set()
-            for inp in self.inputs:
-                dims_used_at_least_twice |= inp.get_dims_unordered() & dims_used_at_least_once
-                dims_used_at_least_once |= inp.get_dims_unordered()
+            all_input_dims = {dim for inp in self.inputs for dim in inp.dims}
             # Coerce each input
-            inputs = [inp.coerce(dims, do_not_collapse | dims_used_at_least_twice, force_align=False) for inp in self.inputs]
+            inputs = [inp.coerce(dims, do_not_collapse | all_input_dims, force_align=False) for inp in self.inputs]
             # Create the einsum signature
             # einsum requires each dim to be represented by a single letter, so remap longer dims
             all_input_dims = {dim for inp in inputs for dim in inp.dims}
@@ -119,11 +114,11 @@ class lazy_func(LazyArrayLike, np.lib.mixins.NDArrayOperatorsMixin):
             out_dims = [dim for dim in dims if dim in all_input_dims] + [dim for dim in all_input_dims & do_not_collapse - set(dims)]
             signature = ",".join("".join(dim_map[dim] for dim in inp.dims) for inp in inputs) + "->" + "".join(dim_map[dim] for dim in out_dims)
             # Get the raw arrays and, if self.func is a divison operation, take the reciprocal of the second input
-            if self.func in [np.divide.__call__]:
+            if self.func in [np.divide.__call__, np.true_divide.__call__]:
                 assert len(inputs) == 2
                 inputs[1] = np.reciprocal(inputs[1])
             # Return the result
-            return einarray(np.einsum(signature, *inputs, **self.kwargs), [dim for dim in out_dims])
+            return einarray(np.einsum(signature, *inputs, **self.kwargs), [dim for dim in out_dims], ambiguous_dims=ambiguous_dims)
         else:
             raise NotImplementedError(f"Lazy evaluation for {self.func} is not yet implemented.")
         
@@ -135,10 +130,12 @@ class lazy_func(LazyArrayLike, np.lib.mixins.NDArrayOperatorsMixin):
         return self.coerce(parse_dims(dims), set())
 
     def __einarray_function__(self, func: Callable, signature: UfuncSignature, *inputs, **kwargs) -> ArrayLike:
-        if func in [np.add.__call__, np.subtract.__call__, np.multiply.__call__, np.divide.__call__]:
+        if self.func in [np.multiply.__call__, np.divide.__call__, np.true_divide.__call__, ] and func in [np.add.__call__, np.subtract.__call__, np.multiply.__call__, np.divide.__call__, np.true_divide.__call__, ]:
+            return lazy_func(func, signature, *inputs, **kwargs)
+        elif self.func in [np.add.__call__, np.subtract.__call__] and func in [np.add.__call__, np.subtract.__call__]:
             return lazy_func(func, signature, *inputs, **kwargs)
         else:
-            return einarray.__einarray_function__(self, func, signature, *inputs, **kwargs)
+            return einarray.__einarray_function__(self, func, signature, *[inp.coerce(inp.dims, ambiguous_dims=inp.ambiguous_dims) if isinstance(inp, lazy_func) else inp for inp in inputs], **kwargs)
     
     def __array_ufunc__(self, ufunc: Callable, method: str, *inputs, **kwargs) -> LazyArrayLike:
         signature_str = ufunc.signature or ','.join(['()']*len(inputs)) + '->()'
@@ -147,6 +144,9 @@ class lazy_func(LazyArrayLike, np.lib.mixins.NDArrayOperatorsMixin):
 
     def __array__(self, dtype: Optional[npt.DTypeLike] = None) -> ConcreteArrayLike:
         return self.a
+    
+    def __bool__(self) -> bool:
+        return bool(self.a)
     
     # JAX support
     def _tree_flatten(self):
@@ -160,8 +160,6 @@ class lazy_func(LazyArrayLike, np.lib.mixins.NDArrayOperatorsMixin):
 
     def __repr__(self) -> str:
         return f"lazy_func({self.func}, {self.signature}, {self.inputs}, {self.kwargs})"
-    
-        
 
 
 class einarray(ConcreteArrayLike, np.lib.mixins.NDArrayOperatorsMixin):
@@ -170,19 +168,20 @@ class einarray(ConcreteArrayLike, np.lib.mixins.NDArrayOperatorsMixin):
         self.dims = parse_dims(dims)
         self.ambiguous_dims = ambiguous_dims or set()
         if isinstance(self.a, LazyArrayLike):
-            self.a = self.a.coerce(self.dims)
+            self.a = self.a.coerce(self.dims, self.a.ambiguous_dims)
         if isinstance(self.a, ArrayLike):
             if self.dims != self.a.dims:
                 raise ValueError(f"The dimensions passed to the constructor must match the dimensions of the concrete array. Got {self.dims} but the array has dimensions {self.a.dims}.")
             self.a = self.a.a
         # Convert self.a to the specified backend
         if backend is None:
-            if isinstance(self.a, (RawArrayLike, DimensionlessLike)):
+            if isinstance(self.a, RawArrayLike):
                 # Just use raw array as-is
                 self.a = self.a
             else:
-                # The user may have passed a list array (e.g. a=[[1,2],[3,4]]). In this case, we hope that self.a can be converted into np.array and require dims to be specified explicitly.
+                # The user may have passed a list array (e.g. a=[[1,2],[3,4]]). In this case, we hope that self.a can be converted into np.array.
                 self.a = np.array(self.a, copy=copy)
+                # If self.a is dimensionless (a value with a shape of () - generally an int or a float), we require the dimensions to be specified explicitly.
                 assert self.dims is not None, f"The dimensions must be specified explicitly when converting a {type(self.a).__name__} to a numpy array."
         elif backend == "numpy":
             self.a = np.array(self.a, copy=copy)
@@ -190,7 +189,8 @@ class einarray(ConcreteArrayLike, np.lib.mixins.NDArrayOperatorsMixin):
             self.a = pt.asarray(self.a, copy=copy)
         else:
             raise ValueError(f"The backend must be either 'numpy' or 'torch'. Got {backend}.")
-        if isinstance(self.a, DimensionlessLike):
+        if isinstance(self.a, DimensionlessLike) or isinstance(self.a, RawArrayLike) and not self.a.shape:
+            assert not self.dims, f"The dimensions of a dimensionless value must be empty or None. Got {self.dims}."
             self.dims = ()
         elif not isinstance(self.dims, (tuple, list)):
             if dims == self.dims:
@@ -209,7 +209,8 @@ class einarray(ConcreteArrayLike, np.lib.mixins.NDArrayOperatorsMixin):
     def get_dims_unordered(self) -> Set[Dimension]:
         return set(self.dims)
     
-    def coerce(self, dims: List[Dimension], do_not_collapse: Set[Dimension], force_align: bool = True) -> ConcreteArrayLike:
+    def coerce(self, dims: List[Dimension], do_not_collapse: Set[Dimension], force_align: bool = True, ambiguous_dims: Set[Dimension] = None) -> ConcreteArrayLike:
+        ambiguous_dims = ambiguous_dims or set()
         # Collapse all dimensions except those in contained in dims or do_not_collapse.
         dims_to_collapse = set(self.dims) - set(dims) - do_not_collapse
         out = reduce_sum(self, dims_to_collapse)
@@ -217,38 +218,44 @@ class einarray(ConcreteArrayLike, np.lib.mixins.NDArrayOperatorsMixin):
             return out
         else:
             out_dims = [dim for dim in dims if dim in out.dims] + [dim for dim in out.dims if dim not in dims and dim in do_not_collapse]
-            return einarray(align_to_dims(out, out_dims), out_dims)
+            return einarray(align_to_dims(out, out_dims), out_dims, ambiguous_dims=ambiguous_dims)
         
     def __getitem__(self, dims: List[Dimension]) -> ConcreteArrayLike:
         return self.coerce(parse_dims(dims), set())
     
     def __einarray_function__(self, func: Callable, signature: UfuncSignature, *inputs, **kwargs) -> ArrayLike:
-        if func in [np.add.__call__, np.subtract.__call__, np.multiply.__call__, np.divide.__call__]:
+        if func in [np.add.__call__, np.subtract.__call__, np.multiply.__call__, np.divide.__call__, np.true_divide.__call__, ]:
             # Execute lazily
             # There may be oppertunities to reduce terms before addition or subtraction.
             # Multiplication and multiplication can be done efficiently using an einsum, but we need to know for sure what the output dims are before we can do that.
             return lazy_func(func, signature, *inputs, **kwargs)
         else:
             inputs = [process_inp(inp) for inp in inputs]
+            inputs_dims = [inp.dims for inp in inputs]
+            # Exchange dimension name for index if necessary.
+            for kw in backend_dim_kwargs_to_resolve:
+                if kw in kwargs:
+                    if kwargs[kw] in self.ambiguous_dims:
+                        raise AmbiguousDimensionException(f"The position of the dimension {kwargs[kw]} is ambiguous.")
+                    if isinstance(kwargs[kw], Dimension):
+                        kwargs[kw] = self.dims.index(kwargs[kw])
+                    elif isinstance(kwargs[kw], (list, tuple)):
+                        kwargs[kw] = [self.dims.index(dim) for dim in kwargs[kw]]
+                    elif not isinstance(kwargs[kw], int):
+                        raise ValueError(f"The value of the {kw} argument must be a dimension or a list of dimensions. Got {kwargs[kw]} of type {type(kwargs[kw]).__name__}.")
             # Force lazy_func inputs to be concrete arrays without collapsing any dimensions.
             all_dims = {dim for inp in inputs for dim in inp.get_dims_unordered()}
             # Collect ambiguous dimensions
-            inp_core_dims = compute_core_dims(signature, *(inp.dims for inp in inputs))
+            inp_core_dims = compute_core_dims(signature, *inputs_dims)
             ambiguous_dims = calculate_ambiguous_get_final_aligned_dims(*inp_core_dims)
             ambiguous_dims |= {dim for inp in inputs if isinstance(inp, ArrayLike) for dim in inp.ambiguous_dims}
             # All potential noncore dimensions must be unambiguous. (This is an assumption of calculate_output_dims_from_signature.)
-            inp_potential_noncore_dims = [inp.dims[-len(inp_signature):] if len(inp_signature) > 0 else [] for inp, inp_signature in zip(inputs, signature.input_dims)]
+            inp_potential_noncore_dims = [dims[-len(inp_sig):] if len(inp_sig) > 0 else [] for dims, inp_sig in zip(inputs_dims, signature.input_dims)]
             all_potential_noncore_dims = {dim for dims in inp_potential_noncore_dims for dim in dims}
             if ambiguous_dims & all_potential_noncore_dims:
-                # TODO: Put mapping method into UfuncSignature
-                sig_inp_dims_tuple, sig_out_dims_tuple = concretize_signature(signature, *(inp.dims for inp in inputs)).to_tuple()
-                dim_map = {sig_dim: arg_dim for arg_dims, sig_dims in zip(inp_potential_noncore_dims, sig_inp_dims_tuple) for arg_dim, sig_dim in zip(arg_dims, sig_dims)}
-                mapped_inp_signature_str = ','.join('(' + ','.join(dim_map[dim] for dim in inp_dims) + ')' for inp_dims in sig_inp_dims_tuple)
-                mapped_out_signature_str = '(' + ','.join(dim_map[dim] for dim in sig_out_dims_tuple) + ')'
-                mapped_signature_sr = mapped_inp_signature_str + '->' + mapped_out_signature_str
-                raise AmbiguousDimensionException(f"Any potentially noncore dimensions must be unambiguous. The signature {signature} for function {func.__name__!r} maps to {mapped_signature_sr}, but the dimensions {list_to_english(ambiguous_dims)} are ambiguous.")
+                raise AmbiguousDimensionException(f"Potentially noncore dimensions must be unambiguous.")
             # Align input arrays
-            inputs = [inp.coerce([], all_dims, force_align=False) for inp in inputs]
+            inputs = [inp.coerce([], all_dims, force_align=False, ambiguous_dims=inp.ambiguous_dims) for inp in inputs]
             raw_arrays, output_dims = align_arrays(*inputs, signature=signature, return_output_dims=True)
             # Apply the ufunc to the raw arrays.
             return einarray(func(*raw_arrays, **kwargs), dims=output_dims, ambiguous_dims=ambiguous_dims)
@@ -257,10 +264,17 @@ class einarray(ConcreteArrayLike, np.lib.mixins.NDArrayOperatorsMixin):
         signature_str = ufunc.signature or ','.join(['()']*len(inputs)) + '->()'
         signature = parse_ufunc_signature(signature_str)
         return self.__einarray_function__(getattr(ufunc, method), signature, *inputs, **kwargs)
+    
+    # def __array_function__(self, func: Callable, types: List[Type], args: List[Any], kwargs: Dict[str, Any]) -> ConcreteArrayLike:
+        
+    #     return self.__einarray_function__(func
         
     def __array__(self, dtype: Optional[npt.DTypeLike] = None) -> ConcreteArrayLike:
         return self.a
     
+    def __bool__(self) -> bool:
+        return bool(self.a)
+
     # JAX support
     def _tree_flatten(self):
         children = (self.a,)
@@ -276,5 +290,6 @@ class einarray(ConcreteArrayLike, np.lib.mixins.NDArrayOperatorsMixin):
     
     
 from jax import tree_util
+
 tree_util.register_pytree_node(lazy_func, lazy_func._tree_flatten, lazy_func._tree_unflatten)
 tree_util.register_pytree_node(einarray, einarray._tree_flatten, einarray._tree_unflatten)

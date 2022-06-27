@@ -2,6 +2,7 @@ from itertools import zip_longest
 from typing import List, Optional, Tuple, Sequence, Any, Union
 
 import numpy as np
+import eagerpy as ep
 
 from einexpr.typing import Dimension
 from .utils import powerset
@@ -10,16 +11,16 @@ from .typing import ConcreteArrayLike, RawArrayLike
 from .dim_calcs import calculate_output_dims_from_signature, calculate_transexpand, get_final_aligned_dims, calculate_signature_align_transexpands
 
 
-def apply_transexpand(a: RawArrayLike, transpose: List[int]) -> ConcreteArrayLike:
+def apply_transexpand(a: RawArrayLike, transexpansion: List[int]) -> ConcreteArrayLike:
     """
     Returns a new array with the given transpose.
     """
-    if not transpose:
+    if not transexpansion:
         return a
     else:
-        transpose_arg = [i for i in transpose if i is not None]
-        expand_arg = [n for n, i in enumerate(transpose) if i is None]
-        return np.expand_dims(np.moveaxis(a, transpose_arg, range(len(transpose_arg))), expand_arg)
+        transposition = [i for i in transexpansion if i is not None]
+        expansion = tuple(None if i is None else slice(None) for i in transexpansion)
+        return a.transpose(transposition)[expansion]
 
 
 def align_to_dims(a: ConcreteArrayLike, dims: List[Dimension], expand: bool = False) -> RawArrayLike:

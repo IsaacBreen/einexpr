@@ -3,6 +3,9 @@ from dataclasses import dataclass, field
 from typing import List, Set
 
 
+def make_empty_signature_str(n_inputs):
+    return ','.join(['()'] * n_inputs) + '->()'
+
 # @dataclass
 class UfuncSignatureDimension:
     name: str

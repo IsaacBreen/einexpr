@@ -1,11 +1,37 @@
-from typing import Union
+from typing import Union, Callable
 
 backend_array_types = dict()
+backend_dim_kwargs_to_resolve = ['dim', 'axis']
+
+function_types = {
+}
+
+typical_function_classes = dict(
+    elementwise="sign sqrt inv where clip argsort ones_like zeros_like full_like softmax log_softmax cumsum".split(),
+    multi_dim_reduction="sum product mean std max min maximum minimum all any ".split(),
+    single_dim_reduction="argmax argmin".split(),
+    concatenation="concat concatenation".split(),
+)
+
+def register_function(function_type: str, function: Callable):
+    function_types.setdefault(function_type, set()).add(function)
+
+def register_functions(**kwargs):
+    for function_type, function in kwargs.items():
+        register_function(function, function_type)
+
+def register_typical_functions(np_like):
+    for function_class, functions in typical_function_classes.items():
+        for function in functions:
+            if hasattr(np_like, function):
+                register_function(function_class, getattr(np_like, function))
 
 # numpy
 import numpy as np
 
 backend_array_types['numpy'] = np.ndarray
+
+
 
 # PyTorch
 import torch
