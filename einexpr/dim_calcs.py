@@ -131,7 +131,7 @@ def compute_noncore_dims(signature: UfuncSignature, *input_dims: List[Dimension]
     concrete_signature = concretize_signature(signature, *input_dims)
     dim_map = get_dim_map(concrete_signature, *input_dims)
     input_noncore_dims = [[dim_map[sig_dim.name] for sig_dim in sig_dims.dims] for sig_dims in concrete_signature.input_dims]
-    output_noncore_dims = [dim_map[sig_dim.name] for sig_dim in concrete_signature.output_dims.dims]
+    output_noncore_dims = [tuple(dim_map[sig_dim_part.name] for sig_dim_part in sig_dim) if isinstance(sig_dim, tuple) else dim_map[sig_dim.name]  for sig_dim in concrete_signature.output_dims.dims]
     return input_noncore_dims, output_noncore_dims
 
 

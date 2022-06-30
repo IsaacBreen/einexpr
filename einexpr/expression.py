@@ -18,7 +18,7 @@ import torch as pt
 from .backends import *
 from .dim_calcs import *
 from .exceptions import *
-from .parse_numpy_ufunc_signature import parse_ufunc_signature
+from .parse_numpy_ufunc_signature import make_empty_signature_str, parse_ufunc_signature
 from .raw_ops import align_arrays, align_to_dims
 from .typing import *
 
@@ -118,7 +118,7 @@ class lazy_func(LazyArrayLike, np.lib.mixins.NDArrayOperatorsMixin):
                 assert len(inputs) == 2
                 inputs[1] = np.reciprocal(inputs[1])
             # Return the result
-            return einarray(np.einsum(signature, *inputs, **self.kwargs), [dim for dim in out_dims], ambiguous_dims=ambiguous_dims)
+            return einarray(np.einsum(signature, *(inp.a for inp in inputs), **self.kwargs), [dim for dim in out_dims], ambiguous_dims=ambiguous_dims)
         else:
             raise NotImplementedError(f"Lazy evaluation for {self.func} is not yet implemented.")
         
@@ -257,7 +257,7 @@ class einarray(ConcreteArrayLike, np.lib.mixins.NDArrayOperatorsMixin):
             # Align input arrays
             inputs = [inp.coerce([], all_dims, force_align=False, ambiguous_dims=inp.ambiguous_dims) for inp in inputs]
             raw_arrays, output_dims = align_arrays(*inputs, signature=signature, return_output_dims=True)
-            # Apply the ufunc to the raw arrays.
+            # Apply the func to the raw arrays.
             return einarray(func(*raw_arrays, **kwargs), dims=output_dims, ambiguous_dims=ambiguous_dims)
 
     def __array_ufunc__(self, ufunc: Callable, method: str, *inputs, **kwargs) -> ConcreteArrayLike:
@@ -265,9 +265,24 @@ class einarray(ConcreteArrayLike, np.lib.mixins.NDArrayOperatorsMixin):
         signature = parse_ufunc_signature(signature_str)
         return self.__einarray_function__(getattr(ufunc, method), signature, *inputs, **kwargs)
     
-    # def __array_function__(self, func: Callable, types: List[Type], args: List[Any], kwargs: Dict[str, Any]) -> ConcreteArrayLike:
-        
-    #     return self.__einarray_function__(func
+    def __array_function__(self, func: Callable, types: List[Type], args: List[Any], kwargs: Dict[str, Any]) -> ConcreteArrayLike:
+        registration = next(search_function_registry(function=func), None)
+        if registration is None:
+            raise ValueError(f"The function {func} is not registered.")
+        if registration.signature is None:
+            signature = make_empty_signature_str(len(args))
+        elif isinstance(registration.signature, str):
+            signature = registration.signature
+        else:
+            signature = registration.signature(args, kwargs)
+        signature = parse_ufunc_signature(signature)
+        if all(isinstance(arg, ArrayLike) for arg in args):
+            return self.__einarray_function__(func, signature, *args, **kwargs)
+        else:
+            if len(args) == 1 and isinstance(args[0][0], ArrayLike):
+                return self.__einarray_function__(lambda *args, **kwargs: func(args, **kwargs), signature, *args[0], **kwargs)
+            else:
+                raise ValueError(f"The arguments must be either arrays or a tuple of arrays. Got {args}.")
         
     def __array__(self, dtype: Optional[npt.DTypeLike] = None) -> ConcreteArrayLike:
         return self.a
