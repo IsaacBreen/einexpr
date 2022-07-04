@@ -1,8 +1,6 @@
 from collections import namedtuple
-from pyclbr import Function
+from pyclbr import 
 from typing import Union, Callable
-import numpy as np
-import string
 
 from .base_typing import EinarrayLike
 from .utils import pytree_mapreduce
@@ -178,47 +176,50 @@ for function_name, function in np.__dict__.items():
 register_typical_functions(np, 'numpy')
 register_typical_functions(np.ndarray, 'numpy')
 
+
 # PyTorch
-import torch
+if importlib.util.find_spec('torch'):
+    import torch
 
-pytorch_tensor_types = [
-    torch.BFloat16Tensor,
-    torch.BoolTensor,
-    torch.ByteTensor,
-    torch.CharTensor,
-    torch.DoubleTensor,
-    torch.FloatTensor,
-    torch.HalfTensor,
-    torch.IntTensor,
-    torch.LongTensor,
-    torch.ShortTensor,
-    torch.Tensor,
-    torch.TensorType]
+    pytorch_tensor_types = [
+        torch.BFloat16Tensor,
+        torch.BoolTensor,
+        torch.ByteTensor,
+        torch.CharTensor,
+        torch.DoubleTensor,
+        torch.FloatTensor,
+        torch.HalfTensor,
+        torch.IntTensor,
+        torch.LongTensor,
+        torch.ShortTensor,
+        torch.Tensor,
+        torch.TensorType]
 
-backend_array_types['torch'] = pytorch_tensor_types
-register_typical_functions(torch, 'torch')
-for array_type in pytorch_tensor_types:
-    register_typical_functions(array_type, 'torch')
+    backend_array_types['torch'] = pytorch_tensor_types
+    register_typical_functions(torch, 'torch')
+    for array_type in pytorch_tensor_types:
+        register_typical_functions(array_type, 'torch')
 
 # JAX
-import jax
-import jax.numpy as jnp
+if importlib.util.find_spec('jax'):
+    import jax
+    import jax.numpy as jnp
 
-jax_array_types = [
-    jax.numpy.ndarray,
-    jax.interpreters.xla.DeviceArray, 
-    jax.interpreters.pxla.ShardedDeviceArray, 
-    jax.interpreters.partial_eval.DynamicJaxprTracer,
-    jax.interpreters.batching.BatchTracer,
-    jax.interpreters.batching.Tracer,
-]
+    jax_array_types = [
+        jax.numpy.ndarray,
+        jax.interpreters.xla.DeviceArray, 
+        jax.interpreters.pxla.ShardedDeviceArray, 
+        jax.interpreters.partial_eval.DynamicJaxprTracer,
+        jax.interpreters.batching.BatchTracer,
+        jax.interpreters.batching.Tracer,
+    ]
 
-JAXArrayLike = jax_array_types
-backend_array_types['jax'] = JAXArrayLike
+    JAXArrayLike = jax_array_types
+    backend_array_types['jax'] = JAXArrayLike
 
-register_typical_functions(jnp, 'jax')
-for array_type in jax_array_types:
-    register_typical_functions(array_type, 'jax')
+    register_typical_functions(jnp, 'jax')
+    for array_type in jax_array_types:
+        register_typical_functions(array_type, 'jax')
 
 
 # Pseudo-backend for dimension inference

@@ -2,7 +2,6 @@ from itertools import zip_longest
 from typing import List, Optional, Tuple, Sequence, Any, Union
 
 import numpy as np
-import eagerpy as ep
 
 from einexpr.base_typing import Dimension
 from .utils import powerset
