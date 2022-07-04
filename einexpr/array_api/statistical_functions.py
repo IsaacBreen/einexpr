@@ -130,6 +130,7 @@ def prod(x: array, /, *, axis: Optional[Union[int, Tuple[int, ...]]] = None, dty
         if the product was computed over the entire array, a zero-dimensional array containing the product; otherwise, a non-zero-dimensional array containing the products. The returned array must have a data type as described by the ``dtype`` parameter above.
     """
 
+    raise NotImplementedError
 def std(x: array, /, *, axis: Optional[Union[int, Tuple[int, ...]]] = None, correction: Union[int, float] = 0.0, keepdims: bool = False) -> array:
     """
     Calculates the standard deviation of the input array ``x``.
@@ -204,6 +205,7 @@ def sum(x: array, /, *, axis: Optional[Union[int, Tuple[int, ...]]] = None, dtyp
         if the sum was computed over the entire array, a zero-dimensional array containing the sum; otherwise, an array containing the sums. The returned array must have a data type as described by the ``dtype`` parameter above.
     """
 
+    raise NotImplementedError
 def var(x: array, /, *, axis: Optional[Union[int, Tuple[int, ...]]] = None, correction: Union[int, float] = 0.0, keepdims: bool = False) -> array:
     """
     Calculates the variance of the input array ``x``.

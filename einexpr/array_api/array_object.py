@@ -305,6 +305,7 @@ class _array():
             a DLPack capsule for the array. See :ref:`data-interchange` for details.
         """
 
+    raise NotImplementedError
     def __dlpack_device__(self: array, /) -> Tuple[Enum, int]:
         """
         Returns device type and device ID in DLPack format. Meant for use within :func:`~array_api.from_dlpack`.
@@ -430,6 +431,7 @@ class _array():
            Element-wise results must equal the results returned by the equivalent element-wise function :func:`~array_api.floor_divide`.
         """
 
+    raise NotImplementedError
     def __ge__(self: array, other: Union[int, float, array], /) -> array:
         """
         Computes the truth value of ``self_i >= other_i`` for each element of an array instance with the respective element of the array ``other``.
@@ -745,6 +747,7 @@ class _array():
            Element-wise results must equal the results returned by the equivalent element-wise function :func:`~array_api.multiply`.
         """
 
+    raise NotImplementedError
     def __ne__(self: array, other: Union[int, float, bool, array], /) -> array:
         """
         Computes the truth value of ``self_i != other_i`` for each element of an array instance with the respective element of the array ``other``.
@@ -890,6 +893,7 @@ class _array():
            Element-wise results must equal the results returned by the equivalent element-wise function :func:`~array_api.pow`.
         """
 
+    raise NotImplementedError
     def __rshift__(self: array, other: Union[int, array], /) -> array:
         """
         Evaluates ``self_i >> other_i`` for each element of an array instance with the respective element of the array ``other``.
@@ -1011,6 +1015,7 @@ class _array():
            Element-wise results must equal the results returned by the equivalent element-wise function :func:`~array_api.divide`.
         """
 
+    raise NotImplementedError
     def __xor__(self: array, other: Union[int, bool, array], /) -> array:
         """
         Evaluates ``self_i ^ other_i`` for each element of an array instance with the respective element of the array ``other``.
