@@ -4,21 +4,29 @@ from typing import Dict, List, Set, Tuple, Sequence, Any
 import numpy as np
 from einexpr.exceptions import AmbiguousDimensionException
 
-
-from einexpr.typing import Dimension
+from einexpr.base_typing import Dimension
 from .utils import get_all_scs_with_unique_elems, powerset
 from .parse_numpy_ufunc_signature import UfuncSignature, UfuncSignatureDimensions, parse_ufunc_signature
 from .typing import ConcreteArrayLike, RawArrayLike
 from .utils import *
 
 
-def get_unambiguous_broadcast_dims(*dims: List[Dimension]) -> List[Dimension]:
+def get_unambiguous_broadcast_dims(*dims: List[Dimension]) -> Set[Dimension]:
     scs = iter(get_all_scs_with_unique_elems(*dims))
     first_broadcasted_dims = np.array(list(next(scs)))
     unambiguous_positions = np.ones((len(first_broadcasted_dims),), dtype=bool)
     for broadcasted_dims in scs:
         unambiguous_positions &= first_broadcasted_dims == np.array(list(broadcasted_dims))
-    return first_broadcasted_dims[unambiguous_positions].tolist()
+    return set(first_broadcasted_dims[unambiguous_positions].tolist())
+
+
+def get_ambiguous_broadcast_dims(*dims: List[Dimension]) -> Set[Dimension]:
+    scs = iter(get_all_scs_with_unique_elems(*dims))
+    first_broadcasted_dims = np.array(list(next(scs)))
+    ambiguous_positions = np.zeros((len(first_broadcasted_dims),), dtype=bool)
+    for broadcasted_dims in scs:
+        ambiguous_positions |= first_broadcasted_dims != np.array(list(broadcasted_dims))
+    return set(first_broadcasted_dims[ambiguous_positions].tolist())
 
 
 def get_unique_broadcast(*dims: List[Dimension]) -> Set[Dimension]:
@@ -50,9 +58,21 @@ def get_final_aligned_dims(*ein_dims: List[Dimension]) -> List[Dimension]:
     return sorted(scs).pop()
 
 
+def calculate_ambiguous_final_aligned_dims(*dims: List[Dimension]) -> Set[Dimension]:
+    aligned_dims = get_each_aligned_dims(*dims)
+    scs = list(get_all_scs_with_unique_elems(*aligned_dims))
+    if len(scs) == 0:
+        raise ValueError(f"No valid alignments for the given dimensions {dims}.")
+    first_broadcasted_dims = np.array(scs[0])
+    ambiguous_positions = np.zeros((len(first_broadcasted_dims),), dtype=bool)
+    for broadcasted_dims in scs[1:]:
+        ambiguous_positions |= first_broadcasted_dims != np.array(list(broadcasted_dims))
+    return set(first_broadcasted_dims[ambiguous_positions].tolist())
+
+
 def get_each_aligned_dims(*ein_dims: List[Dimension]) -> List[List[Dimension]]:
     """
-    Returns a list of lists of dimensions, each of which is aligned with the other.
+    Returns a list of lists of dimensions that are aligned with eachother.
     """
     aligned_final = get_final_aligned_dims(*ein_dims)
     return [[dim for dim in aligned_final if dim in dims] for dims in ein_dims]
@@ -142,29 +162,6 @@ def compute_core_dims(signature: UfuncSignature, *input_dims: List[Dimension]) -
     input_noncore_dims, _ = compute_noncore_dims(signature, *input_dims)
     input_core_dims = [dims[:-len(noncore_dims)] if noncore_dims else dims for dims, noncore_dims in zip(input_dims, input_noncore_dims)]
     return input_core_dims
-
-
-def calculate_signature_align_transexpands(signature: UfuncSignature, *input_dims: List[Dimension]) -> List[Dimension]:
-    """
-    Returns the transpositions and expansions required to align to the core dimensions of the given signature with the given input dimensions.
-    """
-    input_core_dims = compute_core_dims(signature, *input_dims)
-    aligned_core_dims = get_final_aligned_dims(*input_core_dims)
-    input_core_dims_transexpand = [calculate_transexpand(core_dims, aligned_core_dims) for core_dims in input_core_dims]
-    assert all(i==j for transexpand in input_core_dims_transexpand for j,i in enumerate(sorted(i for i in transexpand if i is not None)))
-    return input_core_dims_transexpand
-
-
-def calculate_ambiguous_get_final_aligned_dims(*dims: List[Dimension]) -> Set[Dimension]:
-    aligned_dims = get_each_aligned_dims(*dims)
-    scs = list(get_all_scs_with_unique_elems(*aligned_dims))
-    if len(scs) == 0:
-        raise ValueError(f"No valid alignments for the given dimensions {dims}.")
-    first_broadcasted_dims = np.array(scs[0])
-    ambiguous_positions = np.zeros((len(first_broadcasted_dims),), dtype=bool)
-    for broadcasted_dims in scs[1:]:
-        ambiguous_positions |= first_broadcasted_dims != np.array(list(broadcasted_dims))
-    return set(first_broadcasted_dims[ambiguous_positions].tolist())
 
 
 def calculate_output_dims_from_signature(signature: UfuncSignature, *input_dims: List[Dimension]) -> List[Dimension]:

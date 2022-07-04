@@ -4,11 +4,11 @@ from typing import List, Optional, Tuple, Sequence, Any, Union
 import numpy as np
 import eagerpy as ep
 
-from einexpr.typing import Dimension
+from einexpr.base_typing import Dimension
 from .utils import powerset
 from .parse_numpy_ufunc_signature import UfuncSignature, UfuncSignatureDimensions, parse_ufunc_signature
 from .typing import ConcreteArrayLike, RawArrayLike
-from .dim_calcs import calculate_output_dims_from_signature, calculate_transexpand, get_final_aligned_dims, calculate_signature_align_transexpands
+from .dim_calcs import *
 
 
 def apply_transexpand(a: RawArrayLike, transexpansion: List[int]) -> ConcreteArrayLike:
@@ -37,18 +37,18 @@ def align_to_dims(a: ConcreteArrayLike, dims: List[Dimension], expand: bool = Fa
         return apply_transexpand(a.__array__(), calculate_transexpand([dim for dim in a.dims if dim in dims], dims))
     
     
-def align_arrays(*arrays: ConcreteArrayLike, signature: Optional[UfuncSignature] = None, return_output_dims: bool = False) -> Union[List[RawArrayLike], Tuple[List[RawArrayLike], List[Dimension]]]:
+def align_arrays(*arrays: ConcreteArrayLike, return_output_dims: bool = False) -> Union[List[RawArrayLike], Tuple[List[RawArrayLike], List[Dimension]]]:
     """
     Aligns the given arrays to common dimensions.
     """
     if not arrays:
         return [], [] if return_output_dims else []
     else:
-        # Calculate the transpositions and expansions necessesary to align the arrays
-        transexpands = calculate_signature_align_transexpands(signature, *(a.dims for a in arrays))
-        # Apply these
-        raw_aligned_arrays = [apply_transexpand(a.__array__(), transexpand) for a, transexpand in zip(arrays, transexpands)]
+        # Calculate the output dimensions
+        out_dims = get_final_aligned_dims(*(array.dims for array in arrays))
+        # Calculate and apply the transpositions and expansions necessesary to align the arrays to the output dimensions
+        raw_aligned_arrays = [apply_transexpand(array.__array__(), calculate_transexpand(array.dims, out_dims)) for array in arrays]
         if return_output_dims:
-            return raw_aligned_arrays, calculate_output_dims_from_signature(signature, *(a.dims for a in arrays))
+            return raw_aligned_arrays, out_dims
         else:
             return raw_aligned_arrays

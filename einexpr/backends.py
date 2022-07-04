@@ -4,85 +4,137 @@ from typing import Union, Callable
 import numpy as np
 import string
 
+from .base_typing import EinarrayLike
+from .utils import pytree_mapreduce
+from .einarray_utils import *
+import einexpr
+
+
+Dimension = str
+
 backend_array_types = dict()
 backend_dim_kwargs_to_resolve = ['dim', 'axis']
 
 function_registry = []
 
-typical_function_classes = dict(
-    elementwise="sign sqrt inv where clip argsort ones_like zeros_like full_like softmax log_softmax cumsum".split(),
-    multi_dim_reduction="sum product mean std max min maximum minimum all any ".split(),
-    single_dim_reduction="argmax argmin".split(),
-    concatenation="concat concatenate".split(),
+
+def single_arg_elementwise_dispatch(func, args, kwargs):
+    assert isinstance(args, (list, tuple))
+    assert isinstance(kwargs, dict)
+    assert isinstance(args[0], EinarrayLike)
+    assert all(not isinstance(arg, EinarrayLike) for arg in args[1:])
+    assert all(not isinstance(arg, EinarrayLike) for arg in kwargs.values())
+    return einexpr.einarray(func(args[0].a, *args[1:], **kwargs), dims=args[0].dims, ambiguous_dims=args[0].ambiguous_dims)
+
+
+def multi_arg_elementwise_dispatch(func, args, kwargs):
+    assert isinstance(args, (list, tuple))
+    assert isinstance(kwargs, dict)
+    assert all(isinstance(arg, EinarrayLike) for arg in args)
+    assert all(not isinstance(arg, EinarrayLike) for arg in kwargs.values())
+    ambiguous_dims = einexpr.calculate_ambiguous_final_aligned_dims(*(arg.dims for arg in args))
+    ambiguous_dims |= {dim for arg in args for dim in arg.ambiguous_dims}
+    raw_aligned_arrays, out_dims = einexpr.align_arrays(*args, return_output_dims=True)
+    return einexpr.einarray(func(*raw_aligned_arrays, **kwargs), dims=out_dims, ambiguous_dims=ambiguous_dims)
+
+
+def multi_dim_reduction_dispatch(func, args, kwargs):
+    # TODO:
+    # - Check that axes are in the array
+    # - raise error when there are duplicate axes, esp of different types (Dimension, int, and negative int)
+    assert isinstance(args, (list, tuple))
+    assert isinstance(kwargs, dict)
+    assert isinstance(args[0], EinarrayLike)
+    assert all(not isinstance(arg, EinarrayLike) for arg in args[1:]) # TODO: mapreduce over pytree
+    assert all(not isinstance(arg, EinarrayLike) for arg in kwargs.values())
+    if 'axis' in kwargs:
+        axis = kwargs.pop('axis')
+    elif 'dims' in kwargs:
+        axis = kwargs.pop('dims')
+    else:
+        axis = None
+    if axis is None:
+        axis = list(range(len(args[0].dims)))
+    elif isinstance(axis, (Dimension, int)):
+        axis = [axis]
+    axis = [args[0].dims.index(dim) if isinstance(dim, Dimension) else dim for dim in axis]
+    assert all(isinstance(dim, int) for dim in axis)
+    axis = [i if i >= 0 else i + len(args[0].dims) for i in axis]
+    out_dims = [dim for i, dim in enumerate(args[0].dims) if i not in axis]
+    ambiguous_out_dims = args[0].ambiguous_dims - {dim for i, dim in enumerate(args[0].dims) if i in axis}
+    return einexpr.einarray(func(args[0].a, *args[1:], axis=axis, **kwargs), dims=out_dims, ambiguous_dims=ambiguous_out_dims)
+
+
+def single_dim_reduction_dispatch(func, args, kwargs):
+    if 'axis' in kwargs and isinstance(kwargs['axis'], (tuple, list)):
+        raise ValueError("Multiple axes not supported")
+    elif 'dims' in kwargs and isinstance(kwargs['dims'], (tuple, list)):
+        raise ValueError("Multiple axes not supported")
+    return multi_dim_reduction_dispatch(func, args, kwargs)
+
+
+def concatenation_dispatch(func, args, kwargs):
+    assert isinstance(args, (list, tuple))
+    assert isinstance(kwargs, dict)
+    assert isinstance(args[0], (list, tuple)) and all(isinstance(arg, EinarrayLike) for arg in args[0])
+    assert all(not isinstance(arg, EinarrayLike) for arg in args[1:])
+    if 'axis' in kwargs:
+        axes = kwargs.pop('axis')
+    elif 'dims' in kwargs:
+        axes = kwargs.pop('dims')
+    else:
+        axes = 0
+    if axes is None:
+        raise NotImplementedError("Axis must be specified")
+    if isinstance(axes, (Dimension, int)):
+        axes = [axes] * len(args[0])
+    if not isinstance(axes, (list, tuple)):
+        raise ValueError("Axes must be a list or tuple")
+    axes = list(axes)
+    for i, (axis, arg) in enumerate(zip(axes, args[0])):
+        # If the axis is an integer, convert it to a Dimension
+        if isinstance(axis, int):
+            axis = arg.dims[axis]
+            axes[i] = axis
+        elif not isinstance(axis, Dimension):
+            raise ValueError(f"Invalid axis {axis}")
+        assert axis not in arg.ambiguous_dims
+    # Check that arrays share all dimensions except the concatenated ones
+    out_dims_set = set(args[0][0].dims) - {axes[0]}
+    for axis, arg in zip(axes, args[0][1:]):
+        arg_dims_set = set(arg.dims) - {axis}
+        if arg_dims_set != out_dims_set:
+            raise ValueError(f"Arrays must have all the same dimensions except those concatentated over. The first input array {args[0][0]} has non-concatenated dimensions {out_dims_set}, while the input array {arg} has non-concatenated dimensions {arg_dims_set}.")
+    # Align the arrays. Use the shape of the first array as the template.
+    ambiguous_out_dims = {dim for arg in args[0] for dim in arg.ambiguous_dims if dim not in axes}
+    aligned_args = [args[0][0]]
+    for axis, arg in zip(axes, args[0][1:]):
+        for dim0, dim in zip(args[0][0].dims, arg.dims):
+            if axes[0] != dim0 and dim != axis and dim0 != dim:
+                ambiguous_out_dims.add(dim)
+        aligned_args.append(arg[tuple(axis if axis == dim else dim for dim in args[0][0].dims)])
+    out_dims = [dim if dim != axes[0] else tuple(axes) for dim in args[0][0].dims]
+    return einexpr.einarray(func((arg.a for arg in aligned_args), *args[1:], **kwargs), dims=out_dims, ambiguous_dims=ambiguous_out_dims)
+
+
+typical_function_dispatches = dict(
+    # Module functions
+    **{name: single_arg_elementwise_dispatch for name in "sign sqrt inv where clip argsort ones_like zeros_like full_like softmax log_softmax cumsum abs absolute".split()},
+    **{name: multi_dim_reduction_dispatch for name in "sum product mean std max min maximum minimum all any".split()},
+    **{name: single_dim_reduction_dispatch for name in "argmax argmin".split()},
+    **{name: concatenation_dispatch for name in "concat concatenate".split()},
+    # Array functions
+    **{f'__{name}__': single_arg_elementwise_dispatch for name in "neg pos invert".split()},
+    **{f'__{name}__': multi_arg_elementwise_dispatch for name in "add radd sub rsub mul rmult div rdiv truediv rtruediv mod rmod pow rpow".split()},
 )
 
 
-def elementwise_signature(args, kwargs):
-    return f"{','.join(['()'] * len(args))}->()"
+FunctionRegistration = namedtuple('FunctionRegistration', ['name', 'base_function', 'dispatch', 'backend'])
 
-
-def multi_dim_reduction_signature(args, kwargs):
-    assert len(args) == 1
-    args = args[0]
-    assert len(args) == 1
-    in_dims = list(string.ascii_lowercase[:len(args[0].dims)])
-    if 'axis' in kwargs:
-        axis = kwargs['axis']
-    elif 'dims' in kwargs:
-        axis = kwargs['dims']
-    else:
-        axis = None
-    if axis is None:
-        axis = list(range(in_dims))
-    else:
-        if isinstance(axis, int):
-            axis = [axis]
-        axis = [i if i >= 0 else i + len(in_dims) for i in axis]
-    out_dims = [dims for i, dims in enumerate(in_dims) if i not in axis]
-    return f"({','.join(out_dims)})->()"
-
-
-def single_dim_reduction_signature(args, kwargs):
-    if 'axis' in kwargs:
-        axis = kwargs['axis']
-    elif 'dims' in kwargs:
-        axis = kwargs['dims']
-    else:
-        axis = None
-    assert axis is None or isinstance(axis, int)
-    return multi_dim_reduction_signature(args, kwargs)
-
-
-def concatenation_signature(args, kwargs):
-    assert len(args) == 1
-    args = args[0]
-    axis = kwargs.get('axis', None) or kwargs.get('dim', None)
-    if 'axis' in kwargs:
-        axis = kwargs['axis']
-    elif 'dims' in kwargs:
-        axis = kwargs['dims']
-    else:
-        axis = None
-    if axis is None:
-        axis = 0
-    non_concatenated_dims = args[0].dims[:axis] + args[0].dims[axis+1:]
-    for arg in args[1:]:
-        assert non_concatenated_dims == arg.dims[:axis] + arg.dims[axis+1:]
-    aliases = iter(string.ascii_lowercase)
-    left_non_concatenated_dims = [next(aliases) for _ in range(axis)]
-    right_non_concatenated_dims = [next(aliases) for _ in range(axis+1, len(args[0].dims))]
-    inp_signatures = []
-    for arg in args:
-        inp_signatures.append('(' + ','.join((*left_non_concatenated_dims, next(aliases), *right_non_concatenated_dims)) + ')')
-    out_signature = '(' + ','.join((*left_non_concatenated_dims, next(aliases), *right_non_concatenated_dims)) + ')'
-    return ','.join(inp_signatures) + '->' + out_signature
-
-
-FunctionRegistration = namedtuple('FunctionRegistration', ['name', 'function', 'signature', 'backend'])
-
-
-def register_function(name: str, function: Callable, signature: Union[str, Callable], backend: str):
-    function_registry.append(FunctionRegistration(name, function, signature, backend))
+def register_function(name: str, base_function: Callable, dispatch: Callable, backend: str):
+    function_registry.append(FunctionRegistration(name, base_function, dispatch, backend))
+    if callable(base_function):
+        function_registry.append(FunctionRegistration(name, base_function.__call__, dispatch, backend))  # Register __call__ too for 'functions' like numpy ufuncs that are actually objects.
 
 
 def search_function_registry(**kwargs):
@@ -101,69 +153,99 @@ def search_function_registry(**kwargs):
             yield registration
 
 
-def register_functions_to_default(np_like, backend):
+def register_typical_functions(np_like, backend):
     """
-    For each function in np_like, search the function registry for a registration with the same name but with a backend of the value 'default'. If such a registration is found, register it with the new backend.
+    Registers all functions in np_like with a typical name (like 'sum', 'concat', etc.).
     """
-    for registration in search_function_registry(backend='default'):
-        if hasattr(np_like, registration.name):
-            # Get the first registration that matches
-            if registration is not None:
-                register_function(registration.name, getattr(np_like, registration.name), registration.signature, backend)
-
-
-# Register the typical functions as defaults
-for function_name in typical_function_classes['elementwise']:
-    register_function(function_name, None, elementwise_signature, 'default')
-
-for function_name in typical_function_classes['multi_dim_reduction']:
-    register_function(function_name, None, multi_dim_reduction_signature, 'default')
-    
-for function_name in typical_function_classes['single_dim_reduction']:
-    register_function(function_name, None, single_dim_reduction_signature, 'default')
-    
-for function_name in typical_function_classes['concatenation']:
-    register_function(function_name, None, concatenation_signature, 'default')
+    for name, function in np_like.__dict__.items():
+        if isinstance(function, Callable):
+            if name in typical_function_dispatches:
+                if next(search_function_registry(base_function=function), None) is None:
+                    register_function(name, function, typical_function_dispatches[name], backend)
 
 
 # numpy
 import numpy as np
 
-backend_array_types['numpy'] = np.ndarray
+backend_array_types['numpy'] = [np.ndarray]
 
 # Register all universal functions as defaults by iterating over functions
 for function_name, function in np.__dict__.items():
-    if isinstance(function, np.ufunc):
-        register_function(function_name, None, function.signature, 'default')
+    if isinstance(function, np.ufunc) and function.signature is None:
+        register_function(function_name, None, multi_arg_elementwise_dispatch, 'default')
 
-register_functions_to_default(np, 'numpy')
+register_typical_functions(np, 'numpy')
+register_typical_functions(np.ndarray, 'numpy')
 
 # PyTorch
 import torch
 
-backend_array_types['torch'] = torch.Tensor
-register_functions_to_default(torch, 'torch')
+pytorch_tensor_types = [
+    torch.BFloat16Tensor,
+    torch.BoolTensor,
+    torch.ByteTensor,
+    torch.CharTensor,
+    torch.DoubleTensor,
+    torch.FloatTensor,
+    torch.HalfTensor,
+    torch.IntTensor,
+    torch.LongTensor,
+    torch.ShortTensor,
+    torch.Tensor,
+    torch.TensorType]
+
+backend_array_types['torch'] = pytorch_tensor_types
+register_typical_functions(torch, 'torch')
+for array_type in pytorch_tensor_types:
+    register_typical_functions(array_type, 'torch')
 
 # JAX
 import jax
 import jax.numpy as jnp
 
-JAXArrayLike = Union[
+jax_array_types = [
+    jax.numpy.ndarray,
     jax.interpreters.xla.DeviceArray, 
     jax.interpreters.pxla.ShardedDeviceArray, 
     jax.interpreters.partial_eval.DynamicJaxprTracer,
     jax.interpreters.batching.BatchTracer,
 ]
 
+JAXArrayLike = jax_array_types
 backend_array_types['jax'] = JAXArrayLike
-register_functions_to_default(jnp, 'jax')
+
+register_typical_functions(jnp, 'jax')
+for array_type in jax_array_types:
+    register_typical_functions(array_type, 'jax')
+
+
+# Pseudo-backend for dimension inference
+class PseudoRawArray:
+    def __array__(self):
+        raise NotImplementedError("Attempted to use a PseudoRawArray as an array")
+    
+    def __array_function__(self, func, types, args, kwargs):
+        return self
+    
+    def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
+        raise self
+    
+    def __torch_function__(self, func, types, args, kwargs):
+        raise self
+    
+    def __repr__(self):
+        return "PseudoRawArray()"
+
+
+register_typical_functions(PseudoRawArray, 'pseudo')
 
 # End of backend-specific sections
-
-RawArrayLike = Union[(*backend_array_types.values(),)]
-
+RawArrayLike = Union[tuple(array_type for _backend_array_types in backend_array_types.values() for array_type in _backend_array_types) + (PseudoRawArray,)]
 def detect_backend(array: RawArrayLike) -> str:
     for backend, array_type in backend_array_types.items():
         if isinstance(array, array_type):
             return backend
     raise ValueError(f"Could not detect backend for array {array}")
+
+
+

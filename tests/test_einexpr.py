@@ -12,6 +12,8 @@ import pprint
 import pytest
 import inspect
 
+from einexpr.backends import PseudoRawArray, concatenation_dispatch
+
 pp = pprint.PrettyPrinter(indent=4)
 
 tolerance = 1e-2
@@ -33,7 +35,7 @@ default_unary_ops = [np.abs]
 
 RandomExpressionData = namedtuple("RandomExpressionData", ["expr", "expr_json", "var"])
 
-N_TRIALS_MULTIPLIER=1000
+N_TRIALS_MULTIPLIER=300
 # N_TRIALS_MULTIPLIER=0
 
 @pytest.fixture
@@ -69,10 +71,10 @@ def test_simple_expr1(X, Y, x, y):
     ye = einarray(y, dims=['j'])
 
     # MULTIPLICATION
-    assert np.allclose(np.einsum('ij,jk->ik', X, Y), (Xe['i j'] * Ye['j k'])['i k'], tolerance)
+    assert np.allclose(np.einsum('ij,jk->ik', X, Y), (Xe['i j'] * Ye['j k'])['i k'].a, tolerance)
 
     # ADDITION
-    assert np.allclose(np.sum(X[:, :, np.newaxis] + Y[np.newaxis, :, :], axis=1), (Xe['i j'] + Ye['j k'])['i k'], tolerance)
+    assert np.allclose(np.sum(X[:, :, np.newaxis] + Y[np.newaxis, :, :], axis=1), (Xe['i j'] + Ye['j k'])['i k'].a, tolerance)
 
     # LINEAR TRANSFORMATION
     def linear(x, W, b):
@@ -96,7 +98,7 @@ def test_commonly_failed1(X, Y, x, y):
     z = xe['i'] ** (xe['j'] + xe['j'])
     assert np.allclose(z['i j'].__array__(), x[:, None] ** (x[None, :] + x[None, :]), tolerance)
     print(z.coerce_into_shape('i'))
-    assert np.allclose(z['i'], np.sum(x[:, None] ** (x[None, :] + x[None, :]), axis=1), tolerance)
+    assert np.allclose(z['i'].a, np.sum(x[:, None] ** (x[None, :] + x[None, :]), axis=1), tolerance)
 
 def test_numpy_ufunc_override1(X, Y, x, y):
     Xe = einarray(X, dims=['i j'])
@@ -420,3 +422,12 @@ def test_commonly_failed_3():
     # multiply = {"__mul__", "__rmul__", "__truediv__", "__rtruediv__"},
     # add = {"__add__", "__radd__", "__sub__", "__rsub__"},
     # power = {"__pow__", "__rpow__"},
+
+
+def test_concat_dispatch():
+    x = einarray(PseudoRawArray(), dims='i j')
+    y = einarray(PseudoRawArray(), dims='i j')
+    c1 = concatenation_dispatch(np.concatenate, ((x, y),), dict(axis=0))
+    c2 = concatenation_dispatch(np.concatenate, ((x, y),), dict(axis='i'))
+    c3 = concatenation_dispatch(np.concatenate, ((x, y),), dict(axis=['i']))
+    

@@ -203,3 +203,19 @@ def list_to_english(lst: List) -> str:
             return str(lst[0])
         case default:
             return ', '.join(str(item) for item in lst[:-1]) + ' and ' + str(lst[-1])
+
+
+def pytree_mapreduce(tree, map_func, reduce_func):
+    """
+    Mapreduce a tree of Python objects.
+    """
+    if isinstance(tree, list):
+        return reduce_func([pytree_mapreduce(item, map_func, reduce_func) for item in tree])
+    elif isinstance(tree, tuple):
+        return reduce_func(tuple(pytree_mapreduce(item, map_func, reduce_func) for item in tree))
+    elif isinstance(tree, dict):
+        return reduce_func({key: pytree_mapreduce(value, map_func, reduce_func) for key, value in tree.items()})
+    elif isinstance(tree, set):
+        return reduce_func({pytree_mapreduce(item, map_func, reduce_func) for item in tree})
+    else:
+        return map_func(tree)
