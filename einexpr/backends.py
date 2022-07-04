@@ -1,12 +1,12 @@
+import importlib
 from collections import namedtuple
-from pyclbr import 
-from typing import Union, Callable
+from typing import Callable, Union
 
-from .base_typing import EinarrayLike
-from .utils import pytree_mapreduce
-from .einarray_utils import *
 import einexpr
 
+from .base_typing import EinarrayLike
+from .einarray_utils import *
+from .utils import pytree_mapreduce
 
 Dimension = str
 

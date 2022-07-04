@@ -1,13 +1,16 @@
 from itertools import zip_longest
-from typing import List, Optional, Tuple, Sequence, Any, Union
+from typing import Any, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 
 from einexpr.base_typing import Dimension
-from .utils import powerset
-from .parse_numpy_ufunc_signature import UfuncSignature, UfuncSignatureDimensions, parse_ufunc_signature
-from .typing import ConcreteArrayLike, RawArrayLike
+
 from .dim_calcs import *
+from .parse_numpy_ufunc_signature import (UfuncSignature,
+                                          UfuncSignatureDimensions,
+                                          parse_ufunc_signature)
+from .typing import ConcreteArrayLike, RawArrayLike
+from .utils import powerset
 
 
 def apply_transexpand(a: RawArrayLike, transexpansion: List[int]) -> ConcreteArrayLike:

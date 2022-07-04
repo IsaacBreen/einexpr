@@ -1,22 +1,21 @@
 import warnings
+
 warnings.filterwarnings("ignore", category=UserWarning, message="JAX on Mac ARM machines is experimental and minimally tested.*")
 warnings.filterwarnings("ignore", category=DeprecationWarning, message="the imp module is deprecated in favour of importlib and slated for removal in .*")
 warnings.filterwarnings("ignore", category=RuntimeWarning, message="overflow encountered.*")
 
+import inspect
+import pprint
+import string
+from collections import namedtuple
 from ssl import OP_NO_SSLv3
 from typing import List
-from einexpr import __version__
-from einexpr import einarray
-from einexpr import AmbiguousDimensionException
-import numpy as np
+
 import jax
 import jax.numpy as jnp
-from collections import namedtuple
-import string
-import pprint
+import numpy as np
 import pytest
-import inspect
-
+from einexpr import AmbiguousDimensionException, __version__, einarray
 from einexpr.backends import PseudoRawArray, concatenation_dispatch
 
 pp = pprint.PrettyPrinter(indent=4)

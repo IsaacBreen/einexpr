@@ -1,5 +1,6 @@
-import einexpr
 from typing import *
+
+import einexpr
 
 
 class ConcreteArrayLike:

@@ -16,12 +16,13 @@ import numpy.typing as npt
 import torch as pt
 
 from .backends import *
-from .dim_calcs import *
-from .exceptions import *
-from .parse_numpy_ufunc_signature import make_empty_signature_str, parse_ufunc_signature
-from .raw_ops import align_arrays, align_to_dims
 from .base_typing import *
+from .dim_calcs import *
 from .einarray_utils import *
+from .exceptions import *
+from .parse_numpy_ufunc_signature import (make_empty_signature_str,
+                                          parse_ufunc_signature)
+from .raw_ops import align_arrays, align_to_dims
 
 
 class Lazy:

@@ -1,15 +1,19 @@
 import re
 from itertools import zip_longest
-from typing import Dict, List, Set, Tuple, Sequence, Any
+from typing import Any, Dict, List, Sequence, Set, Tuple
+
 import numpy as np
-from einexpr.exceptions import AmbiguousDimensionException
 from lark import Lark, Transformer, v_args
 
 from einexpr.base_typing import Dimension
-from .utils import get_all_scs_with_unique_elems, powerset
-from .parse_numpy_ufunc_signature import UfuncSignature, UfuncSignatureDimensions, parse_ufunc_signature
+from einexpr.exceptions import AmbiguousDimensionException
+
+from .parse_numpy_ufunc_signature import (UfuncSignature,
+                                          UfuncSignatureDimensions,
+                                          parse_ufunc_signature)
 from .typing import ConcreteArrayLike, RawArrayLike
 from .utils import *
+from .utils import get_all_scs_with_unique_elems, powerset
 
 
 def get_unambiguous_broadcast_dims(*dims: List[Dimension]) -> Set[Dimension]:
