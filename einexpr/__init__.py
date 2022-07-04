@@ -3,5 +3,5 @@ from .expression import *
 from .index import *
 from .parse_numpy_ufunc_signature import *
 from .dim_calcs import *
-from .typing import *
+from .base_typing import *
 from .exceptions import *
