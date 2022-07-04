@@ -57,13 +57,13 @@ class lazy_func(LazyArrayLike, EinarrayOperatorsMixin):
         """
         Return the dimensions of the lazy_func.
         """
-        return NotImplemented
+        raise NotImplementedError
 
     @property
     def ambiguous_dims(self) -> Set[Dimension]:
         # Align input arrays
-        return NotImplemented
-
+        raise NotImplementedError
+    
     def get_dims_unordered(self) -> Set[Dimension]:
         return {dim for inp in self.inputs if hasattr(inp, "get_dims_unordered") for dim in inp.get_dims_unordered()}
 
@@ -119,8 +119,8 @@ class lazy_func(LazyArrayLike, EinarrayOperatorsMixin):
         else:
             raise NotImplementedError(f"Lazy evaluation for {self.func} is not yet implemented.")
         
-    def __getitem__(self, dims) -> ConcreteArrayLike:
-        return self.coerce(parse_dims(dims))
+    def __getitem__(self, dims_raw) -> ConcreteArrayLike:
+        return self.coerce(parse_dims_reshape(dims_raw))
     
     def concretize(self) -> ConcreteArrayLike:
         return self.coerce(self.dims, ambiguous_dims=self.ambiguous_dims)
@@ -170,7 +170,7 @@ class lazy_func(LazyArrayLike, EinarrayOperatorsMixin):
 class einarray(ConcreteArrayLike, EinarrayOperatorsMixin):
     def __init__(self, a: Union[RawArrayLike, ConcreteArrayLike], dims: List[Dimension] = None, ambiguous_dims: Set[Dimension] = None, copy: bool=True, backend: Literal["numpy", "torch"] = None) -> None:
         self.a = a
-        self.dims = parse_dims(dims)
+        self.dims = parse_dims_declaration(dims)
         self.ambiguous_dims = ambiguous_dims or set()
         if isinstance(self.a, LazyArrayLike):
             self.a = self.a.concretize()
@@ -226,7 +226,7 @@ class einarray(ConcreteArrayLike, EinarrayOperatorsMixin):
             return einarray(align_to_dims(out, out_dims), out_dims, ambiguous_dims=ambiguous_dims)
         
     def __getitem__(self, dims: List[Dimension]) -> ConcreteArrayLike:
-        return self.coerce(parse_dims(dims), set())
+        return self.coerce(parse_dims_reshape(dims), set())
     
     def __einarray_function__(self, func: Callable, *args, **kwargs) -> EinarrayLike:
         if func in [np.add.__call__, np.subtract.__call__, np.multiply.__call__, np.divide.__call__, np.true_divide.__call__, ]:

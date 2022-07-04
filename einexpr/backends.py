@@ -62,7 +62,7 @@ def multi_dim_reduction_dispatch(func, args, kwargs):
     axis = [i if i >= 0 else i + len(args[0].dims) for i in axis]
     out_dims = [dim for i, dim in enumerate(args[0].dims) if i not in axis]
     ambiguous_out_dims = args[0].ambiguous_dims - {dim for i, dim in enumerate(args[0].dims) if i in axis}
-    return einexpr.einarray(func(args[0].a, *args[1:], axis=axis, **kwargs), dims=out_dims, ambiguous_dims=ambiguous_out_dims)
+    return einexpr.einarray(func(args[0].a, *args[1:], axis=tuple(axis), **kwargs), dims=out_dims, ambiguous_dims=ambiguous_out_dims)
 
 
 def single_dim_reduction_dispatch(func, args, kwargs):
@@ -101,31 +101,32 @@ def concatenation_dispatch(func, args, kwargs):
         assert axis not in arg.ambiguous_dims
     # Check that arrays share all dimensions except the concatenated ones
     out_dims_set = set(args[0][0].dims) - {axes[0]}
-    for axis, arg in zip(axes, args[0][1:]):
+    for axis, arg in zip(axes[1:], args[0][1:]):
         arg_dims_set = set(arg.dims) - {axis}
         if arg_dims_set != out_dims_set:
             raise ValueError(f"Arrays must have all the same dimensions except those concatentated over. The first input array {args[0][0]} has non-concatenated dimensions {out_dims_set}, while the input array {arg} has non-concatenated dimensions {arg_dims_set}.")
     # Align the arrays. Use the shape of the first array as the template.
     ambiguous_out_dims = {dim for arg in args[0] for dim in arg.ambiguous_dims if dim not in axes}
     aligned_args = [args[0][0]]
-    for axis, arg in zip(axes, args[0][1:]):
+    for axis, arg in zip(axes[1:], args[0][1:]):
         for dim0, dim in zip(args[0][0].dims, arg.dims):
             if axes[0] != dim0 and dim != axis and dim0 != dim:
                 ambiguous_out_dims.add(dim)
-        aligned_args.append(arg[tuple(axis if axis == dim else dim for dim in args[0][0].dims)])
+        aligned_args.append(arg[tuple(dim if dim != axes[0] else axis for dim in args[0][0].dims)])
     out_dims = [dim if dim != axes[0] else tuple(axes) for dim in args[0][0].dims]
-    return einexpr.einarray(func((arg.a for arg in aligned_args), *args[1:], **kwargs), dims=out_dims, ambiguous_dims=ambiguous_out_dims)
+    axis_num = args[0][0].dims.index(axes[0])
+    return einexpr.einarray(func(tuple(arg.a for arg in aligned_args), *args[1:], axis=axis_num, **kwargs), dims=out_dims, ambiguous_dims=ambiguous_out_dims)
 
 
 typical_function_dispatches = dict(
     # Module functions
-    **{name: single_arg_elementwise_dispatch for name in "sign sqrt inv where clip argsort ones_like zeros_like full_like softmax log_softmax cumsum abs absolute".split()},
+    **{name: single_arg_elementwise_dispatch for name in "sign sqrt inv where clip argsort ones_like zeros_like full_like softmax log_softmax cumsum abs absolute sin cos tan exp log exp2 log2 log10 sqrt pow reciprocal floor ceil round floor_divide".split()},
     **{name: multi_dim_reduction_dispatch for name in "sum product mean std max min maximum minimum all any".split()},
     **{name: single_dim_reduction_dispatch for name in "argmax argmin".split()},
     **{name: concatenation_dispatch for name in "concat concatenate".split()},
     # Array functions
     **{f'__{name}__': single_arg_elementwise_dispatch for name in "neg pos invert".split()},
-    **{f'__{name}__': multi_arg_elementwise_dispatch for name in "add radd sub rsub mul rmult div rdiv truediv rtruediv mod rmod pow rpow".split()},
+    **{f'__{name}__': multi_arg_elementwise_dispatch for name in "add radd sub rsub mul rmult div rdiv truediv rtruediv mod rmod pow rpow eq".split()},
 )
 
 
@@ -209,6 +210,7 @@ jax_array_types = [
     jax.interpreters.pxla.ShardedDeviceArray, 
     jax.interpreters.partial_eval.DynamicJaxprTracer,
     jax.interpreters.batching.BatchTracer,
+    jax.interpreters.batching.Tracer,
 ]
 
 JAXArrayLike = jax_array_types

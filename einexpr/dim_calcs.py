@@ -3,7 +3,7 @@ from itertools import zip_longest
 from typing import Dict, List, Set, Tuple, Sequence, Any
 import numpy as np
 from einexpr.exceptions import AmbiguousDimensionException
-import ast
+from lark import Lark, Transformer, v_args
 
 from einexpr.base_typing import Dimension
 from .utils import get_all_scs_with_unique_elems, powerset
@@ -175,37 +175,112 @@ def calculate_output_dims_from_signature(signature: UfuncSignature, *input_dims:
     return [*aligned_core_dims, *output_noncore_dims]
 
 
-def parse_dims(dims_raw: str) -> List[Dimension]:
+@v_args(inline=True)
+class TreeToDimsDeclaration(Transformer):
+    def dims(self, *dims) -> Tuple[Dimension]:
+        return tuple(dim for dim in dims if dim is not None)
+    
+    def dim(self, value, *x) -> Union[Dimension, Tuple]:
+        print(x)
+        return value
+    
+    def tuple(self, *dims) -> Tuple[Dimension]:
+        return tuple(dim for dim in dims if dim is not None)
+    
+    def sep(self) -> None:
+        return None
+
+    def NAME(self, tree) -> Dimension:
+        return tree.value
+    
+
+dims_declaration_grammar = Lark(r'''
+                    %import common.WS
+                    
+                    %ignore WS
+                    
+                    ?start: dims
+                    ?dims: (dim [sep])*
+                    ?dim: tuple | NAME | "(" dim ")"
+                    tuple: "(" dim (sep | ([sep] dim)+ [sep]) ")"
+                    ?sep: ","
+                    NAME: /[^\W\d]\w*/
+                    ''',
+                    parser='lalr',
+                    transformer=TreeToDimsDeclaration(),
+                    maybe_placeholders=False)
+
+
+@v_args(inline=True)
+class TreeToReshape(Transformer):
+    def dims(self, *dims) -> Tuple[Dimension]:
+        return tuple(dim for dim in dims if dim is not None)
+    
+    def dim(self, value, *x) -> Union[Dimension, Tuple]:
+        print(x)
+        return value
+    
+    def tuple(self, *dims) -> Tuple[Dimension]:
+        return tuple(dim for dim in dims if dim is not None)
+    
+    def sep(self) -> None:
+        return None
+
+    def NAME(self, tree) -> Dimension:
+        return tree.value
+
+
+dims_reshape_grammar = Lark(r'''
+                    %import common.WS
+                    
+                    %ignore WS
+                    
+                    ?start: dims
+                    ?dims: (dim [sep])*
+                    ?dim: ( tuple | NAME | "(" dim ")" ) ( "->" dim )?
+                    tuple: "(" dim (sep | ([sep] dim)+ [sep]) ")"
+                    ?sep: ","
+                    NAME: /[^\W\d]\w*/
+                    ''',
+                    parser='lalr',
+                    transformer=TreeToReshape(),
+                    maybe_placeholders=False)
+
+dims_reshape_grammar.parse('j i j,f,(fdsf,) x->j (k)->f q->(i f2 (x y( z)))')
+
+
+def parse_dims_declaration(dims_raw: Union[str, Tuple]) -> Tuple:
     """
-    Parses an dimensions string such as into a list of Dimension types. e.g. "can_use_commas,or_spaces to_separate_dimensions ( l (m n) ) dimension_identifiers_can_be_any_valid_python_identifier"
+    Parses a dimensions declaration string into a tree. 
+    
+    Dimensions string example: "you_can_use_commas,or_spaces to_separate_dimensions ( l (m n) ) dimension_identifiers_can_be_any_valid_python_identifier"
     """
     if not dims_raw:
-        return []
-    # K.I.S.S. - Wrangle the dimensions string into something we can just read using the Python ast module. I thought about using a dedicated parser, but it's really not worth it.
-    # Place commas before and after parentheses to make the parser happy (and get rid of extraneous commas/spaces)
-    dims_raw = re.sub(r'[\s,]*\(\s*', r',(', dims_raw)
-    dims_raw = re.sub(r'\s*\)[\s,]*', r'),', dims_raw)
-    # Replace sequences of one or more comma and spaces with a single comma
-    dims_raw = re.sub(r"[\s,]+", ",", dims_raw)
-    # Remove extraneous commas before parentheses
-    dims_raw = re.sub(r'^[\s,]*\(', r'(', dims_raw)
-    dims_raw = re.sub(r'\([\s,]*\(', r'((', dims_raw)
-    # Parse using ast
-    tree = ast.parse(dims_raw, mode='eval')
-    # Assert that the tree consists only of names and tuples (and a few other simple ast constructs)
-    for node in ast.walk(tree.body):
-        if not isinstance(node, (ast.Name, ast.Tuple, ast.Load, ast.Expression)):
-            raise SyntaxError(f"Invalid dimension string: {dims_raw!r}. Expected {ast.unparse(node)!r} to be either ast.Name or a ast.Tuple, but it is an instance of {type(node)}.")
+        return ()
+    def helper(dims_raw):
+        if isinstance(dims_raw, (tuple, list)):
+            return tuple(helper(dim) for dim in dims_raw)
+        else:
+            return dims_declaration_grammar.parse(dims_raw)
+    dims = helper(dims_raw)
+    if isinstance(dims, Dimension):
+        return (dims,)
+    else:
+        return dims
 
-    class TransformDimensions(ast.NodeVisitor):
-        def visit_Name(self, node: ast.Name) -> Dimension:
-            if not node.id.isidentifier():
-                # Should never happen, but just in case
-                raise SyntaxError(f"{node.id!r} is not a valid identifier.")
-            return node.id
-        
-        def visit_Tuple(self, node: ast.Tuple) -> Tuple:
-            return tuple(self.visit(child) for child in node.elts)
-
-    parsed_dims = TransformDimensions().visit(tree.body)
-    return parsed_dims    
+def parse_dims_reshape(dims_raw: Union[str, Tuple]) -> Tuple:
+    """
+    Parses a dimensions reshape string into a tree.
+    """
+    if not dims_raw:
+        return ()
+    def helper(dims_raw):
+        if isinstance(dims_raw, (tuple, list)):
+            return tuple(helper(dim) for dim in dims_raw)
+        else:
+            return dims_reshape_grammar.parse(dims_raw)
+    dims = helper(dims_raw)
+    if isinstance(dims, Dimension):
+        return (dims,)
+    else:
+        return dims

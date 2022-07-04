@@ -205,7 +205,7 @@ def list_to_english(lst: List) -> str:
             return ', '.join(str(item) for item in lst[:-1]) + ' and ' + str(lst[-1])
 
 
-def pytree_mapreduce(tree, map_func, reduce_func):
+def pytree_mapreduce(tree, map_func, reduce_func=lambda x: x):
     """
     Mapreduce a tree of Python objects.
     """

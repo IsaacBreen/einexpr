@@ -7,10 +7,8 @@ class ConcreteArrayLike:
         raise NotImplementedError
 
 
-class Dimension:
-    def __init__(self, *args, **kwargs):
-    
-        raise NotImplementedError
+Dimension = str
+
 
 class LazyArrayLike:
     def __init__(self, *args, **kwargs):
