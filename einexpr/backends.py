@@ -118,7 +118,7 @@ def concatenation_dispatch(func, args, kwargs):
 
 typical_function_dispatches = dict(
     # Module functions
-    **{name: single_arg_elementwise_dispatch for name in "sign sqrt inv where clip argsort ones_like zeros_like full_like softmax log_softmax cumsum abs absolute sin cos tan exp log exp2 log2 log10 sqrt pow reciprocal floor ceil round floor_divide".split()},
+    **{name: single_arg_elementwise_dispatch for name in "sign sqrt inv where clip argsort ones_like zeros_like full_like softmax log_softmax abs absolute sin cos tan exp log exp2 log2 log10 sqrt pow reciprocal floor ceil round floor_divide".split()},
     **{name: multi_dim_reduction_dispatch for name in "sum product mean std max min maximum minimum all any".split()},
     **{name: single_dim_reduction_dispatch for name in "argmax argmin".split()},
     **{name: concatenation_dispatch for name in "concat concatenate".split()},
