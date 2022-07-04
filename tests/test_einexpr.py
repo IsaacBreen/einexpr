@@ -4,7 +4,6 @@ warnings.filterwarnings("ignore", category=UserWarning, message="JAX on Mac ARM 
 warnings.filterwarnings("ignore", category=DeprecationWarning, message="the imp module is deprecated in favour of importlib and slated for removal in .*")
 warnings.filterwarnings("ignore", category=RuntimeWarning, message="overflow encountered.*")
 
-import inspect
 import pprint
 import string
 from collections import namedtuple
@@ -49,15 +48,15 @@ class NamedLambda:
     
 
 binary_arithmetic_magics = {key: {NamedLambda(lambda x, y: getattr(x, op)(y), op) for op in ops} for key, ops in binary_arithmetic_magics_str.items()}
-# Soft clip any exponents between 1/10 and 10
+# Soft clip any exponents between 1/3 and 3 + 1/3
 binary_arithmetic_magics['power'] = {
-    NamedLambda(lambda x, y: getattr(np.abs(x), '__pow__')( 10/(1+np.e**-y) + 1/10 ), "__pow__"), 
-    NamedLambda(lambda x, y: getattr(10/(1+np.e**-x) + 1/10, '__rpow__')(np.abs(y)), "__rpow__"),
+    NamedLambda(lambda x, y: getattr(np.abs(x), '__pow__')( 3/(1+np.e**-y) + 3/10 ), "__pow__"), 
+    NamedLambda(lambda x, y: getattr(3/(1+np.e**-x) + 1/3, '__rpow__')(np.abs(y)), "__rpow__"),
     }
 
 default_binary_ops = {op for ops in binary_arithmetic_magics.values() for op in ops}
 default_unary_ops = [getattr(np, op) for op in 
-                     "sign sqrt inv argsort ones_like zeros_like softmax log_softmax cumsum abs absolute sin cos tan exp log exp2 log2 log10 sqrt pow reciprocal floor ceil round".split()
+                     "sign sqrt inv argsort ones_like zeros_like softmax log_softmax abs absolute sin cos tan exp log exp2 log2 log10 sqrt pow reciprocal floor ceil round".split()
                      if hasattr(np, op)]
 
 RandomExpressionData = namedtuple("RandomExpressionData", ["expr", "expr_json", "var"])
