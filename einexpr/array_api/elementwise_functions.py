@@ -25,6 +25,7 @@ def abs(x: array, /) -> array:
     out: array
         an array containing the absolute value of each element in ``x``. The returned array must have the same data type as ``x``.
     """
+    raise NotImplementedError
 
 def acos(x: array, /) -> array:
     """
@@ -49,6 +50,7 @@ def acos(x: array, /) -> array:
     out: array
         an array containing the inverse cosine of each element in ``x``. The returned array must have a real-valued floating-point data type determined by :ref:`type-promotion`.
     """
+    raise NotImplementedError
 
 def acosh(x: array, /) -> array:
     """
@@ -73,6 +75,7 @@ def acosh(x: array, /) -> array:
     out: array
         an array containing the inverse hyperbolic cosine of each element in ``x``. The returned array must have a real-valued floating-point data type determined by :ref:`type-promotion`.
     """
+    raise NotImplementedError
 
 def add(x1: array, x2: array, /) -> array:
     """
@@ -115,6 +118,7 @@ def add(x1: array, x2: array, /) -> array:
     out: array
         an array containing the element-wise sums. The returned array must have a data type determined by :ref:`type-promotion`.
     """
+    raise NotImplementedError
 
 def asin(x: array, /) -> array:
     """
@@ -140,6 +144,7 @@ def asin(x: array, /) -> array:
     out: array
         an array containing the inverse sine of each element in ``x``. The returned array must have a real-valued floating-point data type determined by :ref:`type-promotion`.
     """
+    raise NotImplementedError
 
 def asinh(x: array, /) -> array:
     """
@@ -165,6 +170,7 @@ def asinh(x: array, /) -> array:
     out: array
         an array containing the inverse hyperbolic sine of each element in ``x``. The returned array must have a real-valued floating-point data type determined by :ref:`type-promotion`.
     """
+    raise NotImplementedError
 
 def atan(x: array, /) -> array:
     """
@@ -190,6 +196,7 @@ def atan(x: array, /) -> array:
     out: array
         an array containing the inverse tangent of each element in ``x``. The returned array must have a real-valued floating-point data type determined by :ref:`type-promotion`.
     """
+    raise NotImplementedError
 
 def atan2(x1: array, x2: array, /) -> array:
     """
@@ -270,6 +277,7 @@ def atanh(x: array, /) -> array:
     out: array
         an array containing the inverse hyperbolic tangent of each element in ``x``. The returned array must have a real-valued floating-point data type determined by :ref:`type-promotion`.
     """
+    raise NotImplementedError
 
 def bitwise_and(x1: array, x2: array, /) -> array:
     """
@@ -287,6 +295,7 @@ def bitwise_and(x1: array, x2: array, /) -> array:
     out: array
         an array containing the element-wise results. The returned array must have a data type determined by :ref:`type-promotion`.
     """
+    raise NotImplementedError
 
 def bitwise_left_shift(x1: array, x2: array, /) -> array:
     """
@@ -304,6 +313,7 @@ def bitwise_left_shift(x1: array, x2: array, /) -> array:
     out: array
         an array containing the element-wise results. The returned array must have a data type determined by :ref:`type-promotion`.
     """
+    raise NotImplementedError
 
 def bitwise_invert(x: array, /) -> array:
     """
@@ -319,6 +329,7 @@ def bitwise_invert(x: array, /) -> array:
     out: array
         an array containing the element-wise results. The returned array must have the same data type as ``x``.
     """
+    raise NotImplementedError
 
 def bitwise_or(x1: array, x2: array, /) -> array:
     """
@@ -336,6 +347,7 @@ def bitwise_or(x1: array, x2: array, /) -> array:
     out: array
         an array containing the element-wise results. The returned array must have a data type determined by :ref:`type-promotion`.
     """
+    raise NotImplementedError
 
 def bitwise_right_shift(x1: array, x2: array, /) -> array:
     """
@@ -356,6 +368,7 @@ def bitwise_right_shift(x1: array, x2: array, /) -> array:
     out: array
         an array containing the element-wise results. The returned array must have a data type determined by :ref:`type-promotion`.
     """
+    raise NotImplementedError
 
 def bitwise_xor(x1: array, x2: array, /) -> array:
     """
@@ -373,6 +386,7 @@ def bitwise_xor(x1: array, x2: array, /) -> array:
     out: array
         an array containing the element-wise results. The returned array must have a data type determined by :ref:`type-promotion`.
     """
+    raise NotImplementedError
 
 def ceil(x: array, /) -> array:
     """
@@ -400,6 +414,7 @@ def ceil(x: array, /) -> array:
     out: array
         an array containing the rounded result for each element in ``x``. The returned array must have the same data type as ``x``.
     """
+    raise NotImplementedError
 
 def cos(x: array, /) -> array:
     """
@@ -425,6 +440,7 @@ def cos(x: array, /) -> array:
     out: array
         an array containing the cosine of each element in ``x``. The returned array must have a real-valued floating-point data type determined by :ref:`type-promotion`.
     """
+    raise NotImplementedError
 
 def cosh(x: array, /) -> array:
     """
@@ -450,6 +466,7 @@ def cosh(x: array, /) -> array:
     out: array
         an array containing the hyperbolic cosine of each element in ``x``. The returned array must have a real-valued floating-point data type determined by :ref:`type-promotion`.
     """
+    raise NotImplementedError
 
 def divide(x1: array, x2: array, /) -> array:
     """
@@ -516,6 +533,7 @@ def equal(x1: array, x2: array, /) -> array:
     out: array
         an array containing the element-wise results. The returned array must have a data type of ``bool``.
     """
+    raise NotImplementedError
 
 def exp(x: array, /) -> array:
     """
@@ -541,6 +559,7 @@ def exp(x: array, /) -> array:
     out: array
         an array containing the evaluated exponential function result for each element in ``x``. The returned array must have a real-valued floating-point data type determined by :ref:`type-promotion`.
     """
+    raise NotImplementedError
 
 def expm1(x: array, /) -> array:
     """
@@ -569,6 +588,7 @@ def expm1(x: array, /) -> array:
     out: array
         an array containing the evaluated result for each element in ``x``. The returned array must have a real-valued floating-point data type determined by :ref:`type-promotion`.
     """
+    raise NotImplementedError
 
 def floor(x: array, /) -> array:
     """
@@ -596,6 +616,7 @@ def floor(x: array, /) -> array:
     out: array
         an array containing the rounded result for each element in ``x``. The returned array must have the same data type as ``x``.
     """
+    raise NotImplementedError
 
 def floor_divide(x1: array, x2: array, /) -> array:
     r"""
@@ -669,6 +690,7 @@ def greater(x1: array, x2: array, /) -> array:
     out: array
         an array containing the element-wise results. The returned array must have a data type of ``bool``.
     """
+    raise NotImplementedError
 
 def greater_equal(x1: array, x2: array, /) -> array:
     """
@@ -686,6 +708,7 @@ def greater_equal(x1: array, x2: array, /) -> array:
     out: array
         an array containing the element-wise results. The returned array must have a data type of ``bool``.
     """
+    raise NotImplementedError
 
 def isfinite(x: array, /) -> array:
     """
@@ -701,6 +724,7 @@ def isfinite(x: array, /) -> array:
     out: array
         an array containing test results. An element ``out_i`` is ``True`` if ``x_i`` is finite and ``False`` otherwise. The returned array must have a data type of ``bool``.
     """
+    raise NotImplementedError
 
 def isinf(x: array, /) -> array:
     """
@@ -716,6 +740,7 @@ def isinf(x: array, /) -> array:
     out: array
         an array containing test results. An element ``out_i`` is ``True`` if ``x_i`` is either positive or negative infinity and ``False`` otherwise. The returned array must have a data type of ``bool``.
     """
+    raise NotImplementedError
 
 def isnan(x: array, /) -> array:
     """
@@ -731,6 +756,7 @@ def isnan(x: array, /) -> array:
     out: array
         an array containing test results. An element ``out_i`` is ``True`` if ``x_i`` is ``NaN`` and ``False`` otherwise. The returned array should have a data type of ``bool``.
     """
+    raise NotImplementedError
 
 def less(x1: array, x2: array, /) -> array:
     """
@@ -748,6 +774,7 @@ def less(x1: array, x2: array, /) -> array:
     out: array
         an array containing the element-wise results. The returned array must have a data type of ``bool``.
     """
+    raise NotImplementedError
 
 def less_equal(x1: array, x2: array, /) -> array:
     """
@@ -765,6 +792,7 @@ def less_equal(x1: array, x2: array, /) -> array:
     out: array
         an array containing the element-wise results. The returned array must have a data type of ``bool``.
     """
+    raise NotImplementedError
 
 def log(x: array, /) -> array:
     """
@@ -790,6 +818,7 @@ def log(x: array, /) -> array:
     out: array
         an array containing the evaluated natural logarithm for each element in ``x``. The returned array must have a real-valued floating-point data type determined by :ref:`type-promotion`.
     """
+    raise NotImplementedError
 
 def log1p(x: array, /) -> array:
     """
@@ -819,6 +848,7 @@ def log1p(x: array, /) -> array:
     out: array
         an array containing the evaluated result for each element in ``x``. The returned array must have a real-valued floating-point data type determined by :ref:`type-promotion`.
     """
+    raise NotImplementedError
 
 def log2(x: array, /) -> array:
     """
@@ -844,6 +874,7 @@ def log2(x: array, /) -> array:
     out: array
         an array containing the evaluated base ``2`` logarithm for each element in ``x``. The returned array must have a real-valued floating-point data type determined by :ref:`type-promotion`.
     """
+    raise NotImplementedError
 
 def log10(x: array, /) -> array:
     """
@@ -869,6 +900,7 @@ def log10(x: array, /) -> array:
     out: array
         an array containing the evaluated base ``10`` logarithm for each element in ``x``. The returned array must have a real-valued floating-point data type determined by :ref:`type-promotion`.
     """
+    raise NotImplementedError
 
 def logaddexp(x1: array, x2: array, /) -> array:
     """
@@ -894,6 +926,7 @@ def logaddexp(x1: array, x2: array, /) -> array:
     out: array
         an array containing the element-wise results. The returned array must have a real-valued floating-point data type determined by :ref:`type-promotion`.
     """
+    raise NotImplementedError
 
 def logical_and(x1: array, x2: array, /) -> array:
     """
@@ -914,6 +947,7 @@ def logical_and(x1: array, x2: array, /) -> array:
     out: array
         an array containing the element-wise results. The returned array must have a data type of `bool`.
     """
+    raise NotImplementedError
 
 def logical_not(x: array, /) -> array:
     """
@@ -932,6 +966,7 @@ def logical_not(x: array, /) -> array:
     out: array
         an array containing the element-wise results. The returned array must have a data type of ``bool``.
     """
+    raise NotImplementedError
 
 def logical_or(x1: array, x2: array, /) -> array:
     """
@@ -952,6 +987,7 @@ def logical_or(x1: array, x2: array, /) -> array:
     out: array
         an array containing the element-wise results. The returned array must have a data type of ``bool``.
     """
+    raise NotImplementedError
 
 def logical_xor(x1: array, x2: array, /) -> array:
     """
@@ -972,6 +1008,7 @@ def logical_xor(x1: array, x2: array, /) -> array:
     out: array
         an array containing the element-wise results. The returned array must have a data type of ``bool``.
     """
+    raise NotImplementedError
 
 def multiply(x1: array, x2: array, /) -> array:
     """
@@ -1027,6 +1064,7 @@ def negative(x: array, /) -> array:
     out: array
         an array containing the evaluated result for each element in ``x``. The returned array must have a data type determined by :ref:`type-promotion`.
     """
+    raise NotImplementedError
 
 def not_equal(x1: array, x2: array, /) -> array:
     """
@@ -1044,6 +1082,7 @@ def not_equal(x1: array, x2: array, /) -> array:
     out: array
         an array containing the element-wise results. The returned array must have a data type of ``bool``.
     """
+    raise NotImplementedError
 
 def positive(x: array, /) -> array:
     """
@@ -1059,6 +1098,7 @@ def positive(x: array, /) -> array:
     out: array
         an array containing the evaluated result for each element in ``x``. The returned array must have the same data type as ``x``.
     """
+    raise NotImplementedError
 
 def pow(x1: array, x2: array, /) -> array:
     """
@@ -1161,6 +1201,7 @@ def remainder(x1: array, x2: array, /) -> array:
     out: array
         an array containing the element-wise results. Each element-wise result must have the same sign as the respective element ``x2_i``. The returned array must have a data type determined by :ref:`type-promotion`.
     """
+    raise NotImplementedError
 
 def round(x: array, /) -> array:
     """
@@ -1189,6 +1230,7 @@ def round(x: array, /) -> array:
     out: array
         an array containing the rounded result for each element in ``x``. The returned array must have the same data type as ``x``.
     """
+    raise NotImplementedError
 
 def sign(x: array, /) -> array:
     """
@@ -1210,6 +1252,7 @@ def sign(x: array, /) -> array:
     out: array
         an array containing the evaluated result for each element in ``x``. The returned array must have the same data type as ``x``.
     """
+    raise NotImplementedError
 
 def sin(x: array, /) -> array:
     """
@@ -1234,6 +1277,7 @@ def sin(x: array, /) -> array:
     out: array
         an array containing the sine of each element in ``x``. The returned array must have a real-valued floating-point data type determined by :ref:`type-promotion`.
     """
+    raise NotImplementedError
 
 def sinh(x: array, /) -> array:
     """
@@ -1259,6 +1303,7 @@ def sinh(x: array, /) -> array:
     out: array
         an array containing the hyperbolic sine of each element in ``x``. The returned array must have a real-valued floating-point data type determined by :ref:`type-promotion`.
     """
+    raise NotImplementedError
 
 def square(x: array, /) -> array:
     """
@@ -1274,6 +1319,7 @@ def square(x: array, /) -> array:
     out: array
         an array containing the evaluated result for each element in ``x``. The returned array must have a data type determined by :ref:`type-promotion`.
     """
+    raise NotImplementedError
 
 def sqrt(x: array, /) -> array:
     """
@@ -1299,6 +1345,7 @@ def sqrt(x: array, /) -> array:
     out: array
         an array containing the square root of each element in ``x``. The returned array must have a real-valued floating-point data type determined by :ref:`type-promotion`.
     """
+    raise NotImplementedError
 
 def subtract(x1: array, x2: array, /) -> array:
     """
@@ -1316,6 +1363,7 @@ def subtract(x1: array, x2: array, /) -> array:
     out: array
         an array containing the element-wise differences. The returned array must have a data type determined by :ref:`type-promotion`.
     """
+    raise NotImplementedError
 
 def tan(x: array, /) -> array:
     """
@@ -1340,6 +1388,7 @@ def tan(x: array, /) -> array:
     out: array
         an array containing the tangent of each element in ``x``. The returned array must have a real-valued floating-point data type determined by :ref:`type-promotion`.
     """
+    raise NotImplementedError
 
 def tanh(x: array, /) -> array:
     """
@@ -1365,6 +1414,7 @@ def tanh(x: array, /) -> array:
     out: array
         an array containing the hyperbolic tangent of each element in ``x``. The returned array must have a real-valued floating-point data type determined by :ref:`type-promotion`.
     """
+    raise NotImplementedError
 
 def trunc(x: array, /) -> array:
     """
@@ -1392,5 +1442,6 @@ def trunc(x: array, /) -> array:
     out: array
         an array containing the rounded result for each element in ``x``. The returned array must have the same data type as ``x``.
     """
+    raise NotImplementedError
 
 __all__ = ['abs', 'acos', 'acosh', 'add', 'asin', 'asinh', 'atan', 'atan2', 'atanh', 'bitwise_and', 'bitwise_left_shift', 'bitwise_invert', 'bitwise_or', 'bitwise_right_shift', 'bitwise_xor', 'ceil', 'cos', 'cosh', 'divide', 'equal', 'exp', 'expm1', 'floor', 'floor_divide', 'greater', 'greater_equal', 'isfinite', 'isinf', 'isnan', 'less', 'less_equal', 'log', 'log1p', 'log2', 'log10', 'logaddexp', 'logical_and', 'logical_not', 'logical_or', 'logical_xor', 'multiply', 'negative', 'not_equal', 'positive', 'pow', 'remainder', 'round', 'sign', 'sin', 'sinh', 'square', 'sqrt', 'subtract', 'tan', 'tanh', 'trunc']

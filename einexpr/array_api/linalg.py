@@ -57,6 +57,7 @@ def cross(x1: array, x2: array, /, *, axis: int = -1) -> array:
     out: array
         an array containing the cross products. The returned array must have a data type determined by :ref:`type-promotion`.
     """
+    raise NotImplementedError
 
 def det(x: array, /) -> array:
     """
@@ -72,6 +73,7 @@ def det(x: array, /) -> array:
     out: array
         if ``x`` is a two-dimensional array, a zero-dimensional array containing the determinant; otherwise, a non-zero dimensional array containing the determinant for each square matrix. The returned array must have the same data type as ``x``.
     """
+    raise NotImplementedError
 
 def diagonal(x: array, /, *, offset: int = 0) -> array:
     """
@@ -95,6 +97,7 @@ def diagonal(x: array, /, *, offset: int = 0) -> array:
     out: array
         an array containing the diagonals and whose shape is determined by removing the last two dimensions and appending a dimension equal to the size of the resulting diagonals. The returned array must have the same data type as ``x``.
     """
+    raise NotImplementedError
 
 def eigh(x: array, /) -> Tuple[array]:
     """
@@ -127,6 +130,7 @@ def eigh(x: array, /) -> Tuple[array]:
     .. note::
        Eigenvalue sort order is left unspecified and is thus implementation-dependent.
     """
+    raise NotImplementedError
 
 def eigvalsh(x: array, /) -> array:
     """
@@ -154,6 +158,7 @@ def eigvalsh(x: array, /) -> array:
     .. note::
        Eigenvalue sort order is left unspecified and is thus implementation-dependent.
     """
+    raise NotImplementedError
 
 def inv(x: array, /) -> array:
     """
@@ -169,11 +174,13 @@ def inv(x: array, /) -> array:
     out: array
         an array containing the multiplicative inverses. The returned array must have a real-valued floating-point data type determined by :ref:`type-promotion` and must have the same shape as ``x``.
     """
+    raise NotImplementedError
 
 def matmul(x1: array, x2: array, /) -> array:
     """
     Alias for :func:`~array_api.matmul`.
     """
+    raise NotImplementedError
 
 def matrix_norm(x: array, /, *, keepdims: bool = False, ord: Optional[Union[int, float, Literal[inf, -inf, 'fro', 'nuc']]] = 'fro') -> array:
     """
@@ -244,6 +251,7 @@ def matrix_power(x: array, n: int, /) -> array:
     out: array
         if ``n`` is equal to zero, an array containing the identity matrix for each square matrix. If ``n`` is less than zero, an array containing the inverse of each square matrix raised to the absolute value of ``n``, provided that each square matrix is invertible. If ``n`` is greater than zero, an array containing the result of raising each square matrix to the power ``n``. The returned array must have the same shape as ``x`` and a real-valued floating-point data type determined by :ref:`type-promotion`.
     """
+    raise NotImplementedError
 
 def matrix_rank(x: array, /, *, rtol: Optional[Union[float, array]] = None) -> array:
     """
@@ -261,11 +269,13 @@ def matrix_rank(x: array, /, *, rtol: Optional[Union[float, array]] = None) -> a
     out: array
         an array containing the ranks. The returned array must have a real-valued floating-point data type determined by :ref:`type-promotion` and must have shape ``(...)`` (i.e., must have a shape equal to ``shape(x)[:-2]``).
     """
+    raise NotImplementedError
 
 def matrix_transpose(x: array, /) -> array:
     """
     Alias for :func:`~array_api.matrix_transpose`.
     """
+    raise NotImplementedError
 
 def outer(x1: array, x2: array, /) -> array:
     """
@@ -283,6 +293,7 @@ def outer(x1: array, x2: array, /) -> array:
     out: array
         a two-dimensional array containing the outer product and whose shape is ``(N, M)``. The returned array must have a data type determined by :ref:`type-promotion`.
     """
+    raise NotImplementedError
 
 def pinv(x: array, /, *, rtol: Optional[Union[float, array]] = None) -> array:
     """
@@ -300,6 +311,7 @@ def pinv(x: array, /, *, rtol: Optional[Union[float, array]] = None) -> array:
     out: array
         an array containing the pseudo-inverses. The returned array must have a real-valued floating-point data type determined by :ref:`type-promotion` and must have shape ``(..., N, M)`` (i.e., must have the same shape as ``x``, except the innermost two dimensions must be transposed).
     """
+    raise NotImplementedError
 
 def qr(x: array, /, *, mode: Literal['reduced', 'complete'] = 'reduced') -> Tuple[array, array]:
     """
@@ -330,6 +342,7 @@ def qr(x: array, /, *, mode: Literal['reduced', 'complete'] = 'reduced') -> Tupl
 
         Each returned array must have a real-valued floating-point data type determined by :ref:`type-promotion`.
     """
+    raise NotImplementedError
 
 def slogdet(x: array, /) -> Tuple[array, array]:
     """
@@ -358,6 +371,7 @@ def slogdet(x: array, /) -> Tuple[array, array]:
         .. note::
            If a determinant is zero, then the corresponding ``sign`` should be ``0`` and ``logabsdet`` should be ``-infinity``; however, depending on the underlying algorithm, the returned result may differ. In all cases, the determinant should be equal to ``sign * exp(logsabsdet)`` (although, again, the result may be subject to numerical precision errors).
     """
+    raise NotImplementedError
 
 def solve(x1: array, x2: array, /) -> array:
     """
@@ -403,6 +417,7 @@ def svd(x: array, /, *, full_matrices: bool = True) -> Union[array, Tuple[array,
 
         Each returned array must have the same real-valued floating-point data type as ``x``.
     """
+    raise NotImplementedError
 
 def svdvals(x: array, /) -> array:
     """
@@ -418,11 +433,13 @@ def svdvals(x: array, /) -> array:
     out: array
         an array with shape ``(..., K)`` that contains the vector(s) of singular values of length ``K``, where ``K = min(M, N)``. For each vector, the singular values must be sorted in descending order by magnitude, such that ``s[..., 0]`` is the largest value, ``s[..., 1]`` is the second largest value, et cetera. The first ``x.ndim-2`` dimensions must have the same shape as those of the input ``x``. The returned array must have the same real-valued floating-point data type as ``x``.
     """
+    raise NotImplementedError
 
 def tensordot(x1: array, x2: array, /, *, axes: Union[int, Tuple[Sequence[int], Sequence[int]]] = 2) -> array:
     """
     Alias for :func:`~array_api.tensordot`.
     """
+    raise NotImplementedError
 
 def trace(x: array, /, *, offset: int = 0) -> array:
     """
@@ -452,11 +469,13 @@ def trace(x: array, /, *, offset: int = 0) -> array:
 
         The returned array must have the same data type as ``x``.
     """
+    raise NotImplementedError
 
 def vecdot(x1: array, x2: array, /, *, axis: int = None) -> array:
     """
     Alias for :func:`~array_api.vecdot`.
     """
+    raise NotImplementedError
 
 def vector_norm(x: array, /, *, axis: Optional[Union[int, Tuple[int, ...]]] = None, keepdims: bool = False, ord: Union[int, float, Literal[inf, -inf]] = 2) -> array:
     r"""
