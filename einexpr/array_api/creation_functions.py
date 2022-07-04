@@ -71,6 +71,7 @@ def asarray(obj: Union[array, bool, int, float, complex, NestedSequence, Support
     out: array
         an array containing the data from ``obj``.
     """
+    raise NotImplementedError
 
 def empty(shape: Union[int, Tuple[int, ...]], *, dtype: Optional[dtype] = None, device: Optional[device] = None) -> array:
     """

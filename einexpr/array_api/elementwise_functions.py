@@ -251,6 +251,7 @@ def atan2(x1: array, x2: array, /) -> array:
 
     """
 
+    raise NotImplementedError
 def atanh(x: array, /) -> array:
     """
     Calculates an implementation-dependent approximation to the inverse hyperbolic tangent, having domain ``[-1, +1]`` and codomain ``[-infinity, +infinity]``, for each element ``x_i`` of the input array ``x``.
@@ -517,6 +518,7 @@ def divide(x1: array, x2: array, /) -> array:
         an array containing the element-wise results. The returned array must have a real-valued floating-point data type determined by :ref:`type-promotion`.
     """
 
+    raise NotImplementedError
 def equal(x1: array, x2: array, /) -> array:
     """
     Computes the truth value of ``x1_i == x2_i`` for each element ``x1_i`` of the input array ``x1`` with the respective element ``x2_i`` of the input array ``x2``.
@@ -673,6 +675,7 @@ def floor_divide(x1: array, x2: array, /) -> array:
     out: array
         an array containing the element-wise results. The returned array must have a data type determined by :ref:`type-promotion`.
     """
+    raise NotImplementedError
 
 def greater(x1: array, x2: array, /) -> array:
     """
@@ -1044,6 +1047,7 @@ def multiply(x1: array, x2: array, /) -> array:
         an array containing the element-wise products. The returned array must have a data type determined by :ref:`type-promotion`.
     """
 
+    raise NotImplementedError
 def negative(x: array, /) -> array:
     """
     Computes the numerical negative of each element ``x_i`` (i.e., ``y_i = -x_i``) of the input array ``x``.
@@ -1151,6 +1155,7 @@ def pow(x1: array, x2: array, /) -> array:
         an array containing the element-wise results. The returned array must have a data type determined by :ref:`type-promotion`.
     """
 
+    raise NotImplementedError
 def remainder(x1: array, x2: array, /) -> array:
     """
     Returns the remainder of division for each element ``x1_i`` of the input array ``x1`` and the respective element ``x2_i`` of the input array ``x2``.

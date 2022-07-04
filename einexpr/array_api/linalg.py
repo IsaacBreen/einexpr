@@ -38,6 +38,7 @@ def cholesky(x: array, /, *, upper: bool = False) -> array:
     out: array
         an array containing the Cholesky factors for each square matrix. If ``upper`` is ``False``, the returned array must contain lower-triangular matrices; otherwise, the returned array must contain upper-triangular matrices. The returned array must have a floating-point data type determined by :ref:`type-promotion` and must have the same shape as ``x``.
     """
+    raise NotImplementedError
 
 def cross(x1: array, x2: array, /, *, axis: int = -1) -> array:
     """
@@ -235,6 +236,7 @@ def matrix_norm(x: array, /, *, keepdims: bool = False, ord: Optional[Union[int,
         an array containing the norms for each ``MxN`` matrix. If ``keepdims`` is ``False``, the returned array must have a rank which is two less than the rank of ``x``. The returned array must have a real-valued floating-point data type determined by :ref:`type-promotion`.
     """
 
+    raise NotImplementedError
 def matrix_power(x: array, n: int, /) -> array:
     """
     Raises a square matrix (or a stack of square matrices) ``x`` to an integer power ``n``.
@@ -393,6 +395,7 @@ def solve(x1: array, x2: array, /) -> array:
         an array containing the solution to the system ``AX = B`` for each square matrix. The returned array must have the same shape as ``x2`` (i.e., the array corresponding to ``B``) and must have a real-valued floating-point data type determined by :ref:`type-promotion`.
     """
 
+    raise NotImplementedError
 def svd(x: array, /, *, full_matrices: bool = True) -> Union[array, Tuple[array, ...]]:
     """
     Returns a singular value decomposition A = USVh of a matrix (or a stack of matrices) ``x``, where ``U`` is a matrix (or a stack of matrices) with orthonormal columns, ``S`` is a vector of non-negative numbers (or stack of vectors), and ``Vh`` is a matrix (or a stack of matrices) with orthonormal rows.
@@ -527,5 +530,6 @@ def vector_norm(x: array, /, *, axis: Optional[Union[int, Tuple[int, ...]]] = No
     out: array
         an array containing the vector norms. If ``axis`` is ``None``, the returned array must be a zero-dimensional array containing a vector norm. If ``axis`` is a scalar value (``int`` or ``float``), the returned array must have a rank which is one less than the rank of ``x``. If ``axis`` is a ``n``-tuple, the returned array must have a rank which is ``n`` less than the rank of ``x``. The returned array must have a real-valued floating-point data type determined by :ref:`type-promotion`.
     """
+    raise NotImplementedError
 
 __all__ = ['cholesky', 'cross', 'det', 'diagonal', 'eigh', 'eigvalsh', 'inv', 'matmul', 'matrix_norm', 'matrix_power', 'matrix_rank', 'matrix_transpose', 'outer', 'pinv', 'qr', 'slogdet', 'solve', 'svd', 'svdvals', 'tensordot', 'trace', 'vecdot', 'vector_norm']
