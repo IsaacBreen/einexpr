@@ -1,8 +1,9 @@
-import regex as re
+import re
 from itertools import zip_longest
 from typing import Dict, List, Set, Tuple, Sequence, Any
 import numpy as np
 from einexpr.exceptions import AmbiguousDimensionException
+import ast
 
 from einexpr.base_typing import Dimension
 from .utils import get_all_scs_with_unique_elems, powerset
@@ -176,32 +177,35 @@ def calculate_output_dims_from_signature(signature: UfuncSignature, *input_dims:
 
 def parse_dims(dims_raw: str) -> List[Dimension]:
     """
-    Parses an dimensions string such as into a list of Dimension types.
+    Parses an dimensions string such as into a list of Dimension types. e.g. "can_use_commas,or_spaces to_separate_dimensions ( l (m n) ) dimension_identifiers_can_be_any_valid_python_identifier"
     """
     if not dims_raw:
         return []
-    if isinstance(dims_raw, str):
-        dims_raw = re.split(",| ", dims_raw)
-    # Parse elements of dims_raw if they are not already split into individual dimensions
-    dims_raw = [dim for dims_raw_element in dims_raw for dim in re.split(",| ", dims_raw_element)]
-    dims = []
-    for dim in dims_raw:
-        if not dim:
-            continue
-        if '[' in dim:
-            dim = dim.split('[')
-            # dims.append(NamedIndex(dim[0], dim[1][:-1]))
-            raise NotImplementedError("Multiple dimension instances are not yet supported.")
-        else:
-            dims.append(dim)
-    for dim in dims:
-        if not str.isidentifier(dim):
-            raise ValueError(f"The dimension {dim} is not a valid identifier.")
-    return dims
+    # K.I.S.S. - Wrangle the dimensions string into something we can just read using the Python ast module. I thought about using a dedicated parser, but it's really not worth it.
+    # Place commas before and after parentheses to make the parser happy (and get rid of extraneous commas/spaces)
+    dims_raw = re.sub(r'[\s,]*\(\s*', r',(', dims_raw)
+    dims_raw = re.sub(r'\s*\)[\s,]*', r'),', dims_raw)
+    # Replace sequences of one or more comma and spaces with a single comma
+    dims_raw = re.sub(r"[\s,]+", ",", dims_raw)
+    # Remove extraneous commas before parentheses
+    dims_raw = re.sub(r'^[\s,]*\(', r'(', dims_raw)
+    dims_raw = re.sub(r'\([\s,]*\(', r'((', dims_raw)
+    # Parse using ast
+    tree = ast.parse(dims_raw, mode='eval')
+    # Assert that the tree consists only of names and tuples (and a few other simple ast constructs)
+    for node in ast.walk(tree.body):
+        if not isinstance(node, (ast.Name, ast.Tuple, ast.Load, ast.Expression)):
+            raise SyntaxError(f"Invalid dimension string: {dims_raw!r}. Expected {ast.unparse(node)!r} to be either ast.Name or a ast.Tuple, but it is an instance of {type(node)}.")
 
+    class TransformDimensions(ast.NodeVisitor):
+        def visit_Name(self, node: ast.Name) -> Dimension:
+            if not node.id.isidentifier():
+                # Should never happen, but just in case
+                raise SyntaxError(f"{node.id!r} is not a valid identifier.")
+            return node.id
+        
+        def visit_Tuple(self, node: ast.Tuple) -> Tuple:
+            return tuple(self.visit(child) for child in node.elts)
 
-# def get_signature(func: Callable, *inputs: Any, **kwargs: Any) -> UfuncSignature:
-#     """
-#     Returns the signature of the given function.
-#     """
-#     if 
+    parsed_dims = TransformDimensions().visit(tree.body)
+    return parsed_dims    
