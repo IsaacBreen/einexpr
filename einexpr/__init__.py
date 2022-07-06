@@ -1,5 +1,5 @@
 __version__ = '0.1.0'
-from .array_api import *
+from . import array_api
 from .base_typing import *
 from .dim_calcs import *
 from .exceptions import *
