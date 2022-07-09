@@ -11,7 +11,7 @@ from einexpr.exceptions import AmbiguousDimensionException
 from .parse_numpy_ufunc_signature import (UfuncSignature,
                                           UfuncSignatureDimensions,
                                           parse_ufunc_signature)
-from .typing import ConcreteArrayLike, RawArrayLike
+from .einexpr_typing import ConcreteArrayLike, RawArrayLike
 from .utils import *
 from .utils import get_all_scs_with_unique_elems, powerset
 

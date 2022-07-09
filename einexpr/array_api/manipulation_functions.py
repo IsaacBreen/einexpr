@@ -14,7 +14,6 @@ def broadcast_arrays(*arrays: array) -> List[array]:
     out: List[array]
         a list of broadcasted arrays. Each array must have the same shape. Each array must have the same dtype as its corresponding input array.
     """
-    raise NotImplementedError
 
 def broadcast_to(x: array, /, shape: Tuple[int, ...]) -> array:
     """
@@ -32,7 +31,6 @@ def broadcast_to(x: array, /, shape: Tuple[int, ...]) -> array:
     out: array
         an array having a specified shape. Must have the same data type as ``x``.
     """
-    raise NotImplementedError
 
 def concat(arrays: Union[Tuple[array, ...], List[array]], /, *, axis: Optional[int] = 0) -> array:
     """
@@ -53,7 +51,6 @@ def concat(arrays: Union[Tuple[array, ...], List[array]], /, *, axis: Optional[i
         .. note::
            This specification leaves type promotion between data type families (i.e., ``intxx`` and ``floatxx``) unspecified.
     """
-    raise NotImplementedError
 
 def expand_dims(x: array, /, *, axis: int = 0) -> array:
     """
@@ -71,7 +68,6 @@ def expand_dims(x: array, /, *, axis: int = 0) -> array:
     out: array
         an expanded output array having the same data type as ``x``.
     """
-    raise NotImplementedError
 
 def flip(x: array, /, *, axis: Optional[Union[int, Tuple[int, ...]]] = None) -> array:
     """
@@ -89,7 +85,6 @@ def flip(x: array, /, *, axis: Optional[Union[int, Tuple[int, ...]]] = None) -> 
     out: array
         an output array having the same data type and shape as ``x`` and whose elements, relative to ``x``, are reordered.
     """
-    raise NotImplementedError
 
 def permute_dims(x: array, /, axes: Tuple[int, ...]) -> array:
     """
@@ -107,7 +102,6 @@ def permute_dims(x: array, /, axes: Tuple[int, ...]) -> array:
     out: array
         an array containing the axes permutation. The returned array must have the same data type as ``x``.
     """
-    raise NotImplementedError
 
 def reshape(x: array, /, shape: Tuple[int, ...], *, copy: Optional[bool] = None) -> array:
     """
@@ -127,7 +121,6 @@ def reshape(x: array, /, shape: Tuple[int, ...], *, copy: Optional[bool] = None)
     out: array
         an output array having the same data type and elements as ``x``.
     """
-    raise NotImplementedError
 
 def roll(x: array, /, shift: Union[int, Tuple[int, ...]], *, axis: Optional[Union[int, Tuple[int, ...]]] = None) -> array:
     """
@@ -147,7 +140,6 @@ def roll(x: array, /, shift: Union[int, Tuple[int, ...]], *, axis: Optional[Unio
     out: array
         an output array having the same data type as ``x`` and whose elements, relative to ``x``, are shifted.
     """
-    raise NotImplementedError
 
 def squeeze(x: array, /, axis: Union[int, Tuple[int, ...]]) -> array:
     """
@@ -165,7 +157,6 @@ def squeeze(x: array, /, axis: Union[int, Tuple[int, ...]]) -> array:
     out: array
         an output array having the same data type and elements as ``x``.
     """
-    raise NotImplementedError
 
 def stack(arrays: Union[Tuple[array, ...], List[array]], /, *, axis: int = 0) -> array:
     """
@@ -186,6 +177,5 @@ def stack(arrays: Union[Tuple[array, ...], List[array]], /, *, axis: int = 0) ->
         .. note::
            This specification leaves type promotion between data type families (i.e., ``intxx`` and ``floatxx``) unspecified.
     """
-    raise NotImplementedError
 
 __all__ = [ 'broadcast_arrays', 'broadcast_to', 'concat', 'expand_dims', 'flip', 'permute_dims', 'reshape', 'roll', 'squeeze', 'stack']

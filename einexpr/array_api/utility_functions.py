@@ -27,7 +27,6 @@ def all(x: array, /, *, axis: Optional[Union[int, Tuple[int, ...]]] = None, keep
     out: array
         if a logical AND reduction was performed over the entire array, the returned array must be a zero-dimensional array containing the test result; otherwise, the returned array must be a non-zero-dimensional array containing the test results. The returned array must have a data type of ``bool``.
     """
-    raise NotImplementedError
 
 def any(x: array, /, *, axis: Optional[Union[int, Tuple[int, ...]]] = None, keepdims: bool = False) -> array:
     """
@@ -56,6 +55,5 @@ def any(x: array, /, *, axis: Optional[Union[int, Tuple[int, ...]]] = None, keep
     out: array
         if a logical OR reduction was performed over the entire array, the returned array must be a zero-dimensional array containing the test result; otherwise, the returned array must be a non-zero-dimensional array containing the test results. The returned array must have a data type of ``bool``.
     """
-    raise NotImplementedError
 
 __all__ = ['all', 'any']

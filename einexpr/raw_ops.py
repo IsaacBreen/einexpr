@@ -9,7 +9,7 @@ from .dim_calcs import *
 from .parse_numpy_ufunc_signature import (UfuncSignature,
                                           UfuncSignatureDimensions,
                                           parse_ufunc_signature)
-from .typing import ConcreteArrayLike, RawArrayLike
+from .einexpr_typing import ConcreteArrayLike, RawArrayLike
 from .utils import powerset
 
 

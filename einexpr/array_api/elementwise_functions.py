@@ -25,7 +25,6 @@ def abs(x: array, /) -> array:
     out: array
         an array containing the absolute value of each element in ``x``. The returned array must have the same data type as ``x``.
     """
-    raise NotImplementedError
 
 def acos(x: array, /) -> array:
     """
@@ -50,7 +49,6 @@ def acos(x: array, /) -> array:
     out: array
         an array containing the inverse cosine of each element in ``x``. The returned array must have a real-valued floating-point data type determined by :ref:`type-promotion`.
     """
-    raise NotImplementedError
 
 def acosh(x: array, /) -> array:
     """
@@ -75,7 +73,6 @@ def acosh(x: array, /) -> array:
     out: array
         an array containing the inverse hyperbolic cosine of each element in ``x``. The returned array must have a real-valued floating-point data type determined by :ref:`type-promotion`.
     """
-    raise NotImplementedError
 
 def add(x1: array, x2: array, /) -> array:
     """
@@ -118,7 +115,6 @@ def add(x1: array, x2: array, /) -> array:
     out: array
         an array containing the element-wise sums. The returned array must have a data type determined by :ref:`type-promotion`.
     """
-    raise NotImplementedError
 
 def asin(x: array, /) -> array:
     """
@@ -144,7 +140,6 @@ def asin(x: array, /) -> array:
     out: array
         an array containing the inverse sine of each element in ``x``. The returned array must have a real-valued floating-point data type determined by :ref:`type-promotion`.
     """
-    raise NotImplementedError
 
 def asinh(x: array, /) -> array:
     """
@@ -170,7 +165,6 @@ def asinh(x: array, /) -> array:
     out: array
         an array containing the inverse hyperbolic sine of each element in ``x``. The returned array must have a real-valued floating-point data type determined by :ref:`type-promotion`.
     """
-    raise NotImplementedError
 
 def atan(x: array, /) -> array:
     """
@@ -196,7 +190,6 @@ def atan(x: array, /) -> array:
     out: array
         an array containing the inverse tangent of each element in ``x``. The returned array must have a real-valued floating-point data type determined by :ref:`type-promotion`.
     """
-    raise NotImplementedError
 
 def atan2(x1: array, x2: array, /) -> array:
     """
@@ -230,8 +223,8 @@ def atan2(x1: array, x2: array, /) -> array:
     - If ``x1_i`` is greater than ``0``, ``x1_i`` is a finite number, and ``x2_i`` is ``-infinity``, the result is an implementation-dependent approximation to ``+π``.
     - If ``x1_i`` is less than ``0``, ``x1_i`` is a finite number, and ``x2_i`` is ``+infinity``, the result is ``-0``.
     - If ``x1_i`` is less than ``0``, ``x1_i`` is a finite number, and ``x2_i`` is ``-infinity``, the result is an implementation-dependent approximation to ``-π``.
-    - If ``x1_i`` is ``+infinity`` and ``x2_i`` is finite, the result is an implementation-dependent approximation to ``+π/2``.
-    - If ``x1_i`` is ``-infinity`` and ``x2_i`` is finite, the result is an implementation-dependent approximation to ``-π/2``.
+    - If ``x1_i`` is ``+infinity`` and ``x2_i`` is a finite number, the result is an implementation-dependent approximation to ``+π/2``.
+    - If ``x1_i`` is ``-infinity`` and ``x2_i`` is a finite number, the result is an implementation-dependent approximation to ``-π/2``.
     - If ``x1_i`` is ``+infinity`` and ``x2_i`` is ``+infinity``, the result is an implementation-dependent approximation to ``+π/4``.
     - If ``x1_i`` is ``+infinity`` and ``x2_i`` is ``-infinity``, the result is an implementation-dependent approximation to ``+3π/4``.
     - If ``x1_i`` is ``-infinity`` and ``x2_i`` is ``+infinity``, the result is an implementation-dependent approximation to ``-π/4``.
@@ -251,7 +244,6 @@ def atan2(x1: array, x2: array, /) -> array:
 
     """
 
-    raise NotImplementedError
 def atanh(x: array, /) -> array:
     """
     Calculates an implementation-dependent approximation to the inverse hyperbolic tangent, having domain ``[-1, +1]`` and codomain ``[-infinity, +infinity]``, for each element ``x_i`` of the input array ``x``.
@@ -278,7 +270,6 @@ def atanh(x: array, /) -> array:
     out: array
         an array containing the inverse hyperbolic tangent of each element in ``x``. The returned array must have a real-valued floating-point data type determined by :ref:`type-promotion`.
     """
-    raise NotImplementedError
 
 def bitwise_and(x1: array, x2: array, /) -> array:
     """
@@ -296,7 +287,6 @@ def bitwise_and(x1: array, x2: array, /) -> array:
     out: array
         an array containing the element-wise results. The returned array must have a data type determined by :ref:`type-promotion`.
     """
-    raise NotImplementedError
 
 def bitwise_left_shift(x1: array, x2: array, /) -> array:
     """
@@ -314,7 +304,6 @@ def bitwise_left_shift(x1: array, x2: array, /) -> array:
     out: array
         an array containing the element-wise results. The returned array must have a data type determined by :ref:`type-promotion`.
     """
-    raise NotImplementedError
 
 def bitwise_invert(x: array, /) -> array:
     """
@@ -330,7 +319,6 @@ def bitwise_invert(x: array, /) -> array:
     out: array
         an array containing the element-wise results. The returned array must have the same data type as ``x``.
     """
-    raise NotImplementedError
 
 def bitwise_or(x1: array, x2: array, /) -> array:
     """
@@ -348,7 +336,6 @@ def bitwise_or(x1: array, x2: array, /) -> array:
     out: array
         an array containing the element-wise results. The returned array must have a data type determined by :ref:`type-promotion`.
     """
-    raise NotImplementedError
 
 def bitwise_right_shift(x1: array, x2: array, /) -> array:
     """
@@ -369,7 +356,6 @@ def bitwise_right_shift(x1: array, x2: array, /) -> array:
     out: array
         an array containing the element-wise results. The returned array must have a data type determined by :ref:`type-promotion`.
     """
-    raise NotImplementedError
 
 def bitwise_xor(x1: array, x2: array, /) -> array:
     """
@@ -387,7 +373,6 @@ def bitwise_xor(x1: array, x2: array, /) -> array:
     out: array
         an array containing the element-wise results. The returned array must have a data type determined by :ref:`type-promotion`.
     """
-    raise NotImplementedError
 
 def ceil(x: array, /) -> array:
     """
@@ -415,15 +400,16 @@ def ceil(x: array, /) -> array:
     out: array
         an array containing the rounded result for each element in ``x``. The returned array must have the same data type as ``x``.
     """
-    raise NotImplementedError
 
 def cos(x: array, /) -> array:
-    """
-    Calculates an implementation-dependent approximation to the cosine, having domain ``(-infinity, +infinity)`` and codomain ``[-1, +1]``, for each element ``x_i`` of the input array ``x``. Each element ``x_i`` is assumed to be expressed in radians.
+    r"""
+    Calculates an implementation-dependent approximation to the cosine for each element ``x_i`` of the input array ``x``.
+
+    Each element ``x_i`` is assumed to be expressed in radians.
 
     **Special cases**
 
-    For floating-point operands,
+    For real-valued floating-point operands,
 
     - If ``x_i`` is ``NaN``, the result is ``NaN``.
     - If ``x_i`` is ``+0``, the result is ``1``.
@@ -431,25 +417,45 @@ def cos(x: array, /) -> array:
     - If ``x_i`` is ``+infinity``, the result is ``NaN``.
     - If ``x_i`` is ``-infinity``, the result is ``NaN``.
 
+    For complex floating-point operands, special cases must be handled as if the operation is implemented as ``cosh(x*1j)``.
+
+    .. note::
+       The cosine is an entire function on the complex plane and has no branch cuts.
+
+    .. note::
+       For complex arguments, the mathematical definition of cosine is
+
+       .. math::
+          \begin{align} \operatorname{cos}(x) &= \sum_{n=0}^\infty \frac{(-1)^n}{(2n)!} x^{2n} \\ &= \frac{e^{jx} + e^{-jx}}{2} \\ &= \operatorname{cosh}(jx) \end{align}
+
+       where :math:`\operatorname{cosh}` is the hyperbolic cosine.
+
     Parameters
     ----------
     x: array
-        input array whose elements are each expressed in radians. Should have a real-valued floating-point data type.
+        input array whose elements are each expressed in radians. Should have a floating-point data type.
 
     Returns
     -------
     out: array
-        an array containing the cosine of each element in ``x``. The returned array must have a real-valued floating-point data type determined by :ref:`type-promotion`.
+        an array containing the cosine of each element in ``x``. The returned array must have a floating-point data type determined by :ref:`type-promotion`.
     """
-    raise NotImplementedError
 
 def cosh(x: array, /) -> array:
-    """
-    Calculates an implementation-dependent approximation to the hyperbolic cosine, having domain ``[-infinity, +infinity]`` and codomain ``[-infinity, +infinity]``, for each element ``x_i`` in the input array ``x``.
+    r"""
+    Calculates an implementation-dependent approximation to the hyperbolic cosine for each element ``x_i`` in the input array ``x``.
+
+    The mathematical definition of the hyperbolic cosine is
+
+    .. math::
+       \operatorname{cosh}(x) = \frac{e^x + e^{-x}}{2}
 
     **Special cases**
 
-    For floating-point operands,
+    .. note::
+       For all operands, ``cosh(x)`` must equal ``cosh(-x)``.
+
+    For real-valued floating-point operands,
 
     - If ``x_i`` is ``NaN``, the result is ``NaN``.
     - If ``x_i`` is ``+0``, the result is ``1``.
@@ -457,17 +463,39 @@ def cosh(x: array, /) -> array:
     - If ``x_i`` is ``+infinity``, the result is ``+infinity``.
     - If ``x_i`` is ``-infinity``, the result is ``+infinity``.
 
+    For complex floating-point operands, let ``a = real(x_i)``, ``b = imag(x_i)``, and
+
+    .. note::
+       For complex floating-point operands, ``cosh(conj(x))`` must equal ``conj(cosh(x))``.
+
+    - If ``a`` is ``+0`` and ``b`` is ``+0``, the result is ``1 + 0j``.
+    - If ``a`` is ``+0`` and ``b`` is ``+infinity``, the result is ``NaN + 0j`` (sign of the imaginary component is unspecified).
+    - If ``a`` is ``+0`` and ``b`` is ``NaN``, the result is ``NaN + 0j`` (sign of the imaginary component is unspecified).
+    - If ``a`` is a nonzero finite number and ``b`` is ``+infinity``, the result is ``NaN + NaN j``.
+    - If ``a`` is a nonzero finite number and ``b`` is ``NaN``, the result is ``NaN + NaN j``.
+    - If ``a`` is ``+infinity`` and ``b`` is ``+0``, the result is ``+infinity + 0j``.
+    - If ``a`` is ``+infinity`` and ``b`` is a nonzero finite number, the result is ``+infinity * cis(b)``.
+    - If ``a`` is ``+infinity`` and ``b`` is ``+infinity``, the result is ``+infinity + NaN j`` (sign of the real component is unspecified).
+    - If ``a`` is ``+infinity`` and ``b`` is ``NaN``, the result is ``+infinity + NaN j``.
+    - If ``a`` is ``NaN`` and ``b`` is either ``+0`` or ``-0``, the result is ``NaN + 0j`` (sign of the imaginary component is unspecified).
+    - If ``a`` is ``NaN`` and ``b`` is a nonzero finite number, the result is ``NaN + NaN j``.
+    - If ``a`` is ``NaN`` and ``b`` is ``NaN``, the result is ``NaN + NaN j``.
+
+    where ``cis(v)`` is ``cos(v) + sin(v)*1j``.
+
+    .. note::
+       The hyperbolic cosine is an entire function in the complex plane and has no branch cuts. The function is periodic, with period :math:`2\pi j`, with respect to the imaginary component.
+
     Parameters
     ----------
     x: array
-        input array whose elements each represent a hyperbolic angle. Should have a real-valued floating-point data type.
+        input array whose elements each represent a hyperbolic angle. Should have a floating-point data type.
 
     Returns
     -------
     out: array
-        an array containing the hyperbolic cosine of each element in ``x``. The returned array must have a real-valued floating-point data type determined by :ref:`type-promotion`.
+        an array containing the hyperbolic cosine of each element in ``x``. The returned array must have a floating-point data type determined by :ref:`type-promotion`.
     """
-    raise NotImplementedError
 
 def divide(x1: array, x2: array, /) -> array:
     """
@@ -518,7 +546,6 @@ def divide(x1: array, x2: array, /) -> array:
         an array containing the element-wise results. The returned array must have a real-valued floating-point data type determined by :ref:`type-promotion`.
     """
 
-    raise NotImplementedError
 def equal(x1: array, x2: array, /) -> array:
     """
     Computes the truth value of ``x1_i == x2_i`` for each element ``x1_i`` of the input array ``x1`` with the respective element ``x2_i`` of the input array ``x2``.
@@ -535,15 +562,14 @@ def equal(x1: array, x2: array, /) -> array:
     out: array
         an array containing the element-wise results. The returned array must have a data type of ``bool``.
     """
-    raise NotImplementedError
 
 def exp(x: array, /) -> array:
     """
-    Calculates an implementation-dependent approximation to the exponential function, having domain ``[-infinity, +infinity]`` and codomain ``[+0, +infinity]``, for each element ``x_i`` of the input array ``x`` (``e`` raised to the power of ``x_i``, where ``e`` is the base of the natural logarithm).
+    Calculates an implementation-dependent approximation to the exponential function for each element ``x_i`` of the input array ``x`` (``e`` raised to the power of ``x_i``, where ``e`` is the base of the natural logarithm).
 
     **Special cases**
 
-    For floating-point operands,
+    For real-valued floating-point operands,
 
     - If ``x_i`` is ``NaN``, the result is ``NaN``.
     - If ``x_i`` is ``+0``, the result is ``1``.
@@ -551,17 +577,40 @@ def exp(x: array, /) -> array:
     - If ``x_i`` is ``+infinity``, the result is ``+infinity``.
     - If ``x_i`` is ``-infinity``, the result is ``+0``.
 
+    For complex floating-point operands, let ``a = real(x_i)``, ``b = imag(x_i)``, and
+
+    .. note::
+       For complex floating-point operands, ``exp(conj(x))`` must equal ``conj(exp(x))``.
+
+    - If ``a`` is either ``+0`` or ``-0`` and ``b`` is ``+0``, the result is ``1 + 0j``.
+    - If ``a`` is a finite number and ``b`` is ``+infinity``, the result is ``NaN + NaN j``.
+    - If ``a`` is a finite number and ``b`` is ``NaN``, the result is ``NaN + NaN j``.
+    - If ``a`` is ``+infinity`` and ``b`` is ``+0``, the result is ``infinity + 0j``.
+    - If ``a`` is ``-infinity`` and ``b`` is a finite number, the result is ``+0 * cis(b)``.
+    - If ``a`` is ``+infinity`` and ``b`` is a nonzero finite number, the result is ``+infinity * cis(b)``.
+    - If ``a`` is ``-infinity`` and ``b`` is ``+infinity``, the result is ``0 + 0j`` (signs of real and imaginary components are unspecified).
+    - If ``a`` is ``+infinity`` and ``b`` is ``+infinity``, the result is ``infinity + NaN j`` (sign of real component is unspecified).
+    - If ``a`` is ``-infinity`` and ``b`` is ``NaN``, the result is ``0 + 0j`` (signs of real and imaginary components are unspecified).
+    - If ``a`` is ``+infinity`` and ``b`` is ``NaN``, the result is ``infinity + NaN j`` (sign of real component is unspecified).
+    - If ``a`` is ``NaN`` and ``b`` is ``+0``, the result is ``NaN + 0j``.
+    - If ``a`` is ``NaN`` and ``b`` is not equal to ``0``, the result is ``NaN + NaN j``.
+    - If ``a`` is ``NaN`` and ``b`` is ``NaN``, the result is ``NaN + NaN j``.
+
+    where ``cis(v)`` is ``cos(v) + sin(v)*1j``.
+
+    .. note::
+       The exponential function is an entire function in the complex plane and has no branch cuts.
+
     Parameters
     ----------
     x: array
-        input array. Should have a real-valued floating-point data type.
+        input array. Should have a floating-point data type.
 
     Returns
     -------
     out: array
-        an array containing the evaluated exponential function result for each element in ``x``. The returned array must have a real-valued floating-point data type determined by :ref:`type-promotion`.
+        an array containing the evaluated exponential function result for each element in ``x``. The returned array must have a floating-point data type determined by :ref:`type-promotion`.
     """
-    raise NotImplementedError
 
 def expm1(x: array, /) -> array:
     """
@@ -590,7 +639,6 @@ def expm1(x: array, /) -> array:
     out: array
         an array containing the evaluated result for each element in ``x``. The returned array must have a real-valued floating-point data type determined by :ref:`type-promotion`.
     """
-    raise NotImplementedError
 
 def floor(x: array, /) -> array:
     """
@@ -618,7 +666,6 @@ def floor(x: array, /) -> array:
     out: array
         an array containing the rounded result for each element in ``x``. The returned array must have the same data type as ``x``.
     """
-    raise NotImplementedError
 
 def floor_divide(x1: array, x2: array, /) -> array:
     r"""
@@ -675,7 +722,6 @@ def floor_divide(x1: array, x2: array, /) -> array:
     out: array
         an array containing the element-wise results. The returned array must have a data type determined by :ref:`type-promotion`.
     """
-    raise NotImplementedError
 
 def greater(x1: array, x2: array, /) -> array:
     """
@@ -693,7 +739,6 @@ def greater(x1: array, x2: array, /) -> array:
     out: array
         an array containing the element-wise results. The returned array must have a data type of ``bool``.
     """
-    raise NotImplementedError
 
 def greater_equal(x1: array, x2: array, /) -> array:
     """
@@ -711,7 +756,6 @@ def greater_equal(x1: array, x2: array, /) -> array:
     out: array
         an array containing the element-wise results. The returned array must have a data type of ``bool``.
     """
-    raise NotImplementedError
 
 def isfinite(x: array, /) -> array:
     """
@@ -727,7 +771,6 @@ def isfinite(x: array, /) -> array:
     out: array
         an array containing test results. An element ``out_i`` is ``True`` if ``x_i`` is finite and ``False`` otherwise. The returned array must have a data type of ``bool``.
     """
-    raise NotImplementedError
 
 def isinf(x: array, /) -> array:
     """
@@ -743,7 +786,6 @@ def isinf(x: array, /) -> array:
     out: array
         an array containing test results. An element ``out_i`` is ``True`` if ``x_i`` is either positive or negative infinity and ``False`` otherwise. The returned array must have a data type of ``bool``.
     """
-    raise NotImplementedError
 
 def isnan(x: array, /) -> array:
     """
@@ -759,7 +801,6 @@ def isnan(x: array, /) -> array:
     out: array
         an array containing test results. An element ``out_i`` is ``True`` if ``x_i`` is ``NaN`` and ``False`` otherwise. The returned array should have a data type of ``bool``.
     """
-    raise NotImplementedError
 
 def less(x1: array, x2: array, /) -> array:
     """
@@ -777,7 +818,6 @@ def less(x1: array, x2: array, /) -> array:
     out: array
         an array containing the element-wise results. The returned array must have a data type of ``bool``.
     """
-    raise NotImplementedError
 
 def less_equal(x1: array, x2: array, /) -> array:
     """
@@ -795,7 +835,6 @@ def less_equal(x1: array, x2: array, /) -> array:
     out: array
         an array containing the element-wise results. The returned array must have a data type of ``bool``.
     """
-    raise NotImplementedError
 
 def log(x: array, /) -> array:
     """
@@ -821,7 +860,6 @@ def log(x: array, /) -> array:
     out: array
         an array containing the evaluated natural logarithm for each element in ``x``. The returned array must have a real-valued floating-point data type determined by :ref:`type-promotion`.
     """
-    raise NotImplementedError
 
 def log1p(x: array, /) -> array:
     """
@@ -851,7 +889,6 @@ def log1p(x: array, /) -> array:
     out: array
         an array containing the evaluated result for each element in ``x``. The returned array must have a real-valued floating-point data type determined by :ref:`type-promotion`.
     """
-    raise NotImplementedError
 
 def log2(x: array, /) -> array:
     """
@@ -877,7 +914,6 @@ def log2(x: array, /) -> array:
     out: array
         an array containing the evaluated base ``2`` logarithm for each element in ``x``. The returned array must have a real-valued floating-point data type determined by :ref:`type-promotion`.
     """
-    raise NotImplementedError
 
 def log10(x: array, /) -> array:
     """
@@ -903,7 +939,6 @@ def log10(x: array, /) -> array:
     out: array
         an array containing the evaluated base ``10`` logarithm for each element in ``x``. The returned array must have a real-valued floating-point data type determined by :ref:`type-promotion`.
     """
-    raise NotImplementedError
 
 def logaddexp(x1: array, x2: array, /) -> array:
     """
@@ -929,7 +964,6 @@ def logaddexp(x1: array, x2: array, /) -> array:
     out: array
         an array containing the element-wise results. The returned array must have a real-valued floating-point data type determined by :ref:`type-promotion`.
     """
-    raise NotImplementedError
 
 def logical_and(x1: array, x2: array, /) -> array:
     """
@@ -950,7 +984,6 @@ def logical_and(x1: array, x2: array, /) -> array:
     out: array
         an array containing the element-wise results. The returned array must have a data type of `bool`.
     """
-    raise NotImplementedError
 
 def logical_not(x: array, /) -> array:
     """
@@ -969,7 +1002,6 @@ def logical_not(x: array, /) -> array:
     out: array
         an array containing the element-wise results. The returned array must have a data type of ``bool``.
     """
-    raise NotImplementedError
 
 def logical_or(x1: array, x2: array, /) -> array:
     """
@@ -990,7 +1022,6 @@ def logical_or(x1: array, x2: array, /) -> array:
     out: array
         an array containing the element-wise results. The returned array must have a data type of ``bool``.
     """
-    raise NotImplementedError
 
 def logical_xor(x1: array, x2: array, /) -> array:
     """
@@ -1011,7 +1042,6 @@ def logical_xor(x1: array, x2: array, /) -> array:
     out: array
         an array containing the element-wise results. The returned array must have a data type of ``bool``.
     """
-    raise NotImplementedError
 
 def multiply(x1: array, x2: array, /) -> array:
     """
@@ -1047,7 +1077,6 @@ def multiply(x1: array, x2: array, /) -> array:
         an array containing the element-wise products. The returned array must have a data type determined by :ref:`type-promotion`.
     """
 
-    raise NotImplementedError
 def negative(x: array, /) -> array:
     """
     Computes the numerical negative of each element ``x_i`` (i.e., ``y_i = -x_i``) of the input array ``x``.
@@ -1068,7 +1097,6 @@ def negative(x: array, /) -> array:
     out: array
         an array containing the evaluated result for each element in ``x``. The returned array must have a data type determined by :ref:`type-promotion`.
     """
-    raise NotImplementedError
 
 def not_equal(x1: array, x2: array, /) -> array:
     """
@@ -1086,7 +1114,6 @@ def not_equal(x1: array, x2: array, /) -> array:
     out: array
         an array containing the element-wise results. The returned array must have a data type of ``bool``.
     """
-    raise NotImplementedError
 
 def positive(x: array, /) -> array:
     """
@@ -1102,7 +1129,6 @@ def positive(x: array, /) -> array:
     out: array
         an array containing the evaluated result for each element in ``x``. The returned array must have the same data type as ``x``.
     """
-    raise NotImplementedError
 
 def pow(x1: array, x2: array, /) -> array:
     """
@@ -1155,7 +1181,6 @@ def pow(x1: array, x2: array, /) -> array:
         an array containing the element-wise results. The returned array must have a data type determined by :ref:`type-promotion`.
     """
 
-    raise NotImplementedError
 def remainder(x1: array, x2: array, /) -> array:
     """
     Returns the remainder of division for each element ``x1_i`` of the input array ``x1`` and the respective element ``x2_i`` of the input array ``x2``.
@@ -1206,13 +1231,20 @@ def remainder(x1: array, x2: array, /) -> array:
     out: array
         an array containing the element-wise results. Each element-wise result must have the same sign as the respective element ``x2_i``. The returned array must have a data type determined by :ref:`type-promotion`.
     """
-    raise NotImplementedError
 
 def round(x: array, /) -> array:
     """
     Rounds each element ``x_i`` of the input array ``x`` to the nearest integer-valued number.
 
+    .. note::
+       For complex floating-point operands, real and imaginary components must be independently rounded to the nearest integer-valued number.
+    
+       Rounded real and imaginary components must be equal to their equivalent rounded real-valued floating-point counterparts (i.e., for complex-valued ``x``, ``real(round(x))`` must equal ``round(real(x)))`` and ``imag(round(x))`` must equal ``round(imag(x))``).
+
     **Special cases**
+
+    .. note::
+       For complex floating-point operands, the following special cases apply to real and imaginary components independently (e.g., if ``real(x_i)`` is ``NaN``, the rounded real component is ``NaN``).
 
     - If ``x_i`` is already integer-valued, the result is ``x_i``.
 
@@ -1228,14 +1260,13 @@ def round(x: array, /) -> array:
     Parameters
     ----------
     x: array
-        input array. Should have a real-valued data type.
+        input array. Should have a numeric data type.
 
     Returns
     -------
     out: array
         an array containing the rounded result for each element in ``x``. The returned array must have the same data type as ``x``.
     """
-    raise NotImplementedError
 
 def sign(x: array, /) -> array:
     """
@@ -1257,40 +1288,61 @@ def sign(x: array, /) -> array:
     out: array
         an array containing the evaluated result for each element in ``x``. The returned array must have the same data type as ``x``.
     """
-    raise NotImplementedError
 
 def sin(x: array, /) -> array:
-    """
-    Calculates an implementation-dependent approximation to the sine, having domain ``(-infinity, +infinity)`` and codomain ``[-1, +1]``, for each element ``x_i`` of the input array ``x``. Each element ``x_i`` is assumed to be expressed in radians.
+    r"""
+    Calculates an implementation-dependent approximation to the sine for each element ``x_i`` of the input array ``x``.
+
+    Each element ``x_i`` is assumed to be expressed in radians.
 
     **Special cases**
 
-    For floating-point operands,
+    For real-valued floating-point operands,
 
     - If ``x_i`` is ``NaN``, the result is ``NaN``.
     - If ``x_i`` is ``+0``, the result is ``+0``.
     - If ``x_i`` is ``-0``, the result is ``-0``.
     - If ``x_i`` is either ``+infinity`` or ``-infinity``, the result is ``NaN``.
 
+    For complex floating-point operands, special cases must be handled as if the operation is implemented as ``-1j * sinh(x*1j)``.
+
+    .. note::
+       The sine is an entire function on the complex plane and has no branch cuts.
+
+    .. note::
+       For complex arguments, the mathematical definition of sine is
+
+       .. math::
+          \begin{align} \operatorname{sin}(x) &= \frac{e^{jx} - e^{-jx}}{2j} \\ &= \frac{\operatorname{sinh}(jx)}{j} \\ &= \frac{\operatorname{sinh}(jx)}{j} \cdot \frac{j}{j} \\ &= -j \cdot \operatorname{sinh}(jx) \end{align}
+
+       where :math:`\operatorname{sinh}` is the hyperbolic sine.
+
     Parameters
     ----------
     x: array
-        input array whose elements are each expressed in radians. Should have a real-valued floating-point data type.
+        input array whose elements are each expressed in radians. Should have a floating-point data type.
 
     Returns
     -------
     out: array
-        an array containing the sine of each element in ``x``. The returned array must have a real-valued floating-point data type determined by :ref:`type-promotion`.
+        an array containing the sine of each element in ``x``. The returned array must have a floating-point data type determined by :ref:`type-promotion`.
     """
-    raise NotImplementedError
 
 def sinh(x: array, /) -> array:
-    """
-    Calculates an implementation-dependent approximation to the hyperbolic sine, having domain ``[-infinity, +infinity]`` and codomain ``[-infinity, +infinity]``, for each element ``x_i`` of the input array ``x``.
+    r"""
+    Calculates an implementation-dependent approximation to the hyperbolic sine for each element ``x_i`` of the input array ``x``.
+
+    The mathematical definition of the hyperbolic sine is
+
+    .. math::
+       \operatorname{sinh}(x) = \frac{e^x - e^{-x}}{2}
 
     **Special cases**
 
-    For floating-point operands,
+    .. note::
+       For all operands, ``sinh(x)`` must equal ``-sinh(-x)``.
+
+    For real-valued floating-point operands,
 
     - If ``x_i`` is ``NaN``, the result is ``NaN``.
     - If ``x_i`` is ``+0``, the result is ``+0``.
@@ -1298,17 +1350,39 @@ def sinh(x: array, /) -> array:
     - If ``x_i`` is ``+infinity``, the result is ``+infinity``.
     - If ``x_i`` is ``-infinity``, the result is ``-infinity``.
 
+    For complex floating-point operands, let ``a = real(x_i)``, ``b = imag(x_i)``, and
+
+    .. note::
+       For complex floating-point operands, ``sinh(conj(x))`` must equal ``conj(sinh(x))``.
+
+    - If ``a`` is ``+0`` and ``b`` is ``+0``, the result is ``+0 + 0j``.
+    - If ``a`` is ``+0`` and ``b`` is ``+infinity``, the result is ``0 + NaN j`` (sign of the real component is unspecified).
+    - If ``a`` is ``+0`` and ``b`` is ``NaN``, the result is ``0 + NaN j`` (sign of the real component is unspecified).
+    - If ``a`` is a positive (i.e., greater than ``0``) finite number and ``b`` is ``+infinity``, the result is ``NaN + NaN j``.
+    - If ``a`` is a positive (i.e., greater than ``0``) finite number and ``b`` is ``NaN``, the result is ``NaN + NaN j``.
+    - If ``a`` is ``+infinity`` and ``b`` is ``+0``, the result is ``+infinity + 0j``.
+    - If ``a`` is ``+infinity`` and ``b`` is a positive finite number, the result is ``+infinity * cis(b)``.
+    - If ``a`` is ``+infinity`` and ``b`` is ``+infinity``, the result is ``infinity + NaN j`` (sign of the real component is unspecified).
+    - If ``a`` is ``+infinity`` and ``b`` is ``NaN``, the result is ``infinity + NaN j`` (sign of the real component is unspecified).
+    - If ``a`` is ``NaN`` and ``b`` is ``+0``, the result is ``NaN + 0j``.
+    - If ``a`` is ``NaN`` and ``b`` is a nonzero finite number, the result is ``NaN + NaN j``.
+    - If ``a`` is ``NaN`` and ``b`` is ``NaN``, the result is ``NaN + NaN j``.
+
+    where ``cis(v)`` is ``cos(v) + sin(v)*1j``.
+
+    .. note::
+       The hyperbolic sine is an entire function in the complex plane and has no branch cuts. The function is periodic, with period :math:`2\pi j`, with respect to the imaginary component.
+
     Parameters
     ----------
     x: array
-        input array whose elements each represent a hyperbolic angle. Should have a real-valued floating-point data type.
+        input array whose elements each represent a hyperbolic angle. Should have a floating-point data type.
 
     Returns
     -------
     out: array
-        an array containing the hyperbolic sine of each element in ``x``. The returned array must have a real-valued floating-point data type determined by :ref:`type-promotion`.
+        an array containing the hyperbolic sine of each element in ``x``. The returned array must have a floating-point data type determined by :ref:`type-promotion`.
     """
-    raise NotImplementedError
 
 def square(x: array, /) -> array:
     """
@@ -1324,7 +1398,6 @@ def square(x: array, /) -> array:
     out: array
         an array containing the evaluated result for each element in ``x``. The returned array must have a data type determined by :ref:`type-promotion`.
     """
-    raise NotImplementedError
 
 def sqrt(x: array, /) -> array:
     """
@@ -1350,7 +1423,6 @@ def sqrt(x: array, /) -> array:
     out: array
         an array containing the square root of each element in ``x``. The returned array must have a real-valued floating-point data type determined by :ref:`type-promotion`.
     """
-    raise NotImplementedError
 
 def subtract(x1: array, x2: array, /) -> array:
     """
@@ -1368,7 +1440,6 @@ def subtract(x1: array, x2: array, /) -> array:
     out: array
         an array containing the element-wise differences. The returned array must have a data type determined by :ref:`type-promotion`.
     """
-    raise NotImplementedError
 
 def tan(x: array, /) -> array:
     """
@@ -1393,7 +1464,6 @@ def tan(x: array, /) -> array:
     out: array
         an array containing the tangent of each element in ``x``. The returned array must have a real-valued floating-point data type determined by :ref:`type-promotion`.
     """
-    raise NotImplementedError
 
 def tanh(x: array, /) -> array:
     """
@@ -1419,7 +1489,6 @@ def tanh(x: array, /) -> array:
     out: array
         an array containing the hyperbolic tangent of each element in ``x``. The returned array must have a real-valued floating-point data type determined by :ref:`type-promotion`.
     """
-    raise NotImplementedError
 
 def trunc(x: array, /) -> array:
     """
@@ -1447,6 +1516,5 @@ def trunc(x: array, /) -> array:
     out: array
         an array containing the rounded result for each element in ``x``. The returned array must have the same data type as ``x``.
     """
-    raise NotImplementedError
 
 __all__ = ['abs', 'acos', 'acosh', 'add', 'asin', 'asinh', 'atan', 'atan2', 'atanh', 'bitwise_and', 'bitwise_left_shift', 'bitwise_invert', 'bitwise_or', 'bitwise_right_shift', 'bitwise_xor', 'ceil', 'cos', 'cosh', 'divide', 'equal', 'exp', 'expm1', 'floor', 'floor_divide', 'greater', 'greater_equal', 'isfinite', 'isinf', 'isnan', 'less', 'less_equal', 'log', 'log1p', 'log2', 'log10', 'logaddexp', 'logical_and', 'logical_not', 'logical_or', 'logical_xor', 'multiply', 'negative', 'not_equal', 'positive', 'pow', 'remainder', 'round', 'sign', 'sin', 'sinh', 'square', 'sqrt', 'subtract', 'tan', 'tanh', 'trunc']
