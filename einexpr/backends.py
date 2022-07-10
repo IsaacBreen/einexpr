@@ -6,6 +6,13 @@ import einexpr
 
 from .base_typing import EinarrayLike
 from .einarray_utils import *
+from .out_dims_calculator import (
+    SingleArgumentElementwise,
+    MultiArgumentElementwise,
+    MultiDimensionReduction,
+    SingleDimensionReduction,
+    Concatenation,
+)
 from .utils import pytree_mapreduce
 
 Dimension = str
@@ -16,109 +23,33 @@ backend_dim_kwargs_to_resolve = ['dim', 'axis']
 function_registry = []
 
 
+def temp_dispatch_integrator(DimensionCalculatorSubclass, func, args, kwargs):
+    out_dims = DimensionCalculatorSubclass.calculate_ouptut_dims(args, kwargs)
+    ambiguous_dims = DimensionCalculatorSubclass.calculate_output_ambiguous_dims(args, kwargs)
+    processed_args, processed_kwargs = DimensionCalculatorSubclass.process_args(args, kwargs)
+    return einexpr.einarray(func(*processed_args, **processed_kwargs), dims=out_dims, ambiguous_dims=ambiguous_dims)
+
+
 def single_arg_elementwise_dispatch(func, args, kwargs):
-    assert isinstance(args, (list, tuple))
-    assert isinstance(kwargs, dict)
-    assert isinstance(args[0], EinarrayLike)
-    assert all(not isinstance(arg, EinarrayLike) for arg in args[1:])
-    assert all(not isinstance(arg, EinarrayLike) for arg in kwargs.values())
-    return einexpr.einarray(func(args[0].a, *args[1:], **kwargs), dims=args[0].dims, ambiguous_dims=args[0].ambiguous_dims)
+    return temp_dispatch_integrator(SingleArgumentElementwise, func, args, kwargs)
 
 
 def multi_arg_elementwise_dispatch(func, args, kwargs):
-    assert isinstance(args, (list, tuple))
-    assert isinstance(kwargs, dict)
-    assert all(isinstance(arg, EinarrayLike) for arg in args)
-    assert all(not isinstance(arg, EinarrayLike) for arg in kwargs.values())
-    ambiguous_dims = einexpr.calculate_ambiguous_final_aligned_dims(*(arg.dims for arg in args))
-    ambiguous_dims |= {dim for arg in args for dim in arg.ambiguous_dims}
-    raw_aligned_arrays, out_dims = einexpr.align_arrays(*args, return_output_dims=True)
-    return einexpr.einarray(func(*raw_aligned_arrays, **kwargs), dims=out_dims, ambiguous_dims=ambiguous_dims)
-
+    return temp_dispatch_integrator(MultiArgumentElementwise, func, args, kwargs)
 
 def multi_dim_reduction_dispatch(func, args, kwargs):
-    # TODO:
-    # - Check that axes are in the array
-    # - raise error when there are duplicate axes, esp of different types (Dimension, int, and negative int)
-    assert isinstance(args, (list, tuple))
-    assert isinstance(kwargs, dict)
-    assert isinstance(args[0], EinarrayLike)
-    assert all(not isinstance(arg, EinarrayLike) for arg in args[1:]) # TODO: mapreduce over pytree
-    assert all(not isinstance(arg, EinarrayLike) for arg in kwargs.values())
-    if 'axis' in kwargs:
-        axis = kwargs.pop('axis')
-    elif 'dims' in kwargs:
-        axis = kwargs.pop('dims')
-    else:
-        axis = None
-    if axis is None:
-        axis = list(range(len(args[0].dims)))
-    elif isinstance(axis, (Dimension, int)):
-        axis = [axis]
-    axis = [args[0].dims.index(dim) if isinstance(dim, Dimension) else dim for dim in axis]
-    assert all(isinstance(dim, int) for dim in axis)
-    axis = [i if i >= 0 else i + len(args[0].dims) for i in axis]
-    out_dims = [dim for i, dim in enumerate(args[0].dims) if i not in axis]
-    ambiguous_out_dims = args[0].ambiguous_dims - {dim for i, dim in enumerate(args[0].dims) if i in axis}
-    return einexpr.einarray(func(args[0].a, *args[1:], axis=tuple(axis), **kwargs), dims=out_dims, ambiguous_dims=ambiguous_out_dims)
-
+    return temp_dispatch_integrator(MultiDimensionReduction, func, args, kwargs)
 
 def single_dim_reduction_dispatch(func, args, kwargs):
-    if 'axis' in kwargs and isinstance(kwargs['axis'], (tuple, list)):
-        raise ValueError("Multiple axes not supported")
-    elif 'dims' in kwargs and isinstance(kwargs['dims'], (tuple, list)):
-        raise ValueError("Multiple axes not supported")
-    return multi_dim_reduction_dispatch(func, args, kwargs)
-
+    return temp_dispatch_integrator(SingleDimensionReduction, func, args, kwargs)
 
 def concatenation_dispatch(func, args, kwargs):
-    assert isinstance(args, (list, tuple))
-    assert isinstance(kwargs, dict)
-    assert isinstance(args[0], (list, tuple)) and all(isinstance(arg, EinarrayLike) for arg in args[0])
-    assert all(not isinstance(arg, EinarrayLike) for arg in args[1:])
-    if 'axis' in kwargs:
-        axes = kwargs.pop('axis')
-    elif 'dims' in kwargs:
-        axes = kwargs.pop('dims')
-    else:
-        axes = 0
-    if axes is None:
-        raise NotImplementedError("Axis must be specified")
-    if isinstance(axes, (Dimension, int)):
-        axes = [axes] * len(args[0])
-    if not isinstance(axes, (list, tuple)):
-        raise ValueError("Axes must be a list or tuple")
-    axes = list(axes)
-    for i, (axis, arg) in enumerate(zip(axes, args[0])):
-        # If the axis is an integer, convert it to a Dimension
-        if isinstance(axis, int):
-            axis = arg.dims[axis]
-            axes[i] = axis
-        elif not isinstance(axis, Dimension):
-            raise ValueError(f"Invalid axis {axis}")
-        assert axis not in arg.ambiguous_dims
-    # Check that arrays share all dimensions except the concatenated ones
-    out_dims_set = set(args[0][0].dims) - {axes[0]}
-    for axis, arg in zip(axes[1:], args[0][1:]):
-        arg_dims_set = set(arg.dims) - {axis}
-        if arg_dims_set != out_dims_set:
-            raise ValueError(f"Arrays must have all the same dimensions except those concatentated over. The first input array {args[0][0]} has non-concatenated dimensions {out_dims_set}, while the input array {arg} has non-concatenated dimensions {arg_dims_set}.")
-    # Align the arrays. Use the shape of the first array as the template.
-    ambiguous_out_dims = {dim for arg in args[0] for dim in arg.ambiguous_dims if dim not in axes}
-    aligned_args = [args[0][0]]
-    for axis, arg in zip(axes[1:], args[0][1:]):
-        for dim0, dim in zip(args[0][0].dims, arg.dims):
-            if axes[0] != dim0 and dim != axis and dim0 != dim:
-                ambiguous_out_dims.add(dim)
-        aligned_args.append(arg[tuple(dim if dim != axes[0] else axis for dim in args[0][0].dims)])
-    out_dims = [dim if dim != axes[0] else tuple(axes) for dim in args[0][0].dims]
-    axis_num = args[0][0].dims.index(axes[0])
-    return einexpr.einarray(func(tuple(arg.a for arg in aligned_args), *args[1:], axis=axis_num, **kwargs), dims=out_dims, ambiguous_dims=ambiguous_out_dims)
+    return temp_dispatch_integrator(Concatenation, func, args, kwargs)
 
 
 typical_function_dispatches = dict(
     # Module functions
-    **{name: single_arg_elementwise_dispatch for name in "sign sqrt inv where clip argsort ones_like zeros_like full_like softmax log_softmax abs absolute sin cos tan exp log exp2 log2 log10 sqrt pow reciprocal floor ceil round floor_divide".split()},
+    **{name: single_arg_elementwise_dispatch for name in "sign sqrt inv where clip argsort ones_like zeros_like full_like softmax log_softmax cumsum abs absolute sin cos tan exp log exp2 log2 log10 sqrt pow reciprocal floor ceil round floor_divide".split()},
     **{name: multi_dim_reduction_dispatch for name in "sum product mean std max min maximum minimum all any".split()},
     **{name: single_dim_reduction_dispatch for name in "argmax argmin".split()},
     **{name: concatenation_dispatch for name in "concat concatenate".split()},
