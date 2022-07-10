@@ -321,7 +321,7 @@ def test_random_expr(seed, random_expr_json, random_expr_value, random_einexpr):
     with np.errstate(divide='ignore', invalid='ignore', over='ignore'):
         if expr.__array__().shape != val.shape:
             raise ValueError(f"Shape mismatch: {expr.__array__().shape} != {val.shape}")
-        if not bool(np.allclose(expr.__array__(), val, tolerance) and np.all([~np.isnan(expr.__array__()), ~np.isnan(val)])):
+        if not np.allclose(expr.__array__(), val, tolerance) and np.all(~np.isnan(expr.__array__())) and np.all(~np.isnan(val)):
             print(f"val: {val}")
             print(f"expr: {expr}")
             # print(f"expr_json: {pp.pformat(random_expr_json)}")
