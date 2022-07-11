@@ -116,11 +116,10 @@ def process_file(file_path):
     tree = tree.visit(implement_functions_transformer)
     # Import the necessary helpers
     codemod_context = CodemodContext()
-    add_imports_visitor = AddImportsVisitor(codemod_context)
-    add_imports_visitor.add_needed_import(codemod_context, 'einexpr', 'einarray')
+    AddImportsVisitor.add_needed_import(codemod_context, 'einexpr', 'einarray')
     for helper_name in implement_functions_transformer.implementation_helper_names_used:
-        add_imports_visitor.add_needed_import(codemod_context, 'einexpr', helper_name)
-    tree = add_imports_visitor.transform_module(tree)
+        AddImportsVisitor.add_needed_import(codemod_context, 'einexpr', helper_name)
+    tree = AddImportsVisitor(codemod_context).transform_module(tree)
     # Write the code back to the file
     with open(file_path, 'w') as f:
         f.write(tree.code)
