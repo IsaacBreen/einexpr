@@ -1,4 +1,7 @@
 from ._types import Tuple, array
+from .. import einarray
+from .. import einarray
+from .. import einarray
 
 def unique_all(x: array, /) -> Tuple[array, array, array, array]:
     """
@@ -38,6 +41,7 @@ def unique_all(x: array, /) -> Tuple[array, array, array, array]:
         .. note::
            The order of unique elements is not specified and may vary between implementations.
     """
+    raise NotImplementedError
 
 def unique_counts(x: array, /) -> Tuple[array, array]:
     """
@@ -72,6 +76,7 @@ def unique_counts(x: array, /) -> Tuple[array, array]:
         .. note::
            The order of unique elements is not specified and may vary between implementations.
     """
+    raise NotImplementedError
 
 def unique_inverse(x: array, /) -> Tuple[array, array]:
     """
@@ -106,6 +111,7 @@ def unique_inverse(x: array, /) -> Tuple[array, array]:
         .. note::
            The order of unique elements is not specified and may vary between implementations.
     """
+    raise NotImplementedError
 
 def unique_values(x: array, /) -> array:
     """
@@ -135,5 +141,6 @@ def unique_values(x: array, /) -> array:
         .. note::
            The order of unique elements is not specified and may vary between implementations.
     """
+    raise NotImplementedError
 
 __all__ = ['unique_all', 'unique_counts', 'unique_inverse', 'unique_values']

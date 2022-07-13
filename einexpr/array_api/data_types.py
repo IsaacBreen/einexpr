@@ -1,4 +1,7 @@
 from ._types import dtype
+from .. import einarray
+from .. import einarray
+from .. import einarray
 
 def __eq__(self: dtype, other: dtype, /) -> bool:
     """
@@ -16,5 +19,6 @@ def __eq__(self: dtype, other: dtype, /) -> bool:
     out: bool
         a boolean indicating whether the data type objects are equal.
     """
+    raise NotImplementedError
 
 __all__ = ['__eq__']

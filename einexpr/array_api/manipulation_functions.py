@@ -1,4 +1,7 @@
 from ._types import List, Optional, Tuple, Union, array
+from .. import Concatenation, einarray
+from .. import einarray
+from .. import SingleArgumentElementwise, einarray
 
 def broadcast_arrays(*arrays: array) -> List[array]:
     """
@@ -14,6 +17,7 @@ def broadcast_arrays(*arrays: array) -> List[array]:
     out: List[array]
         a list of broadcasted arrays. Each array must have the same shape. Each array must have the same dtype as its corresponding input array.
     """
+    raise NotImplementedError
 
 def broadcast_to(x: array, /, shape: Tuple[int, ...]) -> array:
     """
@@ -31,6 +35,7 @@ def broadcast_to(x: array, /, shape: Tuple[int, ...]) -> array:
     out: array
         an array having a specified shape. Must have the same data type as ``x``.
     """
+    raise NotImplementedError
 
 def concat(arrays: Union[Tuple[array, ...], List[array]], /, *, axis: Optional[int] = 0) -> array:
     """
@@ -51,6 +56,11 @@ def concat(arrays: Union[Tuple[array, ...], List[array]], /, *, axis: Optional[i
         .. note::
            This specification leaves type promotion between data type families (i.e., ``intxx`` and ``floatxx``) unspecified.
     """
+    out_dims = Concatenation.calculate_output_dims(args, kwargs)
+    ambiguous_dims = Concatenation.calculate_output_ambiguous_dims(args, kwargs)
+    processed_args, processed_kwargs = Concatenation.process_args(args, kwargs)
+    result = einarray(concat(*processed_args, **processed_kwargs), dims=out_dims, ambiguous_dims=ambiguous_dims)
+    return result
 
 def expand_dims(x: array, /, *, axis: int = 0) -> array:
     """
@@ -68,6 +78,7 @@ def expand_dims(x: array, /, *, axis: int = 0) -> array:
     out: array
         an expanded output array having the same data type as ``x``.
     """
+    raise NotImplementedError
 
 def flip(x: array, /, *, axis: Optional[Union[int, Tuple[int, ...]]] = None) -> array:
     """
@@ -85,6 +96,11 @@ def flip(x: array, /, *, axis: Optional[Union[int, Tuple[int, ...]]] = None) -> 
     out: array
         an output array having the same data type and shape as ``x`` and whose elements, relative to ``x``, are reordered.
     """
+    out_dims = {implementation_helper_name}.calculate_output_dims({params})
+    ambiguous_dims = {implementation_helper_name}.calculate_output_ambiguous_dims(args, kwargs)
+    processed_args, processed_kwargs = {implementation_helper_name}.process_args(args, kwargs)
+    result = einarray({func_name}(*processed_args, **processed_kwargs), dims=out_dims, ambiguous_dims=ambiguous_dims)
+    return result
 
 def permute_dims(x: array, /, axes: Tuple[int, ...]) -> array:
     """
@@ -102,6 +118,7 @@ def permute_dims(x: array, /, axes: Tuple[int, ...]) -> array:
     out: array
         an array containing the axes permutation. The returned array must have the same data type as ``x``.
     """
+    raise NotImplementedError
 
 def reshape(x: array, /, shape: Tuple[int, ...], *, copy: Optional[bool] = None) -> array:
     """
@@ -121,6 +138,7 @@ def reshape(x: array, /, shape: Tuple[int, ...], *, copy: Optional[bool] = None)
     out: array
         an output array having the same data type and elements as ``x``.
     """
+    raise NotImplementedError
 
 def roll(x: array, /, shift: Union[int, Tuple[int, ...]], *, axis: Optional[Union[int, Tuple[int, ...]]] = None) -> array:
     """
@@ -140,6 +158,7 @@ def roll(x: array, /, shift: Union[int, Tuple[int, ...]], *, axis: Optional[Unio
     out: array
         an output array having the same data type as ``x`` and whose elements, relative to ``x``, are shifted.
     """
+    raise NotImplementedError
 
 def squeeze(x: array, /, axis: Union[int, Tuple[int, ...]]) -> array:
     """
@@ -157,6 +176,7 @@ def squeeze(x: array, /, axis: Union[int, Tuple[int, ...]]) -> array:
     out: array
         an output array having the same data type and elements as ``x``.
     """
+    raise NotImplementedError
 
 def stack(arrays: Union[Tuple[array, ...], List[array]], /, *, axis: int = 0) -> array:
     """
@@ -177,5 +197,6 @@ def stack(arrays: Union[Tuple[array, ...], List[array]], /, *, axis: int = 0) ->
         .. note::
            This specification leaves type promotion between data type families (i.e., ``intxx`` and ``floatxx``) unspecified.
     """
+    raise NotImplementedError
 
 __all__ = [ 'broadcast_arrays', 'broadcast_to', 'concat', 'expand_dims', 'flip', 'permute_dims', 'reshape', 'roll', 'squeeze', 'stack']

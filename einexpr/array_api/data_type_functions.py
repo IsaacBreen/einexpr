@@ -1,4 +1,7 @@
 from ._types import Union, array, dtype, finfo_object, iinfo_object
+from .. import einarray
+from .. import einarray
+from .. import SingleArgumentElementwise, einarray
 
 def astype(x: array, dtype: dtype, /, *, copy: bool = True) -> array:
     """
@@ -26,6 +29,11 @@ def astype(x: array, dtype: dtype, /, *, copy: bool = True) -> array:
     out: array
         an array having the specified data type. The returned array must have the same shape as ``x``.
     """
+    out_dims = {implementation_helper_name}.calculate_output_dims({params})
+    ambiguous_dims = {implementation_helper_name}.calculate_output_ambiguous_dims(args, kwargs)
+    processed_args, processed_kwargs = {implementation_helper_name}.process_args(args, kwargs)
+    result = einarray({func_name}(*processed_args, **processed_kwargs), dims=out_dims, ambiguous_dims=ambiguous_dims)
+    return result
 
 def can_cast(from_: Union[dtype, array], to: dtype, /) -> bool:
     """
@@ -43,6 +51,7 @@ def can_cast(from_: Union[dtype, array], to: dtype, /) -> bool:
     out: bool
         ``True`` if the cast can occur according to :ref:`type-promotion` rules; otherwise, ``False``.
     """
+    raise NotImplementedError
 
 def finfo(type: Union[dtype, array], /) -> finfo_object:
     """
@@ -78,6 +87,7 @@ def finfo(type: Union[dtype, array], /) -> finfo_object:
 
           smallest positive floating-point number with full precision.
     """
+    raise NotImplementedError
 
 def iinfo(type: Union[dtype, array], /) -> iinfo_object:
     """
@@ -105,6 +115,7 @@ def iinfo(type: Union[dtype, array], /) -> iinfo_object:
 
           smallest representable number.
     """
+    raise NotImplementedError
 
 def result_type(*arrays_and_dtypes: Union[array, dtype]) -> dtype:
     """
@@ -123,5 +134,6 @@ def result_type(*arrays_and_dtypes: Union[array, dtype]) -> dtype:
     out: dtype
         the dtype resulting from an operation involving the input arrays and dtypes.
     """
+    raise NotImplementedError
 
 __all__ = ['astype', 'can_cast', 'finfo', 'iinfo', 'result_type']

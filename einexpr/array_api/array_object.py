@@ -2,12 +2,16 @@ from __future__ import annotations
 
 from ._types import (array, dtype as Dtype, device as Device, Optional, Tuple,
                      Union, Any, PyCapsule, Enum, ellipsis)
+from .. import einarray
+from .. import einarray
+from .. import einarray
 
 class _array():
     def __init__(self) -> None:
         """
         Initialize the attributes for the array object class.
         """
+        raise NotImplementedError
 
     @property
     def dtype() -> Dtype:
@@ -19,6 +23,7 @@ class _array():
         out: dtype
             array data type.
         """
+        raise NotImplementedError
 
     @property
     def device() -> Device:
@@ -30,6 +35,7 @@ class _array():
         out: device
             a ``device`` object (see :ref:`device-support`).
         """
+        raise NotImplementedError
 
     @property
     def mT() -> array:
@@ -43,6 +49,7 @@ class _array():
         out: array
             array whose last two dimensions (axes) are permuted in reverse order relative to original array (i.e., for an array instance having shape ``(..., M, N)``, the returned array must have shape ``(..., N, M)``). The returned array must have the same data type as the original array.
         """
+        raise NotImplementedError
 
     @property
     def ndim() -> int:
@@ -54,6 +61,7 @@ class _array():
         out: int
             number of array dimensions (axes).
         """
+        raise NotImplementedError
 
     @property
     def shape() -> Tuple[Optional[int], ...]:
@@ -72,6 +80,7 @@ class _array():
         .. note::
            The returned value should be a tuple; however, where warranted, an array library may choose to return a custom shape object. If an array library returns a custom shape object, the object must be immutable, must support indexing for dimension retrieval, and must behave similarly to a tuple.
         """
+        raise NotImplementedError
 
     @property
     def size() -> Optional[int]:
@@ -90,6 +99,7 @@ class _array():
         .. note::
            For array libraries having graph-based computational models, an array may have unknown dimensions due to data-dependent operations.
         """
+        raise NotImplementedError
 
     @property
     def T() -> array:
@@ -107,6 +117,7 @@ class _array():
         .. note::
            Limiting the transpose to two-dimensional arrays (matrices) deviates from the NumPy et al practice of reversing all axes for arrays having more than two-dimensions. This is intentional, as reversing all axes was found to be problematic (e.g., conflicting with the mathematical definition of a transpose which is limited to matrices; not operating on batches of matrices; et cetera). In order to reverse all axes, one is recommended to use the functional ``permute_dims`` interface found in this specification.
         """
+        raise NotImplementedError
 
     def __abs__(self: array, /) -> array:
         """
@@ -137,6 +148,7 @@ class _array():
         .. note::
            Element-wise results must equal the results returned by the equivalent element-wise function :func:`~array_api.abs`.
         """
+        raise NotImplementedError
 
     def __add__(self: array, other: Union[int, float, array], /) -> array:
         """
@@ -183,6 +195,7 @@ class _array():
         .. note::
            Element-wise results must equal the results returned by the equivalent element-wise function :func:`~array_api.add`.
         """
+        raise NotImplementedError
 
     def __and__(self: array, other: Union[int, bool, array], /) -> array:
         """
@@ -204,6 +217,7 @@ class _array():
         .. note::
            Element-wise results must equal the results returned by the equivalent element-wise function :func:`~array_api.bitwise_and`.
         """
+        raise NotImplementedError
 
     def __array_namespace__(self: array, /, *, api_version: Optional[str] = None) -> Any:
         """
@@ -221,6 +235,7 @@ class _array():
         out: Any
             an object representing the array API namespace. It should have every top-level function defined in the specification as an attribute. It may contain other public names as well, but it is recommended to only include those names that are part of the specification.
         """
+        raise NotImplementedError
 
     def __bool__(self: array, /) -> bool:
         """
@@ -236,6 +251,7 @@ class _array():
         out: bool
             a Python ``bool`` object representing the single element of the array.
         """
+        raise NotImplementedError
 
     def __dlpack__(self: array, /, *, stream: Optional[Union[int, Any]] = None) -> PyCapsule:
         """
@@ -291,6 +307,7 @@ class _array():
         capsule: PyCapsule
             a DLPack capsule for the array. See :ref:`data-interchange` for details.
         """
+        raise NotImplementedError
 
     def __dlpack_device__(self: array, /) -> Tuple[Enum, int]:
         """
@@ -317,6 +334,7 @@ class _array():
               VPI = 9
               ROCM = 10
         """
+        raise NotImplementedError
 
     def __eq__(self: array, other: Union[int, float, bool, array], /) -> array:
         """
@@ -338,6 +356,7 @@ class _array():
         .. note::
            Element-wise results must equal the results returned by the equivalent element-wise function :func:`~array_api.equal`.
         """
+        raise NotImplementedError
 
     def __float__(self: array, /) -> float:
         """
@@ -353,6 +372,7 @@ class _array():
         out: float
             a Python ``float`` object representing the single element of the array instance.
         """
+        raise NotImplementedError
 
     def __floordiv__(self: array, other: Union[int, float, array], /) -> array:
         """
@@ -413,6 +433,7 @@ class _array():
         .. note::
            Element-wise results must equal the results returned by the equivalent element-wise function :func:`~array_api.floor_divide`.
         """
+        raise NotImplementedError
 
     def __ge__(self: array, other: Union[int, float, array], /) -> array:
         """
@@ -434,6 +455,7 @@ class _array():
         .. note::
            Element-wise results must equal the results returned by the equivalent element-wise function :func:`~array_api.greater_equal`.
         """
+        raise NotImplementedError
 
     def __getitem__(self: array, key: Union[int, slice, ellipsis, Tuple[Union[int, slice, ellipsis], ...], array], /) -> array:
         """
@@ -451,6 +473,7 @@ class _array():
         out: array
             an array containing the accessed value(s). The returned array must have the same data type as ``self``.
         """
+        raise NotImplementedError
 
     def __gt__(self: array, other: Union[int, float, array], /) -> array:
         """
@@ -472,6 +495,7 @@ class _array():
         .. note::
            Element-wise results must equal the results returned by the equivalent element-wise function :func:`~array_api.greater`.
         """
+        raise NotImplementedError
 
     def __index__(self: array, /) -> int:
         """
@@ -490,6 +514,7 @@ class _array():
         out: int
             a Python ``int`` object representing the single element of the array instance.
         """
+        raise NotImplementedError
 
     def __int__(self: array, /) -> int:
         """
@@ -505,6 +530,7 @@ class _array():
         out: int
             a Python ``int`` object representing the single element of the array instance.
         """
+        raise NotImplementedError
 
     def __invert__(self: array, /) -> array:
         """
@@ -524,6 +550,7 @@ class _array():
         .. note::
            Element-wise results must equal the results returned by the equivalent element-wise function :func:`~array_api.bitwise_invert`.
         """
+        raise NotImplementedError
 
     def __le__(self: array, other: Union[int, float, array], /) -> array:
         """
@@ -545,6 +572,7 @@ class _array():
         .. note::
            Element-wise results must equal the results returned by the equivalent element-wise function :func:`~array_api.less_equal`.
         """
+        raise NotImplementedError
 
     def __lshift__(self: array, other: Union[int, array], /) -> array:
         """
@@ -566,6 +594,7 @@ class _array():
         .. note::
            Element-wise results must equal the results returned by the equivalent element-wise function :func:`~array_api.bitwise_left_shift`.
         """
+        raise NotImplementedError
 
     def __lt__(self: array, other: Union[int, float, array], /) -> array:
         """
@@ -587,6 +616,7 @@ class _array():
         .. note::
            Element-wise results must equal the results returned by the equivalent element-wise function :func:`~array_api.less`.
         """
+        raise NotImplementedError
 
     def __matmul__(self: array, other: array, /) -> array:
         """
@@ -626,6 +656,7 @@ class _array():
         - if ``self`` is an array having shape ``(..., M, K)``, ``other`` is a one-dimensional array having shape ``(L,)``, and ``K != L``.
         - if ``self`` is an array having shape ``(..., M, K)``, ``other`` is an array having shape ``(..., L, N)``, and ``K != L``.
         """
+        raise NotImplementedError
 
     def __mod__(self: array, other: Union[int, float, array], /) -> array:
         """
@@ -678,6 +709,7 @@ class _array():
         .. note::
            Element-wise results must equal the results returned by the equivalent element-wise function :func:`~array_api.remainder`.
         """
+        raise NotImplementedError
 
     def __mul__(self: array, other: Union[int, float, array], /) -> array:
         """
@@ -717,6 +749,7 @@ class _array():
         .. note::
            Element-wise results must equal the results returned by the equivalent element-wise function :func:`~array_api.multiply`.
         """
+        raise NotImplementedError
 
     def __ne__(self: array, other: Union[int, float, bool, array], /) -> array:
         """
@@ -738,6 +771,7 @@ class _array():
         .. note::
            Element-wise results must equal the results returned by the equivalent element-wise function :func:`~array_api.not_equal`.
         """
+        raise NotImplementedError
 
     def __neg__(self: array, /) -> array:
         """
@@ -763,6 +797,7 @@ class _array():
         .. note::
            Element-wise results must equal the results returned by the equivalent element-wise function :func:`~array_api.negative`.
         """
+        raise NotImplementedError
 
     def __or__(self: array, other: Union[int, bool, array], /) -> array:
         """
@@ -784,6 +819,7 @@ class _array():
         .. note::
            Element-wise results must equal the results returned by the equivalent element-wise function :func:`~array_api.bitwise_or`.
         """
+        raise NotImplementedError
 
     def __pos__(self: array, /) -> array:
         """
@@ -803,6 +839,7 @@ class _array():
         .. note::
            Element-wise results must equal the results returned by the equivalent element-wise function :func:`~array_api.positive`.
         """
+        raise NotImplementedError
 
     def __pow__(self: array, other: Union[int, float, array], /) -> array:
         """
@@ -858,6 +895,7 @@ class _array():
         .. note::
            Element-wise results must equal the results returned by the equivalent element-wise function :func:`~array_api.pow`.
         """
+        raise NotImplementedError
 
     def __rshift__(self: array, other: Union[int, array], /) -> array:
         """
@@ -879,6 +917,7 @@ class _array():
         .. note::
            Element-wise results must equal the results returned by the equivalent element-wise function :func:`~array_api.bitwise_right_shift`.
         """
+        raise NotImplementedError
 
     def __setitem__(self: array, key: Union[int, slice, ellipsis, Tuple[Union[int, slice, ellipsis], ...], array], value: Union[int, float, bool, array], /) -> None:
         """
@@ -902,6 +941,7 @@ class _array():
 
            When ``value`` is an ``array`` of a different data type than ``self``, how values are cast to the data type of ``self`` is implementation defined.
         """
+        raise NotImplementedError
 
     def __sub__(self: array, other: Union[int, float, array], /) -> array:
         """
@@ -923,6 +963,7 @@ class _array():
         .. note::
            Element-wise results must equal the results returned by the equivalent element-wise function :func:`~array_api.subtract`.
         """
+        raise NotImplementedError
 
     def __truediv__(self: array, other: Union[int, float, array], /) -> array:
         """
@@ -976,6 +1017,7 @@ class _array():
         .. note::
            Element-wise results must equal the results returned by the equivalent element-wise function :func:`~array_api.divide`.
         """
+        raise NotImplementedError
 
     def __xor__(self: array, other: Union[int, bool, array], /) -> array:
         """
@@ -997,6 +1039,7 @@ class _array():
         .. note::
            Element-wise results must equal the results returned by the equivalent element-wise function :func:`~array_api.bitwise_xor`.
         """
+        raise NotImplementedError
 
     def to_device(self: array, device: Device, /, *, stream: Optional[Union[int, Any]] = None) -> array:
         """
@@ -1020,6 +1063,7 @@ class _array():
         .. note::
            If ``stream`` is given, the copy operation should be enqueued on the provided ``stream``; otherwise, the copy operation should be enqueued on the default stream/queue. Whether the copy is performed synchronously or asynchronously is implementation-dependent. Accordingly, if synchronization is required to guarantee data safety, this must be clearly explained in a conforming library's documentation.
         """
+        raise NotImplementedError
 
 array = _array
 

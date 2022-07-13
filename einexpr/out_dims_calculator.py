@@ -30,7 +30,7 @@ class SingleArgumentElementwise:
         return (args[0].a, *args[1:]), kwargs
     
     @staticmethod
-    def calculate_ouptut_dims(args, kwargs):
+    def calculate_output_dims(args, kwargs):
         return args[0].dims
     
     @staticmethod
@@ -52,7 +52,7 @@ class MultiArgumentElementwise:
         return raw_aligned_arrays, kwargs
 
     @staticmethod
-    def calculate_ouptut_dims(args, kwargs):
+    def calculate_output_dims(args, kwargs):
         return einexpr.get_final_aligned_dims(*(arg.dims for arg in args))
     
     @staticmethod
@@ -93,7 +93,7 @@ class MultiDimensionReduction:
         return (args[0].a, *args[1:]), {**kwargs, 'axis': axis}
 
     @staticmethod
-    def calculate_ouptut_dims(args, kwargs):
+    def calculate_output_dims(args, kwargs):
         axis = MultiDimensionReduction._calculate_axis(args, kwargs)
         return [dim for i, dim in enumerate(args[0].dims) if i not in axis]
     
@@ -154,7 +154,7 @@ class Concatenation:
         return (raw_aligned_args, *args[1:]), {**kwargs, 'axis': axis_num}
 
     @staticmethod
-    def calculate_ouptut_dims(args, kwargs):
+    def calculate_output_dims(args, kwargs):
         axes = Concatenation._calculate_axes(args, kwargs)
         # Check that arrays share all dimensions except the concatenated ones
         out_dims_set = set(args[0][0].dims) - {axes[0]}
