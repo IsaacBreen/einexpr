@@ -1,7 +1,5 @@
 from ._types import Tuple, Union, Sequence, array
 from .. import einarray
-from .. import einarray
-from .. import einarray
 
 def matmul(x1: array, x2: array, /) -> array:
     """

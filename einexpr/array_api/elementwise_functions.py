@@ -1,7 +1,5 @@
 from ._types import array
 from .. import SingleArgumentElementwise, einarray
-from .. import einarray
-from .. import SingleArgumentElementwise, einarray
 
 def abs(x: array, /) -> array:
     """
@@ -28,10 +26,15 @@ def abs(x: array, /) -> array:
     out: array
         an array containing the absolute value of each element in ``x``. The returned array must have the same data type as ``x``.
     """
+    args = (x,)
+    kwargs = {}
     out_dims = SingleArgumentElementwise.calculate_output_dims(args, kwargs)
     ambiguous_dims = SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = SingleArgumentElementwise.process_args(args, kwargs)
-    result = einarray(abs(*processed_args, **processed_kwargs), dims=out_dims, ambiguous_dims=ambiguous_dims)
+    result = einarray(
+        x.__array_namespace__().abs(*processed_args, **processed_kwargs), 
+        dims=out_dims, 
+        ambiguous_dims=ambiguous_dims)
     return result
 
 def acos(x: array, /) -> array:
@@ -57,10 +60,15 @@ def acos(x: array, /) -> array:
     out: array
         an array containing the inverse cosine of each element in ``x``. The returned array must have a real-valued floating-point data type determined by :ref:`type-promotion`.
     """
-    out_dims = {implementation_helper_name}.calculate_output_dims({params})
-    ambiguous_dims = {implementation_helper_name}.calculate_output_ambiguous_dims(args, kwargs)
-    processed_args, processed_kwargs = {implementation_helper_name}.process_args(args, kwargs)
-    result = einarray({func_name}(*processed_args, **processed_kwargs), dims=out_dims, ambiguous_dims=ambiguous_dims)
+    args = (x,)
+    kwargs = {}
+    out_dims = SingleArgumentElementwise.calculate_output_dims(args, kwargs)
+    ambiguous_dims = SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+    processed_args, processed_kwargs = SingleArgumentElementwise.process_args(args, kwargs)
+    result = einarray(
+        x.__array_namespace__().acos(*processed_args, **processed_kwargs), 
+        dims=out_dims, 
+        ambiguous_dims=ambiguous_dims)
     return result
 
 def acosh(x: array, /) -> array:
@@ -86,10 +94,15 @@ def acosh(x: array, /) -> array:
     out: array
         an array containing the inverse hyperbolic cosine of each element in ``x``. The returned array must have a real-valued floating-point data type determined by :ref:`type-promotion`.
     """
-    out_dims = {implementation_helper_name}.calculate_output_dims({params})
-    ambiguous_dims = {implementation_helper_name}.calculate_output_ambiguous_dims(args, kwargs)
-    processed_args, processed_kwargs = {implementation_helper_name}.process_args(args, kwargs)
-    result = einarray({func_name}(*processed_args, **processed_kwargs), dims=out_dims, ambiguous_dims=ambiguous_dims)
+    args = (x,)
+    kwargs = {}
+    out_dims = SingleArgumentElementwise.calculate_output_dims(args, kwargs)
+    ambiguous_dims = SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+    processed_args, processed_kwargs = SingleArgumentElementwise.process_args(args, kwargs)
+    result = einarray(
+        x.__array_namespace__().acosh(*processed_args, **processed_kwargs), 
+        dims=out_dims, 
+        ambiguous_dims=ambiguous_dims)
     return result
 
 def add(x1: array, x2: array, /) -> array:
@@ -133,10 +146,15 @@ def add(x1: array, x2: array, /) -> array:
     out: array
         an array containing the element-wise sums. The returned array must have a data type determined by :ref:`type-promotion`.
     """
-    out_dims = {implementation_helper_name}.calculate_output_dims({params})
-    ambiguous_dims = {implementation_helper_name}.calculate_output_ambiguous_dims(args, kwargs)
-    processed_args, processed_kwargs = {implementation_helper_name}.process_args(args, kwargs)
-    result = einarray({func_name}(*processed_args, **processed_kwargs), dims=out_dims, ambiguous_dims=ambiguous_dims)
+    args = (x1, x2,)
+    kwargs = {}
+    out_dims = SingleArgumentElementwise.calculate_output_dims(args, kwargs)
+    ambiguous_dims = SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+    processed_args, processed_kwargs = SingleArgumentElementwise.process_args(args, kwargs)
+    result = einarray(
+        x2.__array_namespace__().add(*processed_args, **processed_kwargs), 
+        dims=out_dims, 
+        ambiguous_dims=ambiguous_dims)
     return result
 
 def asin(x: array, /) -> array:
@@ -163,10 +181,15 @@ def asin(x: array, /) -> array:
     out: array
         an array containing the inverse sine of each element in ``x``. The returned array must have a real-valued floating-point data type determined by :ref:`type-promotion`.
     """
-    out_dims = {implementation_helper_name}.calculate_output_dims({params})
-    ambiguous_dims = {implementation_helper_name}.calculate_output_ambiguous_dims(args, kwargs)
-    processed_args, processed_kwargs = {implementation_helper_name}.process_args(args, kwargs)
-    result = einarray({func_name}(*processed_args, **processed_kwargs), dims=out_dims, ambiguous_dims=ambiguous_dims)
+    args = (x,)
+    kwargs = {}
+    out_dims = SingleArgumentElementwise.calculate_output_dims(args, kwargs)
+    ambiguous_dims = SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+    processed_args, processed_kwargs = SingleArgumentElementwise.process_args(args, kwargs)
+    result = einarray(
+        x.__array_namespace__().asin(*processed_args, **processed_kwargs), 
+        dims=out_dims, 
+        ambiguous_dims=ambiguous_dims)
     return result
 
 def asinh(x: array, /) -> array:
@@ -193,10 +216,15 @@ def asinh(x: array, /) -> array:
     out: array
         an array containing the inverse hyperbolic sine of each element in ``x``. The returned array must have a real-valued floating-point data type determined by :ref:`type-promotion`.
     """
-    out_dims = {implementation_helper_name}.calculate_output_dims({params})
-    ambiguous_dims = {implementation_helper_name}.calculate_output_ambiguous_dims(args, kwargs)
-    processed_args, processed_kwargs = {implementation_helper_name}.process_args(args, kwargs)
-    result = einarray({func_name}(*processed_args, **processed_kwargs), dims=out_dims, ambiguous_dims=ambiguous_dims)
+    args = (x,)
+    kwargs = {}
+    out_dims = SingleArgumentElementwise.calculate_output_dims(args, kwargs)
+    ambiguous_dims = SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+    processed_args, processed_kwargs = SingleArgumentElementwise.process_args(args, kwargs)
+    result = einarray(
+        x.__array_namespace__().asinh(*processed_args, **processed_kwargs), 
+        dims=out_dims, 
+        ambiguous_dims=ambiguous_dims)
     return result
 
 def atan(x: array, /) -> array:
@@ -223,10 +251,15 @@ def atan(x: array, /) -> array:
     out: array
         an array containing the inverse tangent of each element in ``x``. The returned array must have a real-valued floating-point data type determined by :ref:`type-promotion`.
     """
-    out_dims = {implementation_helper_name}.calculate_output_dims({params})
-    ambiguous_dims = {implementation_helper_name}.calculate_output_ambiguous_dims(args, kwargs)
-    processed_args, processed_kwargs = {implementation_helper_name}.process_args(args, kwargs)
-    result = einarray({func_name}(*processed_args, **processed_kwargs), dims=out_dims, ambiguous_dims=ambiguous_dims)
+    args = (x,)
+    kwargs = {}
+    out_dims = SingleArgumentElementwise.calculate_output_dims(args, kwargs)
+    ambiguous_dims = SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+    processed_args, processed_kwargs = SingleArgumentElementwise.process_args(args, kwargs)
+    result = einarray(
+        x.__array_namespace__().atan(*processed_args, **processed_kwargs), 
+        dims=out_dims, 
+        ambiguous_dims=ambiguous_dims)
     return result
 
 def atan2(x1: array, x2: array, /) -> array:
@@ -281,10 +314,15 @@ def atan2(x1: array, x2: array, /) -> array:
         an array containing the inverse tangent of the quotient ``x1/x2``. The returned array must have a real-valued floating-point data type determined by :ref:`type-promotion`.
 
     """
-    out_dims = {implementation_helper_name}.calculate_output_dims({params})
-    ambiguous_dims = {implementation_helper_name}.calculate_output_ambiguous_dims(args, kwargs)
-    processed_args, processed_kwargs = {implementation_helper_name}.process_args(args, kwargs)
-    result = einarray({func_name}(*processed_args, **processed_kwargs), dims=out_dims, ambiguous_dims=ambiguous_dims)
+    args = (x1, x2,)
+    kwargs = {}
+    out_dims = SingleArgumentElementwise.calculate_output_dims(args, kwargs)
+    ambiguous_dims = SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+    processed_args, processed_kwargs = SingleArgumentElementwise.process_args(args, kwargs)
+    result = einarray(
+        x2.__array_namespace__().atan2(*processed_args, **processed_kwargs), 
+        dims=out_dims, 
+        ambiguous_dims=ambiguous_dims)
     return result
 
 def atanh(x: array, /) -> array:
@@ -313,10 +351,15 @@ def atanh(x: array, /) -> array:
     out: array
         an array containing the inverse hyperbolic tangent of each element in ``x``. The returned array must have a real-valued floating-point data type determined by :ref:`type-promotion`.
     """
-    out_dims = {implementation_helper_name}.calculate_output_dims({params})
-    ambiguous_dims = {implementation_helper_name}.calculate_output_ambiguous_dims(args, kwargs)
-    processed_args, processed_kwargs = {implementation_helper_name}.process_args(args, kwargs)
-    result = einarray({func_name}(*processed_args, **processed_kwargs), dims=out_dims, ambiguous_dims=ambiguous_dims)
+    args = (x,)
+    kwargs = {}
+    out_dims = SingleArgumentElementwise.calculate_output_dims(args, kwargs)
+    ambiguous_dims = SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+    processed_args, processed_kwargs = SingleArgumentElementwise.process_args(args, kwargs)
+    result = einarray(
+        x.__array_namespace__().atanh(*processed_args, **processed_kwargs), 
+        dims=out_dims, 
+        ambiguous_dims=ambiguous_dims)
     return result
 
 def bitwise_and(x1: array, x2: array, /) -> array:
@@ -335,10 +378,15 @@ def bitwise_and(x1: array, x2: array, /) -> array:
     out: array
         an array containing the element-wise results. The returned array must have a data type determined by :ref:`type-promotion`.
     """
-    out_dims = {implementation_helper_name}.calculate_output_dims({params})
-    ambiguous_dims = {implementation_helper_name}.calculate_output_ambiguous_dims(args, kwargs)
-    processed_args, processed_kwargs = {implementation_helper_name}.process_args(args, kwargs)
-    result = einarray({func_name}(*processed_args, **processed_kwargs), dims=out_dims, ambiguous_dims=ambiguous_dims)
+    args = (x1, x2,)
+    kwargs = {}
+    out_dims = SingleArgumentElementwise.calculate_output_dims(args, kwargs)
+    ambiguous_dims = SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+    processed_args, processed_kwargs = SingleArgumentElementwise.process_args(args, kwargs)
+    result = einarray(
+        x2.__array_namespace__().bitwise_and(*processed_args, **processed_kwargs), 
+        dims=out_dims, 
+        ambiguous_dims=ambiguous_dims)
     return result
 
 def bitwise_left_shift(x1: array, x2: array, /) -> array:
@@ -357,10 +405,15 @@ def bitwise_left_shift(x1: array, x2: array, /) -> array:
     out: array
         an array containing the element-wise results. The returned array must have a data type determined by :ref:`type-promotion`.
     """
-    out_dims = {implementation_helper_name}.calculate_output_dims({params})
-    ambiguous_dims = {implementation_helper_name}.calculate_output_ambiguous_dims(args, kwargs)
-    processed_args, processed_kwargs = {implementation_helper_name}.process_args(args, kwargs)
-    result = einarray({func_name}(*processed_args, **processed_kwargs), dims=out_dims, ambiguous_dims=ambiguous_dims)
+    args = (x1, x2,)
+    kwargs = {}
+    out_dims = SingleArgumentElementwise.calculate_output_dims(args, kwargs)
+    ambiguous_dims = SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+    processed_args, processed_kwargs = SingleArgumentElementwise.process_args(args, kwargs)
+    result = einarray(
+        x2.__array_namespace__().bitwise_left_shift(*processed_args, **processed_kwargs), 
+        dims=out_dims, 
+        ambiguous_dims=ambiguous_dims)
     return result
 
 def bitwise_invert(x: array, /) -> array:
@@ -377,10 +430,15 @@ def bitwise_invert(x: array, /) -> array:
     out: array
         an array containing the element-wise results. The returned array must have the same data type as ``x``.
     """
-    out_dims = {implementation_helper_name}.calculate_output_dims({params})
-    ambiguous_dims = {implementation_helper_name}.calculate_output_ambiguous_dims(args, kwargs)
-    processed_args, processed_kwargs = {implementation_helper_name}.process_args(args, kwargs)
-    result = einarray({func_name}(*processed_args, **processed_kwargs), dims=out_dims, ambiguous_dims=ambiguous_dims)
+    args = (x,)
+    kwargs = {}
+    out_dims = SingleArgumentElementwise.calculate_output_dims(args, kwargs)
+    ambiguous_dims = SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+    processed_args, processed_kwargs = SingleArgumentElementwise.process_args(args, kwargs)
+    result = einarray(
+        x.__array_namespace__().bitwise_invert(*processed_args, **processed_kwargs), 
+        dims=out_dims, 
+        ambiguous_dims=ambiguous_dims)
     return result
 
 def bitwise_or(x1: array, x2: array, /) -> array:
@@ -399,10 +457,15 @@ def bitwise_or(x1: array, x2: array, /) -> array:
     out: array
         an array containing the element-wise results. The returned array must have a data type determined by :ref:`type-promotion`.
     """
-    out_dims = {implementation_helper_name}.calculate_output_dims({params})
-    ambiguous_dims = {implementation_helper_name}.calculate_output_ambiguous_dims(args, kwargs)
-    processed_args, processed_kwargs = {implementation_helper_name}.process_args(args, kwargs)
-    result = einarray({func_name}(*processed_args, **processed_kwargs), dims=out_dims, ambiguous_dims=ambiguous_dims)
+    args = (x1, x2,)
+    kwargs = {}
+    out_dims = SingleArgumentElementwise.calculate_output_dims(args, kwargs)
+    ambiguous_dims = SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+    processed_args, processed_kwargs = SingleArgumentElementwise.process_args(args, kwargs)
+    result = einarray(
+        x2.__array_namespace__().bitwise_or(*processed_args, **processed_kwargs), 
+        dims=out_dims, 
+        ambiguous_dims=ambiguous_dims)
     return result
 
 def bitwise_right_shift(x1: array, x2: array, /) -> array:
@@ -424,10 +487,15 @@ def bitwise_right_shift(x1: array, x2: array, /) -> array:
     out: array
         an array containing the element-wise results. The returned array must have a data type determined by :ref:`type-promotion`.
     """
-    out_dims = {implementation_helper_name}.calculate_output_dims({params})
-    ambiguous_dims = {implementation_helper_name}.calculate_output_ambiguous_dims(args, kwargs)
-    processed_args, processed_kwargs = {implementation_helper_name}.process_args(args, kwargs)
-    result = einarray({func_name}(*processed_args, **processed_kwargs), dims=out_dims, ambiguous_dims=ambiguous_dims)
+    args = (x1, x2,)
+    kwargs = {}
+    out_dims = SingleArgumentElementwise.calculate_output_dims(args, kwargs)
+    ambiguous_dims = SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+    processed_args, processed_kwargs = SingleArgumentElementwise.process_args(args, kwargs)
+    result = einarray(
+        x2.__array_namespace__().bitwise_right_shift(*processed_args, **processed_kwargs), 
+        dims=out_dims, 
+        ambiguous_dims=ambiguous_dims)
     return result
 
 def bitwise_xor(x1: array, x2: array, /) -> array:
@@ -446,10 +514,15 @@ def bitwise_xor(x1: array, x2: array, /) -> array:
     out: array
         an array containing the element-wise results. The returned array must have a data type determined by :ref:`type-promotion`.
     """
-    out_dims = {implementation_helper_name}.calculate_output_dims({params})
-    ambiguous_dims = {implementation_helper_name}.calculate_output_ambiguous_dims(args, kwargs)
-    processed_args, processed_kwargs = {implementation_helper_name}.process_args(args, kwargs)
-    result = einarray({func_name}(*processed_args, **processed_kwargs), dims=out_dims, ambiguous_dims=ambiguous_dims)
+    args = (x1, x2,)
+    kwargs = {}
+    out_dims = SingleArgumentElementwise.calculate_output_dims(args, kwargs)
+    ambiguous_dims = SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+    processed_args, processed_kwargs = SingleArgumentElementwise.process_args(args, kwargs)
+    result = einarray(
+        x2.__array_namespace__().bitwise_xor(*processed_args, **processed_kwargs), 
+        dims=out_dims, 
+        ambiguous_dims=ambiguous_dims)
     return result
 
 def ceil(x: array, /) -> array:
@@ -478,10 +551,15 @@ def ceil(x: array, /) -> array:
     out: array
         an array containing the rounded result for each element in ``x``. The returned array must have the same data type as ``x``.
     """
+    args = (x,)
+    kwargs = {}
     out_dims = SingleArgumentElementwise.calculate_output_dims(args, kwargs)
     ambiguous_dims = SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = SingleArgumentElementwise.process_args(args, kwargs)
-    result = einarray(ceil(*processed_args, **processed_kwargs), dims=out_dims, ambiguous_dims=ambiguous_dims)
+    result = einarray(
+        x.__array_namespace__().ceil(*processed_args, **processed_kwargs), 
+        dims=out_dims, 
+        ambiguous_dims=ambiguous_dims)
     return result
 
 def cos(x: array, /) -> array:
@@ -523,10 +601,15 @@ def cos(x: array, /) -> array:
     out: array
         an array containing the cosine of each element in ``x``. The returned array must have a floating-point data type determined by :ref:`type-promotion`.
     """
+    args = (x,)
+    kwargs = {}
     out_dims = SingleArgumentElementwise.calculate_output_dims(args, kwargs)
     ambiguous_dims = SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = SingleArgumentElementwise.process_args(args, kwargs)
-    result = einarray(cos(*processed_args, **processed_kwargs), dims=out_dims, ambiguous_dims=ambiguous_dims)
+    result = einarray(
+        x.__array_namespace__().cos(*processed_args, **processed_kwargs), 
+        dims=out_dims, 
+        ambiguous_dims=ambiguous_dims)
     return result
 
 def cosh(x: array, /) -> array:
@@ -584,10 +667,15 @@ def cosh(x: array, /) -> array:
     out: array
         an array containing the hyperbolic cosine of each element in ``x``. The returned array must have a floating-point data type determined by :ref:`type-promotion`.
     """
-    out_dims = {implementation_helper_name}.calculate_output_dims({params})
-    ambiguous_dims = {implementation_helper_name}.calculate_output_ambiguous_dims(args, kwargs)
-    processed_args, processed_kwargs = {implementation_helper_name}.process_args(args, kwargs)
-    result = einarray({func_name}(*processed_args, **processed_kwargs), dims=out_dims, ambiguous_dims=ambiguous_dims)
+    args = (x,)
+    kwargs = {}
+    out_dims = SingleArgumentElementwise.calculate_output_dims(args, kwargs)
+    ambiguous_dims = SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+    processed_args, processed_kwargs = SingleArgumentElementwise.process_args(args, kwargs)
+    result = einarray(
+        x.__array_namespace__().cosh(*processed_args, **processed_kwargs), 
+        dims=out_dims, 
+        ambiguous_dims=ambiguous_dims)
     return result
 
 def divide(x1: array, x2: array, /) -> array:
@@ -638,10 +726,15 @@ def divide(x1: array, x2: array, /) -> array:
     out: array
         an array containing the element-wise results. The returned array must have a real-valued floating-point data type determined by :ref:`type-promotion`.
     """
-    out_dims = {implementation_helper_name}.calculate_output_dims({params})
-    ambiguous_dims = {implementation_helper_name}.calculate_output_ambiguous_dims(args, kwargs)
-    processed_args, processed_kwargs = {implementation_helper_name}.process_args(args, kwargs)
-    result = einarray({func_name}(*processed_args, **processed_kwargs), dims=out_dims, ambiguous_dims=ambiguous_dims)
+    args = (x1, x2,)
+    kwargs = {}
+    out_dims = SingleArgumentElementwise.calculate_output_dims(args, kwargs)
+    ambiguous_dims = SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+    processed_args, processed_kwargs = SingleArgumentElementwise.process_args(args, kwargs)
+    result = einarray(
+        x2.__array_namespace__().divide(*processed_args, **processed_kwargs), 
+        dims=out_dims, 
+        ambiguous_dims=ambiguous_dims)
     return result
 
 def equal(x1: array, x2: array, /) -> array:
@@ -660,10 +753,15 @@ def equal(x1: array, x2: array, /) -> array:
     out: array
         an array containing the element-wise results. The returned array must have a data type of ``bool``.
     """
-    out_dims = {implementation_helper_name}.calculate_output_dims({params})
-    ambiguous_dims = {implementation_helper_name}.calculate_output_ambiguous_dims(args, kwargs)
-    processed_args, processed_kwargs = {implementation_helper_name}.process_args(args, kwargs)
-    result = einarray({func_name}(*processed_args, **processed_kwargs), dims=out_dims, ambiguous_dims=ambiguous_dims)
+    args = (x1, x2,)
+    kwargs = {}
+    out_dims = SingleArgumentElementwise.calculate_output_dims(args, kwargs)
+    ambiguous_dims = SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+    processed_args, processed_kwargs = SingleArgumentElementwise.process_args(args, kwargs)
+    result = einarray(
+        x2.__array_namespace__().equal(*processed_args, **processed_kwargs), 
+        dims=out_dims, 
+        ambiguous_dims=ambiguous_dims)
     return result
 
 def exp(x: array, /) -> array:
@@ -714,10 +812,15 @@ def exp(x: array, /) -> array:
     out: array
         an array containing the evaluated exponential function result for each element in ``x``. The returned array must have a floating-point data type determined by :ref:`type-promotion`.
     """
+    args = (x,)
+    kwargs = {}
     out_dims = SingleArgumentElementwise.calculate_output_dims(args, kwargs)
     ambiguous_dims = SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = SingleArgumentElementwise.process_args(args, kwargs)
-    result = einarray(exp(*processed_args, **processed_kwargs), dims=out_dims, ambiguous_dims=ambiguous_dims)
+    result = einarray(
+        x.__array_namespace__().exp(*processed_args, **processed_kwargs), 
+        dims=out_dims, 
+        ambiguous_dims=ambiguous_dims)
     return result
 
 def expm1(x: array, /) -> array:
@@ -747,10 +850,15 @@ def expm1(x: array, /) -> array:
     out: array
         an array containing the evaluated result for each element in ``x``. The returned array must have a real-valued floating-point data type determined by :ref:`type-promotion`.
     """
-    out_dims = {implementation_helper_name}.calculate_output_dims({params})
-    ambiguous_dims = {implementation_helper_name}.calculate_output_ambiguous_dims(args, kwargs)
-    processed_args, processed_kwargs = {implementation_helper_name}.process_args(args, kwargs)
-    result = einarray({func_name}(*processed_args, **processed_kwargs), dims=out_dims, ambiguous_dims=ambiguous_dims)
+    args = (x,)
+    kwargs = {}
+    out_dims = SingleArgumentElementwise.calculate_output_dims(args, kwargs)
+    ambiguous_dims = SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+    processed_args, processed_kwargs = SingleArgumentElementwise.process_args(args, kwargs)
+    result = einarray(
+        x.__array_namespace__().expm1(*processed_args, **processed_kwargs), 
+        dims=out_dims, 
+        ambiguous_dims=ambiguous_dims)
     return result
 
 def floor(x: array, /) -> array:
@@ -779,10 +887,15 @@ def floor(x: array, /) -> array:
     out: array
         an array containing the rounded result for each element in ``x``. The returned array must have the same data type as ``x``.
     """
+    args = (x,)
+    kwargs = {}
     out_dims = SingleArgumentElementwise.calculate_output_dims(args, kwargs)
     ambiguous_dims = SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = SingleArgumentElementwise.process_args(args, kwargs)
-    result = einarray(floor(*processed_args, **processed_kwargs), dims=out_dims, ambiguous_dims=ambiguous_dims)
+    result = einarray(
+        x.__array_namespace__().floor(*processed_args, **processed_kwargs), 
+        dims=out_dims, 
+        ambiguous_dims=ambiguous_dims)
     return result
 
 def floor_divide(x1: array, x2: array, /) -> array:
@@ -840,10 +953,15 @@ def floor_divide(x1: array, x2: array, /) -> array:
     out: array
         an array containing the element-wise results. The returned array must have a data type determined by :ref:`type-promotion`.
     """
+    args = (x1, x2,)
+    kwargs = {}
     out_dims = SingleArgumentElementwise.calculate_output_dims(args, kwargs)
     ambiguous_dims = SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = SingleArgumentElementwise.process_args(args, kwargs)
-    result = einarray(floor_divide(*processed_args, **processed_kwargs), dims=out_dims, ambiguous_dims=ambiguous_dims)
+    result = einarray(
+        x2.__array_namespace__().floor_divide(*processed_args, **processed_kwargs), 
+        dims=out_dims, 
+        ambiguous_dims=ambiguous_dims)
     return result
 
 def greater(x1: array, x2: array, /) -> array:
@@ -862,10 +980,15 @@ def greater(x1: array, x2: array, /) -> array:
     out: array
         an array containing the element-wise results. The returned array must have a data type of ``bool``.
     """
-    out_dims = {implementation_helper_name}.calculate_output_dims({params})
-    ambiguous_dims = {implementation_helper_name}.calculate_output_ambiguous_dims(args, kwargs)
-    processed_args, processed_kwargs = {implementation_helper_name}.process_args(args, kwargs)
-    result = einarray({func_name}(*processed_args, **processed_kwargs), dims=out_dims, ambiguous_dims=ambiguous_dims)
+    args = (x1, x2,)
+    kwargs = {}
+    out_dims = SingleArgumentElementwise.calculate_output_dims(args, kwargs)
+    ambiguous_dims = SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+    processed_args, processed_kwargs = SingleArgumentElementwise.process_args(args, kwargs)
+    result = einarray(
+        x2.__array_namespace__().greater(*processed_args, **processed_kwargs), 
+        dims=out_dims, 
+        ambiguous_dims=ambiguous_dims)
     return result
 
 def greater_equal(x1: array, x2: array, /) -> array:
@@ -884,10 +1007,15 @@ def greater_equal(x1: array, x2: array, /) -> array:
     out: array
         an array containing the element-wise results. The returned array must have a data type of ``bool``.
     """
-    out_dims = {implementation_helper_name}.calculate_output_dims({params})
-    ambiguous_dims = {implementation_helper_name}.calculate_output_ambiguous_dims(args, kwargs)
-    processed_args, processed_kwargs = {implementation_helper_name}.process_args(args, kwargs)
-    result = einarray({func_name}(*processed_args, **processed_kwargs), dims=out_dims, ambiguous_dims=ambiguous_dims)
+    args = (x1, x2,)
+    kwargs = {}
+    out_dims = SingleArgumentElementwise.calculate_output_dims(args, kwargs)
+    ambiguous_dims = SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+    processed_args, processed_kwargs = SingleArgumentElementwise.process_args(args, kwargs)
+    result = einarray(
+        x2.__array_namespace__().greater_equal(*processed_args, **processed_kwargs), 
+        dims=out_dims, 
+        ambiguous_dims=ambiguous_dims)
     return result
 
 def isfinite(x: array, /) -> array:
@@ -904,10 +1032,15 @@ def isfinite(x: array, /) -> array:
     out: array
         an array containing test results. An element ``out_i`` is ``True`` if ``x_i`` is finite and ``False`` otherwise. The returned array must have a data type of ``bool``.
     """
-    out_dims = {implementation_helper_name}.calculate_output_dims({params})
-    ambiguous_dims = {implementation_helper_name}.calculate_output_ambiguous_dims(args, kwargs)
-    processed_args, processed_kwargs = {implementation_helper_name}.process_args(args, kwargs)
-    result = einarray({func_name}(*processed_args, **processed_kwargs), dims=out_dims, ambiguous_dims=ambiguous_dims)
+    args = (x,)
+    kwargs = {}
+    out_dims = SingleArgumentElementwise.calculate_output_dims(args, kwargs)
+    ambiguous_dims = SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+    processed_args, processed_kwargs = SingleArgumentElementwise.process_args(args, kwargs)
+    result = einarray(
+        x.__array_namespace__().isfinite(*processed_args, **processed_kwargs), 
+        dims=out_dims, 
+        ambiguous_dims=ambiguous_dims)
     return result
 
 def isinf(x: array, /) -> array:
@@ -924,10 +1057,15 @@ def isinf(x: array, /) -> array:
     out: array
         an array containing test results. An element ``out_i`` is ``True`` if ``x_i`` is either positive or negative infinity and ``False`` otherwise. The returned array must have a data type of ``bool``.
     """
-    out_dims = {implementation_helper_name}.calculate_output_dims({params})
-    ambiguous_dims = {implementation_helper_name}.calculate_output_ambiguous_dims(args, kwargs)
-    processed_args, processed_kwargs = {implementation_helper_name}.process_args(args, kwargs)
-    result = einarray({func_name}(*processed_args, **processed_kwargs), dims=out_dims, ambiguous_dims=ambiguous_dims)
+    args = (x,)
+    kwargs = {}
+    out_dims = SingleArgumentElementwise.calculate_output_dims(args, kwargs)
+    ambiguous_dims = SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+    processed_args, processed_kwargs = SingleArgumentElementwise.process_args(args, kwargs)
+    result = einarray(
+        x.__array_namespace__().isinf(*processed_args, **processed_kwargs), 
+        dims=out_dims, 
+        ambiguous_dims=ambiguous_dims)
     return result
 
 def isnan(x: array, /) -> array:
@@ -944,10 +1082,15 @@ def isnan(x: array, /) -> array:
     out: array
         an array containing test results. An element ``out_i`` is ``True`` if ``x_i`` is ``NaN`` and ``False`` otherwise. The returned array should have a data type of ``bool``.
     """
-    out_dims = {implementation_helper_name}.calculate_output_dims({params})
-    ambiguous_dims = {implementation_helper_name}.calculate_output_ambiguous_dims(args, kwargs)
-    processed_args, processed_kwargs = {implementation_helper_name}.process_args(args, kwargs)
-    result = einarray({func_name}(*processed_args, **processed_kwargs), dims=out_dims, ambiguous_dims=ambiguous_dims)
+    args = (x,)
+    kwargs = {}
+    out_dims = SingleArgumentElementwise.calculate_output_dims(args, kwargs)
+    ambiguous_dims = SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+    processed_args, processed_kwargs = SingleArgumentElementwise.process_args(args, kwargs)
+    result = einarray(
+        x.__array_namespace__().isnan(*processed_args, **processed_kwargs), 
+        dims=out_dims, 
+        ambiguous_dims=ambiguous_dims)
     return result
 
 def less(x1: array, x2: array, /) -> array:
@@ -966,10 +1109,15 @@ def less(x1: array, x2: array, /) -> array:
     out: array
         an array containing the element-wise results. The returned array must have a data type of ``bool``.
     """
-    out_dims = {implementation_helper_name}.calculate_output_dims({params})
-    ambiguous_dims = {implementation_helper_name}.calculate_output_ambiguous_dims(args, kwargs)
-    processed_args, processed_kwargs = {implementation_helper_name}.process_args(args, kwargs)
-    result = einarray({func_name}(*processed_args, **processed_kwargs), dims=out_dims, ambiguous_dims=ambiguous_dims)
+    args = (x1, x2,)
+    kwargs = {}
+    out_dims = SingleArgumentElementwise.calculate_output_dims(args, kwargs)
+    ambiguous_dims = SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+    processed_args, processed_kwargs = SingleArgumentElementwise.process_args(args, kwargs)
+    result = einarray(
+        x2.__array_namespace__().less(*processed_args, **processed_kwargs), 
+        dims=out_dims, 
+        ambiguous_dims=ambiguous_dims)
     return result
 
 def less_equal(x1: array, x2: array, /) -> array:
@@ -988,10 +1136,15 @@ def less_equal(x1: array, x2: array, /) -> array:
     out: array
         an array containing the element-wise results. The returned array must have a data type of ``bool``.
     """
-    out_dims = {implementation_helper_name}.calculate_output_dims({params})
-    ambiguous_dims = {implementation_helper_name}.calculate_output_ambiguous_dims(args, kwargs)
-    processed_args, processed_kwargs = {implementation_helper_name}.process_args(args, kwargs)
-    result = einarray({func_name}(*processed_args, **processed_kwargs), dims=out_dims, ambiguous_dims=ambiguous_dims)
+    args = (x1, x2,)
+    kwargs = {}
+    out_dims = SingleArgumentElementwise.calculate_output_dims(args, kwargs)
+    ambiguous_dims = SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+    processed_args, processed_kwargs = SingleArgumentElementwise.process_args(args, kwargs)
+    result = einarray(
+        x2.__array_namespace__().less_equal(*processed_args, **processed_kwargs), 
+        dims=out_dims, 
+        ambiguous_dims=ambiguous_dims)
     return result
 
 def log(x: array, /) -> array:
@@ -1018,10 +1171,15 @@ def log(x: array, /) -> array:
     out: array
         an array containing the evaluated natural logarithm for each element in ``x``. The returned array must have a real-valued floating-point data type determined by :ref:`type-promotion`.
     """
+    args = (x,)
+    kwargs = {}
     out_dims = SingleArgumentElementwise.calculate_output_dims(args, kwargs)
     ambiguous_dims = SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = SingleArgumentElementwise.process_args(args, kwargs)
-    result = einarray(log(*processed_args, **processed_kwargs), dims=out_dims, ambiguous_dims=ambiguous_dims)
+    result = einarray(
+        x.__array_namespace__().log(*processed_args, **processed_kwargs), 
+        dims=out_dims, 
+        ambiguous_dims=ambiguous_dims)
     return result
 
 def log1p(x: array, /) -> array:
@@ -1052,10 +1210,15 @@ def log1p(x: array, /) -> array:
     out: array
         an array containing the evaluated result for each element in ``x``. The returned array must have a real-valued floating-point data type determined by :ref:`type-promotion`.
     """
-    out_dims = {implementation_helper_name}.calculate_output_dims({params})
-    ambiguous_dims = {implementation_helper_name}.calculate_output_ambiguous_dims(args, kwargs)
-    processed_args, processed_kwargs = {implementation_helper_name}.process_args(args, kwargs)
-    result = einarray({func_name}(*processed_args, **processed_kwargs), dims=out_dims, ambiguous_dims=ambiguous_dims)
+    args = (x,)
+    kwargs = {}
+    out_dims = SingleArgumentElementwise.calculate_output_dims(args, kwargs)
+    ambiguous_dims = SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+    processed_args, processed_kwargs = SingleArgumentElementwise.process_args(args, kwargs)
+    result = einarray(
+        x.__array_namespace__().log1p(*processed_args, **processed_kwargs), 
+        dims=out_dims, 
+        ambiguous_dims=ambiguous_dims)
     return result
 
 def log2(x: array, /) -> array:
@@ -1082,10 +1245,15 @@ def log2(x: array, /) -> array:
     out: array
         an array containing the evaluated base ``2`` logarithm for each element in ``x``. The returned array must have a real-valued floating-point data type determined by :ref:`type-promotion`.
     """
+    args = (x,)
+    kwargs = {}
     out_dims = SingleArgumentElementwise.calculate_output_dims(args, kwargs)
     ambiguous_dims = SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = SingleArgumentElementwise.process_args(args, kwargs)
-    result = einarray(log2(*processed_args, **processed_kwargs), dims=out_dims, ambiguous_dims=ambiguous_dims)
+    result = einarray(
+        x.__array_namespace__().log2(*processed_args, **processed_kwargs), 
+        dims=out_dims, 
+        ambiguous_dims=ambiguous_dims)
     return result
 
 def log10(x: array, /) -> array:
@@ -1112,10 +1280,15 @@ def log10(x: array, /) -> array:
     out: array
         an array containing the evaluated base ``10`` logarithm for each element in ``x``. The returned array must have a real-valued floating-point data type determined by :ref:`type-promotion`.
     """
+    args = (x,)
+    kwargs = {}
     out_dims = SingleArgumentElementwise.calculate_output_dims(args, kwargs)
     ambiguous_dims = SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = SingleArgumentElementwise.process_args(args, kwargs)
-    result = einarray(log10(*processed_args, **processed_kwargs), dims=out_dims, ambiguous_dims=ambiguous_dims)
+    result = einarray(
+        x.__array_namespace__().log10(*processed_args, **processed_kwargs), 
+        dims=out_dims, 
+        ambiguous_dims=ambiguous_dims)
     return result
 
 def logaddexp(x1: array, x2: array, /) -> array:
@@ -1142,10 +1315,15 @@ def logaddexp(x1: array, x2: array, /) -> array:
     out: array
         an array containing the element-wise results. The returned array must have a real-valued floating-point data type determined by :ref:`type-promotion`.
     """
-    out_dims = {implementation_helper_name}.calculate_output_dims({params})
-    ambiguous_dims = {implementation_helper_name}.calculate_output_ambiguous_dims(args, kwargs)
-    processed_args, processed_kwargs = {implementation_helper_name}.process_args(args, kwargs)
-    result = einarray({func_name}(*processed_args, **processed_kwargs), dims=out_dims, ambiguous_dims=ambiguous_dims)
+    args = (x1, x2,)
+    kwargs = {}
+    out_dims = SingleArgumentElementwise.calculate_output_dims(args, kwargs)
+    ambiguous_dims = SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+    processed_args, processed_kwargs = SingleArgumentElementwise.process_args(args, kwargs)
+    result = einarray(
+        x2.__array_namespace__().logaddexp(*processed_args, **processed_kwargs), 
+        dims=out_dims, 
+        ambiguous_dims=ambiguous_dims)
     return result
 
 def logical_and(x1: array, x2: array, /) -> array:
@@ -1167,10 +1345,15 @@ def logical_and(x1: array, x2: array, /) -> array:
     out: array
         an array containing the element-wise results. The returned array must have a data type of `bool`.
     """
-    out_dims = {implementation_helper_name}.calculate_output_dims({params})
-    ambiguous_dims = {implementation_helper_name}.calculate_output_ambiguous_dims(args, kwargs)
-    processed_args, processed_kwargs = {implementation_helper_name}.process_args(args, kwargs)
-    result = einarray({func_name}(*processed_args, **processed_kwargs), dims=out_dims, ambiguous_dims=ambiguous_dims)
+    args = (x1, x2,)
+    kwargs = {}
+    out_dims = SingleArgumentElementwise.calculate_output_dims(args, kwargs)
+    ambiguous_dims = SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+    processed_args, processed_kwargs = SingleArgumentElementwise.process_args(args, kwargs)
+    result = einarray(
+        x2.__array_namespace__().logical_and(*processed_args, **processed_kwargs), 
+        dims=out_dims, 
+        ambiguous_dims=ambiguous_dims)
     return result
 
 def logical_not(x: array, /) -> array:
@@ -1190,10 +1373,15 @@ def logical_not(x: array, /) -> array:
     out: array
         an array containing the element-wise results. The returned array must have a data type of ``bool``.
     """
-    out_dims = {implementation_helper_name}.calculate_output_dims({params})
-    ambiguous_dims = {implementation_helper_name}.calculate_output_ambiguous_dims(args, kwargs)
-    processed_args, processed_kwargs = {implementation_helper_name}.process_args(args, kwargs)
-    result = einarray({func_name}(*processed_args, **processed_kwargs), dims=out_dims, ambiguous_dims=ambiguous_dims)
+    args = (x,)
+    kwargs = {}
+    out_dims = SingleArgumentElementwise.calculate_output_dims(args, kwargs)
+    ambiguous_dims = SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+    processed_args, processed_kwargs = SingleArgumentElementwise.process_args(args, kwargs)
+    result = einarray(
+        x.__array_namespace__().logical_not(*processed_args, **processed_kwargs), 
+        dims=out_dims, 
+        ambiguous_dims=ambiguous_dims)
     return result
 
 def logical_or(x1: array, x2: array, /) -> array:
@@ -1215,10 +1403,15 @@ def logical_or(x1: array, x2: array, /) -> array:
     out: array
         an array containing the element-wise results. The returned array must have a data type of ``bool``.
     """
-    out_dims = {implementation_helper_name}.calculate_output_dims({params})
-    ambiguous_dims = {implementation_helper_name}.calculate_output_ambiguous_dims(args, kwargs)
-    processed_args, processed_kwargs = {implementation_helper_name}.process_args(args, kwargs)
-    result = einarray({func_name}(*processed_args, **processed_kwargs), dims=out_dims, ambiguous_dims=ambiguous_dims)
+    args = (x1, x2,)
+    kwargs = {}
+    out_dims = SingleArgumentElementwise.calculate_output_dims(args, kwargs)
+    ambiguous_dims = SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+    processed_args, processed_kwargs = SingleArgumentElementwise.process_args(args, kwargs)
+    result = einarray(
+        x2.__array_namespace__().logical_or(*processed_args, **processed_kwargs), 
+        dims=out_dims, 
+        ambiguous_dims=ambiguous_dims)
     return result
 
 def logical_xor(x1: array, x2: array, /) -> array:
@@ -1240,10 +1433,15 @@ def logical_xor(x1: array, x2: array, /) -> array:
     out: array
         an array containing the element-wise results. The returned array must have a data type of ``bool``.
     """
-    out_dims = {implementation_helper_name}.calculate_output_dims({params})
-    ambiguous_dims = {implementation_helper_name}.calculate_output_ambiguous_dims(args, kwargs)
-    processed_args, processed_kwargs = {implementation_helper_name}.process_args(args, kwargs)
-    result = einarray({func_name}(*processed_args, **processed_kwargs), dims=out_dims, ambiguous_dims=ambiguous_dims)
+    args = (x1, x2,)
+    kwargs = {}
+    out_dims = SingleArgumentElementwise.calculate_output_dims(args, kwargs)
+    ambiguous_dims = SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+    processed_args, processed_kwargs = SingleArgumentElementwise.process_args(args, kwargs)
+    result = einarray(
+        x2.__array_namespace__().logical_xor(*processed_args, **processed_kwargs), 
+        dims=out_dims, 
+        ambiguous_dims=ambiguous_dims)
     return result
 
 def multiply(x1: array, x2: array, /) -> array:
@@ -1279,10 +1477,15 @@ def multiply(x1: array, x2: array, /) -> array:
     out: array
         an array containing the element-wise products. The returned array must have a data type determined by :ref:`type-promotion`.
     """
-    out_dims = {implementation_helper_name}.calculate_output_dims({params})
-    ambiguous_dims = {implementation_helper_name}.calculate_output_ambiguous_dims(args, kwargs)
-    processed_args, processed_kwargs = {implementation_helper_name}.process_args(args, kwargs)
-    result = einarray({func_name}(*processed_args, **processed_kwargs), dims=out_dims, ambiguous_dims=ambiguous_dims)
+    args = (x1, x2,)
+    kwargs = {}
+    out_dims = SingleArgumentElementwise.calculate_output_dims(args, kwargs)
+    ambiguous_dims = SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+    processed_args, processed_kwargs = SingleArgumentElementwise.process_args(args, kwargs)
+    result = einarray(
+        x2.__array_namespace__().multiply(*processed_args, **processed_kwargs), 
+        dims=out_dims, 
+        ambiguous_dims=ambiguous_dims)
     return result
 
 def negative(x: array, /) -> array:
@@ -1305,10 +1508,15 @@ def negative(x: array, /) -> array:
     out: array
         an array containing the evaluated result for each element in ``x``. The returned array must have a data type determined by :ref:`type-promotion`.
     """
-    out_dims = {implementation_helper_name}.calculate_output_dims({params})
-    ambiguous_dims = {implementation_helper_name}.calculate_output_ambiguous_dims(args, kwargs)
-    processed_args, processed_kwargs = {implementation_helper_name}.process_args(args, kwargs)
-    result = einarray({func_name}(*processed_args, **processed_kwargs), dims=out_dims, ambiguous_dims=ambiguous_dims)
+    args = (x,)
+    kwargs = {}
+    out_dims = SingleArgumentElementwise.calculate_output_dims(args, kwargs)
+    ambiguous_dims = SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+    processed_args, processed_kwargs = SingleArgumentElementwise.process_args(args, kwargs)
+    result = einarray(
+        x.__array_namespace__().negative(*processed_args, **processed_kwargs), 
+        dims=out_dims, 
+        ambiguous_dims=ambiguous_dims)
     return result
 
 def not_equal(x1: array, x2: array, /) -> array:
@@ -1327,10 +1535,15 @@ def not_equal(x1: array, x2: array, /) -> array:
     out: array
         an array containing the element-wise results. The returned array must have a data type of ``bool``.
     """
-    out_dims = {implementation_helper_name}.calculate_output_dims({params})
-    ambiguous_dims = {implementation_helper_name}.calculate_output_ambiguous_dims(args, kwargs)
-    processed_args, processed_kwargs = {implementation_helper_name}.process_args(args, kwargs)
-    result = einarray({func_name}(*processed_args, **processed_kwargs), dims=out_dims, ambiguous_dims=ambiguous_dims)
+    args = (x1, x2,)
+    kwargs = {}
+    out_dims = SingleArgumentElementwise.calculate_output_dims(args, kwargs)
+    ambiguous_dims = SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+    processed_args, processed_kwargs = SingleArgumentElementwise.process_args(args, kwargs)
+    result = einarray(
+        x2.__array_namespace__().not_equal(*processed_args, **processed_kwargs), 
+        dims=out_dims, 
+        ambiguous_dims=ambiguous_dims)
     return result
 
 def positive(x: array, /) -> array:
@@ -1347,10 +1560,15 @@ def positive(x: array, /) -> array:
     out: array
         an array containing the evaluated result for each element in ``x``. The returned array must have the same data type as ``x``.
     """
-    out_dims = {implementation_helper_name}.calculate_output_dims({params})
-    ambiguous_dims = {implementation_helper_name}.calculate_output_ambiguous_dims(args, kwargs)
-    processed_args, processed_kwargs = {implementation_helper_name}.process_args(args, kwargs)
-    result = einarray({func_name}(*processed_args, **processed_kwargs), dims=out_dims, ambiguous_dims=ambiguous_dims)
+    args = (x,)
+    kwargs = {}
+    out_dims = SingleArgumentElementwise.calculate_output_dims(args, kwargs)
+    ambiguous_dims = SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+    processed_args, processed_kwargs = SingleArgumentElementwise.process_args(args, kwargs)
+    result = einarray(
+        x.__array_namespace__().positive(*processed_args, **processed_kwargs), 
+        dims=out_dims, 
+        ambiguous_dims=ambiguous_dims)
     return result
 
 def pow(x1: array, x2: array, /) -> array:
@@ -1403,10 +1621,15 @@ def pow(x1: array, x2: array, /) -> array:
     out: array
         an array containing the element-wise results. The returned array must have a data type determined by :ref:`type-promotion`.
     """
+    args = (x1, x2,)
+    kwargs = {}
     out_dims = SingleArgumentElementwise.calculate_output_dims(args, kwargs)
     ambiguous_dims = SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = SingleArgumentElementwise.process_args(args, kwargs)
-    result = einarray(pow(*processed_args, **processed_kwargs), dims=out_dims, ambiguous_dims=ambiguous_dims)
+    result = einarray(
+        x2.__array_namespace__().pow(*processed_args, **processed_kwargs), 
+        dims=out_dims, 
+        ambiguous_dims=ambiguous_dims)
     return result
 
 def remainder(x1: array, x2: array, /) -> array:
@@ -1459,10 +1682,15 @@ def remainder(x1: array, x2: array, /) -> array:
     out: array
         an array containing the element-wise results. Each element-wise result must have the same sign as the respective element ``x2_i``. The returned array must have a data type determined by :ref:`type-promotion`.
     """
-    out_dims = {implementation_helper_name}.calculate_output_dims({params})
-    ambiguous_dims = {implementation_helper_name}.calculate_output_ambiguous_dims(args, kwargs)
-    processed_args, processed_kwargs = {implementation_helper_name}.process_args(args, kwargs)
-    result = einarray({func_name}(*processed_args, **processed_kwargs), dims=out_dims, ambiguous_dims=ambiguous_dims)
+    args = (x1, x2,)
+    kwargs = {}
+    out_dims = SingleArgumentElementwise.calculate_output_dims(args, kwargs)
+    ambiguous_dims = SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+    processed_args, processed_kwargs = SingleArgumentElementwise.process_args(args, kwargs)
+    result = einarray(
+        x2.__array_namespace__().remainder(*processed_args, **processed_kwargs), 
+        dims=out_dims, 
+        ambiguous_dims=ambiguous_dims)
     return result
 
 def round(x: array, /) -> array:
@@ -1500,10 +1728,15 @@ def round(x: array, /) -> array:
     out: array
         an array containing the rounded result for each element in ``x``. The returned array must have the same data type as ``x``.
     """
+    args = (x,)
+    kwargs = {}
     out_dims = SingleArgumentElementwise.calculate_output_dims(args, kwargs)
     ambiguous_dims = SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = SingleArgumentElementwise.process_args(args, kwargs)
-    result = einarray(round(*processed_args, **processed_kwargs), dims=out_dims, ambiguous_dims=ambiguous_dims)
+    result = einarray(
+        x.__array_namespace__().round(*processed_args, **processed_kwargs), 
+        dims=out_dims, 
+        ambiguous_dims=ambiguous_dims)
     return result
 
 def sign(x: array, /) -> array:
@@ -1526,10 +1759,15 @@ def sign(x: array, /) -> array:
     out: array
         an array containing the evaluated result for each element in ``x``. The returned array must have the same data type as ``x``.
     """
+    args = (x,)
+    kwargs = {}
     out_dims = SingleArgumentElementwise.calculate_output_dims(args, kwargs)
     ambiguous_dims = SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = SingleArgumentElementwise.process_args(args, kwargs)
-    result = einarray(sign(*processed_args, **processed_kwargs), dims=out_dims, ambiguous_dims=ambiguous_dims)
+    result = einarray(
+        x.__array_namespace__().sign(*processed_args, **processed_kwargs), 
+        dims=out_dims, 
+        ambiguous_dims=ambiguous_dims)
     return result
 
 def sin(x: array, /) -> array:
@@ -1570,10 +1808,15 @@ def sin(x: array, /) -> array:
     out: array
         an array containing the sine of each element in ``x``. The returned array must have a floating-point data type determined by :ref:`type-promotion`.
     """
+    args = (x,)
+    kwargs = {}
     out_dims = SingleArgumentElementwise.calculate_output_dims(args, kwargs)
     ambiguous_dims = SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = SingleArgumentElementwise.process_args(args, kwargs)
-    result = einarray(sin(*processed_args, **processed_kwargs), dims=out_dims, ambiguous_dims=ambiguous_dims)
+    result = einarray(
+        x.__array_namespace__().sin(*processed_args, **processed_kwargs), 
+        dims=out_dims, 
+        ambiguous_dims=ambiguous_dims)
     return result
 
 def sinh(x: array, /) -> array:
@@ -1631,10 +1874,15 @@ def sinh(x: array, /) -> array:
     out: array
         an array containing the hyperbolic sine of each element in ``x``. The returned array must have a floating-point data type determined by :ref:`type-promotion`.
     """
-    out_dims = {implementation_helper_name}.calculate_output_dims({params})
-    ambiguous_dims = {implementation_helper_name}.calculate_output_ambiguous_dims(args, kwargs)
-    processed_args, processed_kwargs = {implementation_helper_name}.process_args(args, kwargs)
-    result = einarray({func_name}(*processed_args, **processed_kwargs), dims=out_dims, ambiguous_dims=ambiguous_dims)
+    args = (x,)
+    kwargs = {}
+    out_dims = SingleArgumentElementwise.calculate_output_dims(args, kwargs)
+    ambiguous_dims = SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+    processed_args, processed_kwargs = SingleArgumentElementwise.process_args(args, kwargs)
+    result = einarray(
+        x.__array_namespace__().sinh(*processed_args, **processed_kwargs), 
+        dims=out_dims, 
+        ambiguous_dims=ambiguous_dims)
     return result
 
 def square(x: array, /) -> array:
@@ -1651,10 +1899,15 @@ def square(x: array, /) -> array:
     out: array
         an array containing the evaluated result for each element in ``x``. The returned array must have a data type determined by :ref:`type-promotion`.
     """
-    out_dims = {implementation_helper_name}.calculate_output_dims({params})
-    ambiguous_dims = {implementation_helper_name}.calculate_output_ambiguous_dims(args, kwargs)
-    processed_args, processed_kwargs = {implementation_helper_name}.process_args(args, kwargs)
-    result = einarray({func_name}(*processed_args, **processed_kwargs), dims=out_dims, ambiguous_dims=ambiguous_dims)
+    args = (x,)
+    kwargs = {}
+    out_dims = SingleArgumentElementwise.calculate_output_dims(args, kwargs)
+    ambiguous_dims = SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+    processed_args, processed_kwargs = SingleArgumentElementwise.process_args(args, kwargs)
+    result = einarray(
+        x.__array_namespace__().square(*processed_args, **processed_kwargs), 
+        dims=out_dims, 
+        ambiguous_dims=ambiguous_dims)
     return result
 
 def sqrt(x: array, /) -> array:
@@ -1681,10 +1934,15 @@ def sqrt(x: array, /) -> array:
     out: array
         an array containing the square root of each element in ``x``. The returned array must have a real-valued floating-point data type determined by :ref:`type-promotion`.
     """
+    args = (x,)
+    kwargs = {}
     out_dims = SingleArgumentElementwise.calculate_output_dims(args, kwargs)
     ambiguous_dims = SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = SingleArgumentElementwise.process_args(args, kwargs)
-    result = einarray(sqrt(*processed_args, **processed_kwargs), dims=out_dims, ambiguous_dims=ambiguous_dims)
+    result = einarray(
+        x.__array_namespace__().sqrt(*processed_args, **processed_kwargs), 
+        dims=out_dims, 
+        ambiguous_dims=ambiguous_dims)
     return result
 
 def subtract(x1: array, x2: array, /) -> array:
@@ -1703,10 +1961,15 @@ def subtract(x1: array, x2: array, /) -> array:
     out: array
         an array containing the element-wise differences. The returned array must have a data type determined by :ref:`type-promotion`.
     """
-    out_dims = {implementation_helper_name}.calculate_output_dims({params})
-    ambiguous_dims = {implementation_helper_name}.calculate_output_ambiguous_dims(args, kwargs)
-    processed_args, processed_kwargs = {implementation_helper_name}.process_args(args, kwargs)
-    result = einarray({func_name}(*processed_args, **processed_kwargs), dims=out_dims, ambiguous_dims=ambiguous_dims)
+    args = (x1, x2,)
+    kwargs = {}
+    out_dims = SingleArgumentElementwise.calculate_output_dims(args, kwargs)
+    ambiguous_dims = SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+    processed_args, processed_kwargs = SingleArgumentElementwise.process_args(args, kwargs)
+    result = einarray(
+        x2.__array_namespace__().subtract(*processed_args, **processed_kwargs), 
+        dims=out_dims, 
+        ambiguous_dims=ambiguous_dims)
     return result
 
 def tan(x: array, /) -> array:
@@ -1732,10 +1995,15 @@ def tan(x: array, /) -> array:
     out: array
         an array containing the tangent of each element in ``x``. The returned array must have a real-valued floating-point data type determined by :ref:`type-promotion`.
     """
+    args = (x,)
+    kwargs = {}
     out_dims = SingleArgumentElementwise.calculate_output_dims(args, kwargs)
     ambiguous_dims = SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = SingleArgumentElementwise.process_args(args, kwargs)
-    result = einarray(tan(*processed_args, **processed_kwargs), dims=out_dims, ambiguous_dims=ambiguous_dims)
+    result = einarray(
+        x.__array_namespace__().tan(*processed_args, **processed_kwargs), 
+        dims=out_dims, 
+        ambiguous_dims=ambiguous_dims)
     return result
 
 def tanh(x: array, /) -> array:
@@ -1762,10 +2030,15 @@ def tanh(x: array, /) -> array:
     out: array
         an array containing the hyperbolic tangent of each element in ``x``. The returned array must have a real-valued floating-point data type determined by :ref:`type-promotion`.
     """
-    out_dims = {implementation_helper_name}.calculate_output_dims({params})
-    ambiguous_dims = {implementation_helper_name}.calculate_output_ambiguous_dims(args, kwargs)
-    processed_args, processed_kwargs = {implementation_helper_name}.process_args(args, kwargs)
-    result = einarray({func_name}(*processed_args, **processed_kwargs), dims=out_dims, ambiguous_dims=ambiguous_dims)
+    args = (x,)
+    kwargs = {}
+    out_dims = SingleArgumentElementwise.calculate_output_dims(args, kwargs)
+    ambiguous_dims = SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+    processed_args, processed_kwargs = SingleArgumentElementwise.process_args(args, kwargs)
+    result = einarray(
+        x.__array_namespace__().tanh(*processed_args, **processed_kwargs), 
+        dims=out_dims, 
+        ambiguous_dims=ambiguous_dims)
     return result
 
 def trunc(x: array, /) -> array:
@@ -1794,10 +2067,15 @@ def trunc(x: array, /) -> array:
     out: array
         an array containing the rounded result for each element in ``x``. The returned array must have the same data type as ``x``.
     """
-    out_dims = {implementation_helper_name}.calculate_output_dims({params})
-    ambiguous_dims = {implementation_helper_name}.calculate_output_ambiguous_dims(args, kwargs)
-    processed_args, processed_kwargs = {implementation_helper_name}.process_args(args, kwargs)
-    result = einarray({func_name}(*processed_args, **processed_kwargs), dims=out_dims, ambiguous_dims=ambiguous_dims)
+    args = (x,)
+    kwargs = {}
+    out_dims = SingleArgumentElementwise.calculate_output_dims(args, kwargs)
+    ambiguous_dims = SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+    processed_args, processed_kwargs = SingleArgumentElementwise.process_args(args, kwargs)
+    result = einarray(
+        x.__array_namespace__().trunc(*processed_args, **processed_kwargs), 
+        dims=out_dims, 
+        ambiguous_dims=ambiguous_dims)
     return result
 
 __all__ = ['abs', 'acos', 'acosh', 'add', 'asin', 'asinh', 'atan', 'atan2', 'atanh', 'bitwise_and', 'bitwise_left_shift', 'bitwise_invert', 'bitwise_or', 'bitwise_right_shift', 'bitwise_xor', 'ceil', 'cos', 'cosh', 'divide', 'equal', 'exp', 'expm1', 'floor', 'floor_divide', 'greater', 'greater_equal', 'isfinite', 'isinf', 'isnan', 'less', 'less_equal', 'log', 'log1p', 'log2', 'log10', 'logaddexp', 'logical_and', 'logical_not', 'logical_or', 'logical_xor', 'multiply', 'negative', 'not_equal', 'positive', 'pow', 'remainder', 'round', 'sign', 'sin', 'sinh', 'square', 'sqrt', 'subtract', 'tan', 'tanh', 'trunc']

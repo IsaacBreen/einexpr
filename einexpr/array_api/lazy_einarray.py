@@ -2,11 +2,9 @@ from __future__ import annotations
 
 from ._types import (array, dtype as Dtype, device as Device, Optional, Tuple,
                      Union, Any, PyCapsule, Enum, ellipsis)
-from .. import einarray
-from .. import einarray
-from .. import einarray
+from .. import MultiArgumentElementwise, SingleArgumentElementwise, einarray
 
-class _array():
+class lazy_einarray():
     def __init__(self) -> None:
         """
         Initialize the attributes for the array object class.
@@ -148,7 +146,16 @@ class _array():
         .. note::
            Element-wise results must equal the results returned by the equivalent element-wise function :func:`~array_api.abs`.
         """
-        raise NotImplementedError
+        args = (self,)
+        kwargs = {}
+        out_dims = SingleArgumentElementwise.calculate_output_dims(args, kwargs)
+        ambiguous_dims = SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+        processed_args, processed_kwargs = SingleArgumentElementwise.process_args(args, kwargs)
+        result = einarray(
+            self.__array_namespace__().__abs__(*processed_args, **processed_kwargs), 
+            dims=out_dims, 
+            ambiguous_dims=ambiguous_dims)
+        return result
 
     def __add__(self: array, other: Union[int, float, array], /) -> array:
         """
@@ -195,7 +202,16 @@ class _array():
         .. note::
            Element-wise results must equal the results returned by the equivalent element-wise function :func:`~array_api.add`.
         """
-        raise NotImplementedError
+        args = (self, other,)
+        kwargs = {}
+        out_dims = MultiArgumentElementwise.calculate_output_dims(args, kwargs)
+        ambiguous_dims = MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+        processed_args, processed_kwargs = MultiArgumentElementwise.process_args(args, kwargs)
+        result = einarray(
+            self.__array_namespace__().__add__(*processed_args, **processed_kwargs), 
+            dims=out_dims, 
+            ambiguous_dims=ambiguous_dims)
+        return result
 
     def __and__(self: array, other: Union[int, bool, array], /) -> array:
         """
@@ -217,7 +233,16 @@ class _array():
         .. note::
            Element-wise results must equal the results returned by the equivalent element-wise function :func:`~array_api.bitwise_and`.
         """
-        raise NotImplementedError
+        args = (self, other,)
+        kwargs = {}
+        out_dims = MultiArgumentElementwise.calculate_output_dims(args, kwargs)
+        ambiguous_dims = MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+        processed_args, processed_kwargs = MultiArgumentElementwise.process_args(args, kwargs)
+        result = einarray(
+            self.__array_namespace__().__and__(*processed_args, **processed_kwargs), 
+            dims=out_dims, 
+            ambiguous_dims=ambiguous_dims)
+        return result
 
     def __array_namespace__(self: array, /, *, api_version: Optional[str] = None) -> Any:
         """
@@ -356,7 +381,16 @@ class _array():
         .. note::
            Element-wise results must equal the results returned by the equivalent element-wise function :func:`~array_api.equal`.
         """
-        raise NotImplementedError
+        args = (self, other,)
+        kwargs = {}
+        out_dims = MultiArgumentElementwise.calculate_output_dims(args, kwargs)
+        ambiguous_dims = MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+        processed_args, processed_kwargs = MultiArgumentElementwise.process_args(args, kwargs)
+        result = einarray(
+            self.__array_namespace__().__eq__(*processed_args, **processed_kwargs), 
+            dims=out_dims, 
+            ambiguous_dims=ambiguous_dims)
+        return result
 
     def __float__(self: array, /) -> float:
         """
@@ -433,7 +467,16 @@ class _array():
         .. note::
            Element-wise results must equal the results returned by the equivalent element-wise function :func:`~array_api.floor_divide`.
         """
-        raise NotImplementedError
+        args = (self, other,)
+        kwargs = {}
+        out_dims = MultiArgumentElementwise.calculate_output_dims(args, kwargs)
+        ambiguous_dims = MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+        processed_args, processed_kwargs = MultiArgumentElementwise.process_args(args, kwargs)
+        result = einarray(
+            self.__array_namespace__().__floordiv__(*processed_args, **processed_kwargs), 
+            dims=out_dims, 
+            ambiguous_dims=ambiguous_dims)
+        return result
 
     def __ge__(self: array, other: Union[int, float, array], /) -> array:
         """
@@ -455,7 +498,16 @@ class _array():
         .. note::
            Element-wise results must equal the results returned by the equivalent element-wise function :func:`~array_api.greater_equal`.
         """
-        raise NotImplementedError
+        args = (self, other,)
+        kwargs = {}
+        out_dims = MultiArgumentElementwise.calculate_output_dims(args, kwargs)
+        ambiguous_dims = MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+        processed_args, processed_kwargs = MultiArgumentElementwise.process_args(args, kwargs)
+        result = einarray(
+            self.__array_namespace__().__ge__(*processed_args, **processed_kwargs), 
+            dims=out_dims, 
+            ambiguous_dims=ambiguous_dims)
+        return result
 
     def __getitem__(self: array, key: Union[int, slice, ellipsis, Tuple[Union[int, slice, ellipsis], ...], array], /) -> array:
         """
@@ -495,7 +547,16 @@ class _array():
         .. note::
            Element-wise results must equal the results returned by the equivalent element-wise function :func:`~array_api.greater`.
         """
-        raise NotImplementedError
+        args = (self, other,)
+        kwargs = {}
+        out_dims = MultiArgumentElementwise.calculate_output_dims(args, kwargs)
+        ambiguous_dims = MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+        processed_args, processed_kwargs = MultiArgumentElementwise.process_args(args, kwargs)
+        result = einarray(
+            self.__array_namespace__().__gt__(*processed_args, **processed_kwargs), 
+            dims=out_dims, 
+            ambiguous_dims=ambiguous_dims)
+        return result
 
     def __index__(self: array, /) -> int:
         """
@@ -550,7 +611,16 @@ class _array():
         .. note::
            Element-wise results must equal the results returned by the equivalent element-wise function :func:`~array_api.bitwise_invert`.
         """
-        raise NotImplementedError
+        args = (self,)
+        kwargs = {}
+        out_dims = SingleArgumentElementwise.calculate_output_dims(args, kwargs)
+        ambiguous_dims = SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+        processed_args, processed_kwargs = SingleArgumentElementwise.process_args(args, kwargs)
+        result = einarray(
+            self.__array_namespace__().__invert__(*processed_args, **processed_kwargs), 
+            dims=out_dims, 
+            ambiguous_dims=ambiguous_dims)
+        return result
 
     def __le__(self: array, other: Union[int, float, array], /) -> array:
         """
@@ -572,7 +642,16 @@ class _array():
         .. note::
            Element-wise results must equal the results returned by the equivalent element-wise function :func:`~array_api.less_equal`.
         """
-        raise NotImplementedError
+        args = (self, other,)
+        kwargs = {}
+        out_dims = MultiArgumentElementwise.calculate_output_dims(args, kwargs)
+        ambiguous_dims = MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+        processed_args, processed_kwargs = MultiArgumentElementwise.process_args(args, kwargs)
+        result = einarray(
+            self.__array_namespace__().__le__(*processed_args, **processed_kwargs), 
+            dims=out_dims, 
+            ambiguous_dims=ambiguous_dims)
+        return result
 
     def __lshift__(self: array, other: Union[int, array], /) -> array:
         """
@@ -594,7 +673,16 @@ class _array():
         .. note::
            Element-wise results must equal the results returned by the equivalent element-wise function :func:`~array_api.bitwise_left_shift`.
         """
-        raise NotImplementedError
+        args = (self, other,)
+        kwargs = {}
+        out_dims = MultiArgumentElementwise.calculate_output_dims(args, kwargs)
+        ambiguous_dims = MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+        processed_args, processed_kwargs = MultiArgumentElementwise.process_args(args, kwargs)
+        result = einarray(
+            self.__array_namespace__().__lshift__(*processed_args, **processed_kwargs), 
+            dims=out_dims, 
+            ambiguous_dims=ambiguous_dims)
+        return result
 
     def __lt__(self: array, other: Union[int, float, array], /) -> array:
         """
@@ -616,7 +704,16 @@ class _array():
         .. note::
            Element-wise results must equal the results returned by the equivalent element-wise function :func:`~array_api.less`.
         """
-        raise NotImplementedError
+        args = (self, other,)
+        kwargs = {}
+        out_dims = MultiArgumentElementwise.calculate_output_dims(args, kwargs)
+        ambiguous_dims = MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+        processed_args, processed_kwargs = MultiArgumentElementwise.process_args(args, kwargs)
+        result = einarray(
+            self.__array_namespace__().__lt__(*processed_args, **processed_kwargs), 
+            dims=out_dims, 
+            ambiguous_dims=ambiguous_dims)
+        return result
 
     def __matmul__(self: array, other: array, /) -> array:
         """
@@ -709,7 +806,16 @@ class _array():
         .. note::
            Element-wise results must equal the results returned by the equivalent element-wise function :func:`~array_api.remainder`.
         """
-        raise NotImplementedError
+        args = (self, other,)
+        kwargs = {}
+        out_dims = MultiArgumentElementwise.calculate_output_dims(args, kwargs)
+        ambiguous_dims = MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+        processed_args, processed_kwargs = MultiArgumentElementwise.process_args(args, kwargs)
+        result = einarray(
+            self.__array_namespace__().__mod__(*processed_args, **processed_kwargs), 
+            dims=out_dims, 
+            ambiguous_dims=ambiguous_dims)
+        return result
 
     def __mul__(self: array, other: Union[int, float, array], /) -> array:
         """
@@ -749,7 +855,16 @@ class _array():
         .. note::
            Element-wise results must equal the results returned by the equivalent element-wise function :func:`~array_api.multiply`.
         """
-        raise NotImplementedError
+        args = (self, other,)
+        kwargs = {}
+        out_dims = MultiArgumentElementwise.calculate_output_dims(args, kwargs)
+        ambiguous_dims = MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+        processed_args, processed_kwargs = MultiArgumentElementwise.process_args(args, kwargs)
+        result = einarray(
+            self.__array_namespace__().__mul__(*processed_args, **processed_kwargs), 
+            dims=out_dims, 
+            ambiguous_dims=ambiguous_dims)
+        return result
 
     def __ne__(self: array, other: Union[int, float, bool, array], /) -> array:
         """
@@ -771,7 +886,16 @@ class _array():
         .. note::
            Element-wise results must equal the results returned by the equivalent element-wise function :func:`~array_api.not_equal`.
         """
-        raise NotImplementedError
+        args = (self, other,)
+        kwargs = {}
+        out_dims = MultiArgumentElementwise.calculate_output_dims(args, kwargs)
+        ambiguous_dims = MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+        processed_args, processed_kwargs = MultiArgumentElementwise.process_args(args, kwargs)
+        result = einarray(
+            self.__array_namespace__().__ne__(*processed_args, **processed_kwargs), 
+            dims=out_dims, 
+            ambiguous_dims=ambiguous_dims)
+        return result
 
     def __neg__(self: array, /) -> array:
         """
@@ -797,7 +921,16 @@ class _array():
         .. note::
            Element-wise results must equal the results returned by the equivalent element-wise function :func:`~array_api.negative`.
         """
-        raise NotImplementedError
+        args = (self,)
+        kwargs = {}
+        out_dims = SingleArgumentElementwise.calculate_output_dims(args, kwargs)
+        ambiguous_dims = SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+        processed_args, processed_kwargs = SingleArgumentElementwise.process_args(args, kwargs)
+        result = einarray(
+            self.__array_namespace__().__neg__(*processed_args, **processed_kwargs), 
+            dims=out_dims, 
+            ambiguous_dims=ambiguous_dims)
+        return result
 
     def __or__(self: array, other: Union[int, bool, array], /) -> array:
         """
@@ -819,7 +952,16 @@ class _array():
         .. note::
            Element-wise results must equal the results returned by the equivalent element-wise function :func:`~array_api.bitwise_or`.
         """
-        raise NotImplementedError
+        args = (self, other,)
+        kwargs = {}
+        out_dims = MultiArgumentElementwise.calculate_output_dims(args, kwargs)
+        ambiguous_dims = MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+        processed_args, processed_kwargs = MultiArgumentElementwise.process_args(args, kwargs)
+        result = einarray(
+            self.__array_namespace__().__or__(*processed_args, **processed_kwargs), 
+            dims=out_dims, 
+            ambiguous_dims=ambiguous_dims)
+        return result
 
     def __pos__(self: array, /) -> array:
         """
@@ -839,7 +981,16 @@ class _array():
         .. note::
            Element-wise results must equal the results returned by the equivalent element-wise function :func:`~array_api.positive`.
         """
-        raise NotImplementedError
+        args = (self,)
+        kwargs = {}
+        out_dims = SingleArgumentElementwise.calculate_output_dims(args, kwargs)
+        ambiguous_dims = SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+        processed_args, processed_kwargs = SingleArgumentElementwise.process_args(args, kwargs)
+        result = einarray(
+            self.__array_namespace__().__pos__(*processed_args, **processed_kwargs), 
+            dims=out_dims, 
+            ambiguous_dims=ambiguous_dims)
+        return result
 
     def __pow__(self: array, other: Union[int, float, array], /) -> array:
         """
@@ -895,7 +1046,16 @@ class _array():
         .. note::
            Element-wise results must equal the results returned by the equivalent element-wise function :func:`~array_api.pow`.
         """
-        raise NotImplementedError
+        args = (self, other,)
+        kwargs = {}
+        out_dims = MultiArgumentElementwise.calculate_output_dims(args, kwargs)
+        ambiguous_dims = MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+        processed_args, processed_kwargs = MultiArgumentElementwise.process_args(args, kwargs)
+        result = einarray(
+            self.__array_namespace__().__pow__(*processed_args, **processed_kwargs), 
+            dims=out_dims, 
+            ambiguous_dims=ambiguous_dims)
+        return result
 
     def __rshift__(self: array, other: Union[int, array], /) -> array:
         """
@@ -917,7 +1077,16 @@ class _array():
         .. note::
            Element-wise results must equal the results returned by the equivalent element-wise function :func:`~array_api.bitwise_right_shift`.
         """
-        raise NotImplementedError
+        args = (self, other,)
+        kwargs = {}
+        out_dims = MultiArgumentElementwise.calculate_output_dims(args, kwargs)
+        ambiguous_dims = MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+        processed_args, processed_kwargs = MultiArgumentElementwise.process_args(args, kwargs)
+        result = einarray(
+            self.__array_namespace__().__rshift__(*processed_args, **processed_kwargs), 
+            dims=out_dims, 
+            ambiguous_dims=ambiguous_dims)
+        return result
 
     def __setitem__(self: array, key: Union[int, slice, ellipsis, Tuple[Union[int, slice, ellipsis], ...], array], value: Union[int, float, bool, array], /) -> None:
         """
@@ -963,7 +1132,16 @@ class _array():
         .. note::
            Element-wise results must equal the results returned by the equivalent element-wise function :func:`~array_api.subtract`.
         """
-        raise NotImplementedError
+        args = (self, other,)
+        kwargs = {}
+        out_dims = MultiArgumentElementwise.calculate_output_dims(args, kwargs)
+        ambiguous_dims = MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+        processed_args, processed_kwargs = MultiArgumentElementwise.process_args(args, kwargs)
+        result = einarray(
+            self.__array_namespace__().__sub__(*processed_args, **processed_kwargs), 
+            dims=out_dims, 
+            ambiguous_dims=ambiguous_dims)
+        return result
 
     def __truediv__(self: array, other: Union[int, float, array], /) -> array:
         """
@@ -1017,7 +1195,16 @@ class _array():
         .. note::
            Element-wise results must equal the results returned by the equivalent element-wise function :func:`~array_api.divide`.
         """
-        raise NotImplementedError
+        args = (self, other,)
+        kwargs = {}
+        out_dims = MultiArgumentElementwise.calculate_output_dims(args, kwargs)
+        ambiguous_dims = MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+        processed_args, processed_kwargs = MultiArgumentElementwise.process_args(args, kwargs)
+        result = einarray(
+            self.__array_namespace__().__truediv__(*processed_args, **processed_kwargs), 
+            dims=out_dims, 
+            ambiguous_dims=ambiguous_dims)
+        return result
 
     def __xor__(self: array, other: Union[int, bool, array], /) -> array:
         """
@@ -1039,7 +1226,16 @@ class _array():
         .. note::
            Element-wise results must equal the results returned by the equivalent element-wise function :func:`~array_api.bitwise_xor`.
         """
-        raise NotImplementedError
+        args = (self, other,)
+        kwargs = {}
+        out_dims = MultiArgumentElementwise.calculate_output_dims(args, kwargs)
+        ambiguous_dims = MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+        processed_args, processed_kwargs = MultiArgumentElementwise.process_args(args, kwargs)
+        result = einarray(
+            self.__array_namespace__().__xor__(*processed_args, **processed_kwargs), 
+            dims=out_dims, 
+            ambiguous_dims=ambiguous_dims)
+        return result
 
     def to_device(self: array, device: Device, /, *, stream: Optional[Union[int, Any]] = None) -> array:
         """
@@ -1065,6 +1261,4 @@ class _array():
         """
         raise NotImplementedError
 
-array = _array
 
-__all__ = ['array']

@@ -1,8 +1,6 @@
 from ._types import (List, NestedSequence, Optional, SupportsBufferProtocol, Tuple, Union, array,
                      device, dtype)
 from .. import SingleArgumentElementwise, einarray
-from .. import einarray
-from .. import einarray
 
 def arange(start: Union[int, float], /, stop: Optional[Union[int, float]] = None, step: Union[int, float] = 1, *, dtype: Optional[dtype] = None, device: Optional[device] = None) -> array:
     """
@@ -222,10 +220,15 @@ def full_like(x: array, /, fill_value: Union[bool, int, float, complex], *, dtyp
     out: array
         an array having the same shape as ``x`` and where every element is equal to ``fill_value``.
     """
+    args = (x,)
+    kwargs = {'dtype': dtype, 'device': device}
     out_dims = SingleArgumentElementwise.calculate_output_dims(args, kwargs)
     ambiguous_dims = SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = SingleArgumentElementwise.process_args(args, kwargs)
-    result = einarray(full_like(*processed_args, **processed_kwargs), dims=out_dims, ambiguous_dims=ambiguous_dims)
+    result = einarray(
+        x.__array_namespace__().full_like(*processed_args, **processed_kwargs), 
+        dims=out_dims, 
+        ambiguous_dims=ambiguous_dims)
     return result
 
 def linspace(start: Union[int, float], stop: Union[int, float], /, num: int, *, dtype: Optional[dtype] = None, device: Optional[device] = None, endpoint: bool = True) -> array:
@@ -336,10 +339,15 @@ def ones_like(x: array, /, *, dtype: Optional[dtype] = None, device: Optional[de
     out: array
         an array having the same shape as ``x`` and filled with ones.
     """
+    args = (x,)
+    kwargs = {'dtype': dtype, 'device': device}
     out_dims = SingleArgumentElementwise.calculate_output_dims(args, kwargs)
     ambiguous_dims = SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = SingleArgumentElementwise.process_args(args, kwargs)
-    result = einarray(ones_like(*processed_args, **processed_kwargs), dims=out_dims, ambiguous_dims=ambiguous_dims)
+    result = einarray(
+        x.__array_namespace__().ones_like(*processed_args, **processed_kwargs), 
+        dims=out_dims, 
+        ambiguous_dims=ambiguous_dims)
     return result
 
 def tril(x: array, /, *, k: int = 0) -> array:
@@ -428,10 +436,15 @@ def zeros_like(x: array, /, *, dtype: Optional[dtype] = None, device: Optional[d
     out: array
         an array having the same shape as ``x`` and filled with zeros.
     """
+    args = (x,)
+    kwargs = {'dtype': dtype, 'device': device}
     out_dims = SingleArgumentElementwise.calculate_output_dims(args, kwargs)
     ambiguous_dims = SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = SingleArgumentElementwise.process_args(args, kwargs)
-    result = einarray(zeros_like(*processed_args, **processed_kwargs), dims=out_dims, ambiguous_dims=ambiguous_dims)
+    result = einarray(
+        x.__array_namespace__().zeros_like(*processed_args, **processed_kwargs), 
+        dims=out_dims, 
+        ambiguous_dims=ambiguous_dims)
     return result
 
 __all__ = ['arange', 'asarray', 'empty', 'empty_like', 'eye', 'from_dlpack', 'full', 'full_like', 'linspace', 'meshgrid', 'ones', 'ones_like', 'tril', 'triu', 'zeros', 'zeros_like']

@@ -1,6 +1,4 @@
 from ._types import Optional, Tuple, Union, array, dtype
-from .. import SingleDimensionReduction, einarray
-from .. import einarray
 from .. import MultiDimensionReduction, einarray
 
 def max(x: array, /, *, axis: Optional[Union[int, Tuple[int, ...]]] = None, keepdims: bool = False) -> array:
@@ -30,10 +28,15 @@ def max(x: array, /, *, axis: Optional[Union[int, Tuple[int, ...]]] = None, keep
     out: array
         if the maximum value was computed over the entire array, a zero-dimensional array containing the maximum value; otherwise, a non-zero-dimensional array containing the maximum values. The returned array must have the same data type as ``x``.
     """
-    out_dims = SingleDimensionReduction.calculate_output_dims(args, kwargs)
-    ambiguous_dims = SingleDimensionReduction.calculate_output_ambiguous_dims(args, kwargs)
-    processed_args, processed_kwargs = SingleDimensionReduction.process_args(args, kwargs)
-    result = einarray(max(*processed_args, **processed_kwargs), dims=out_dims, ambiguous_dims=ambiguous_dims)
+    args = (x,)
+    kwargs = {'axis': axis, 'keepdims': keepdims}
+    out_dims = MultiDimensionReduction.calculate_output_dims(args, kwargs)
+    ambiguous_dims = MultiDimensionReduction.calculate_output_ambiguous_dims(args, kwargs)
+    processed_args, processed_kwargs = MultiDimensionReduction.process_args(args, kwargs)
+    result = einarray(
+        x.__array_namespace__().max(*processed_args, **processed_kwargs), 
+        dims=out_dims, 
+        ambiguous_dims=ambiguous_dims)
     return result
 
 def mean(x: array, /, *, axis: Optional[Union[int, Tuple[int, ...]]] = None, keepdims: bool = False) -> array:
@@ -64,10 +67,15 @@ def mean(x: array, /, *, axis: Optional[Union[int, Tuple[int, ...]]] = None, kee
         .. note::
            While this specification recommends that this function only accept input arrays having a real-valued floating-point data type, specification-compliant array libraries may choose to accept input arrays having an integer data type. While mixed data type promotion is implementation-defined, if the input array ``x`` has an integer data type, the returned array must have the default real-valued floating-point data type.
     """
-    out_dims = SingleDimensionReduction.calculate_output_dims(args, kwargs)
-    ambiguous_dims = SingleDimensionReduction.calculate_output_ambiguous_dims(args, kwargs)
-    processed_args, processed_kwargs = SingleDimensionReduction.process_args(args, kwargs)
-    result = einarray(mean(*processed_args, **processed_kwargs), dims=out_dims, ambiguous_dims=ambiguous_dims)
+    args = (x,)
+    kwargs = {'axis': axis, 'keepdims': keepdims}
+    out_dims = MultiDimensionReduction.calculate_output_dims(args, kwargs)
+    ambiguous_dims = MultiDimensionReduction.calculate_output_ambiguous_dims(args, kwargs)
+    processed_args, processed_kwargs = MultiDimensionReduction.process_args(args, kwargs)
+    result = einarray(
+        x.__array_namespace__().mean(*processed_args, **processed_kwargs), 
+        dims=out_dims, 
+        ambiguous_dims=ambiguous_dims)
     return result
 
 def min(x: array, /, *, axis: Optional[Union[int, Tuple[int, ...]]] = None, keepdims: bool = False) -> array:
@@ -97,10 +105,15 @@ def min(x: array, /, *, axis: Optional[Union[int, Tuple[int, ...]]] = None, keep
     out: array
         if the minimum value was computed over the entire array, a zero-dimensional array containing the minimum value; otherwise, a non-zero-dimensional array containing the minimum values. The returned array must have the same data type as ``x``.
     """
-    out_dims = SingleDimensionReduction.calculate_output_dims(args, kwargs)
-    ambiguous_dims = SingleDimensionReduction.calculate_output_ambiguous_dims(args, kwargs)
-    processed_args, processed_kwargs = SingleDimensionReduction.process_args(args, kwargs)
-    result = einarray(min(*processed_args, **processed_kwargs), dims=out_dims, ambiguous_dims=ambiguous_dims)
+    args = (x,)
+    kwargs = {'axis': axis, 'keepdims': keepdims}
+    out_dims = MultiDimensionReduction.calculate_output_dims(args, kwargs)
+    ambiguous_dims = MultiDimensionReduction.calculate_output_ambiguous_dims(args, kwargs)
+    processed_args, processed_kwargs = MultiDimensionReduction.process_args(args, kwargs)
+    result = einarray(
+        x.__array_namespace__().min(*processed_args, **processed_kwargs), 
+        dims=out_dims, 
+        ambiguous_dims=ambiguous_dims)
     return result
 
 def prod(x: array, /, *, axis: Optional[Union[int, Tuple[int, ...]]] = None, dtype: Optional[dtype] = None, keepdims: bool = False) -> array:
@@ -144,10 +157,15 @@ def prod(x: array, /, *, axis: Optional[Union[int, Tuple[int, ...]]] = None, dty
     out: array
         if the product was computed over the entire array, a zero-dimensional array containing the product; otherwise, a non-zero-dimensional array containing the products. The returned array must have a data type as described by the ``dtype`` parameter above.
     """
-    out_dims = {implementation_helper_name}.calculate_output_dims({params})
-    ambiguous_dims = {implementation_helper_name}.calculate_output_ambiguous_dims(args, kwargs)
-    processed_args, processed_kwargs = {implementation_helper_name}.process_args(args, kwargs)
-    result = einarray({func_name}(*processed_args, **processed_kwargs), dims=out_dims, ambiguous_dims=ambiguous_dims)
+    args = (x,)
+    kwargs = {'axis': axis, 'dtype': dtype, 'keepdims': keepdims}
+    out_dims = MultiDimensionReduction.calculate_output_dims(args, kwargs)
+    ambiguous_dims = MultiDimensionReduction.calculate_output_ambiguous_dims(args, kwargs)
+    processed_args, processed_kwargs = MultiDimensionReduction.process_args(args, kwargs)
+    result = einarray(
+        x.__array_namespace__().prod(*processed_args, **processed_kwargs), 
+        dims=out_dims, 
+        ambiguous_dims=ambiguous_dims)
     return result
 
 def std(x: array, /, *, axis: Optional[Union[int, Tuple[int, ...]]] = None, correction: Union[int, float] = 0.0, keepdims: bool = False) -> array:
@@ -180,10 +198,15 @@ def std(x: array, /, *, axis: Optional[Union[int, Tuple[int, ...]]] = None, corr
         .. note::
            While this specification recommends that this function only accept input arrays having a real-valued floating-point data type, specification-compliant array libraries may choose to accept input arrays having an integer data type. While mixed data type promotion is implementation-defined, if the input array ``x`` has an integer data type, the returned array must have the default real-valued floating-point data type.
     """
-    out_dims = SingleDimensionReduction.calculate_output_dims(args, kwargs)
-    ambiguous_dims = SingleDimensionReduction.calculate_output_ambiguous_dims(args, kwargs)
-    processed_args, processed_kwargs = SingleDimensionReduction.process_args(args, kwargs)
-    result = einarray(std(*processed_args, **processed_kwargs), dims=out_dims, ambiguous_dims=ambiguous_dims)
+    args = (x,)
+    kwargs = {'axis': axis, 'correction': correction, 'keepdims': keepdims}
+    out_dims = MultiDimensionReduction.calculate_output_dims(args, kwargs)
+    ambiguous_dims = MultiDimensionReduction.calculate_output_ambiguous_dims(args, kwargs)
+    processed_args, processed_kwargs = MultiDimensionReduction.process_args(args, kwargs)
+    result = einarray(
+        x.__array_namespace__().std(*processed_args, **processed_kwargs), 
+        dims=out_dims, 
+        ambiguous_dims=ambiguous_dims)
     return result
 
 def sum(x: array, /, *, axis: Optional[Union[int, Tuple[int, ...]]] = None, dtype: Optional[dtype] = None, keepdims: bool = False) -> array:
@@ -227,10 +250,15 @@ def sum(x: array, /, *, axis: Optional[Union[int, Tuple[int, ...]]] = None, dtyp
     out: array
         if the sum was computed over the entire array, a zero-dimensional array containing the sum; otherwise, an array containing the sums. The returned array must have a data type as described by the ``dtype`` parameter above.
     """
-    out_dims = SingleDimensionReduction.calculate_output_dims(args, kwargs)
-    ambiguous_dims = SingleDimensionReduction.calculate_output_ambiguous_dims(args, kwargs)
-    processed_args, processed_kwargs = SingleDimensionReduction.process_args(args, kwargs)
-    result = einarray(sum(*processed_args, **processed_kwargs), dims=out_dims, ambiguous_dims=ambiguous_dims)
+    args = (x,)
+    kwargs = {'axis': axis, 'dtype': dtype, 'keepdims': keepdims}
+    out_dims = MultiDimensionReduction.calculate_output_dims(args, kwargs)
+    ambiguous_dims = MultiDimensionReduction.calculate_output_ambiguous_dims(args, kwargs)
+    processed_args, processed_kwargs = MultiDimensionReduction.process_args(args, kwargs)
+    result = einarray(
+        x.__array_namespace__().sum(*processed_args, **processed_kwargs), 
+        dims=out_dims, 
+        ambiguous_dims=ambiguous_dims)
     return result
 
 def var(x: array, /, *, axis: Optional[Union[int, Tuple[int, ...]]] = None, correction: Union[int, float] = 0.0, keepdims: bool = False) -> array:
@@ -264,10 +292,15 @@ def var(x: array, /, *, axis: Optional[Union[int, Tuple[int, ...]]] = None, corr
     .. note::
        While this specification recommends that this function only accept input arrays having a real-valued floating-point data type, specification-compliant array libraries may choose to accept input arrays having an integer data type. While mixed data type promotion is implementation-defined, if the input array ``x`` has an integer data type, the returned array must have the default real-valued floating-point data type.
     """
-    out_dims = {implementation_helper_name}.calculate_output_dims({params})
-    ambiguous_dims = {implementation_helper_name}.calculate_output_ambiguous_dims(args, kwargs)
-    processed_args, processed_kwargs = {implementation_helper_name}.process_args(args, kwargs)
-    result = einarray({func_name}(*processed_args, **processed_kwargs), dims=out_dims, ambiguous_dims=ambiguous_dims)
+    args = (x,)
+    kwargs = {'axis': axis, 'correction': correction, 'keepdims': keepdims}
+    out_dims = MultiDimensionReduction.calculate_output_dims(args, kwargs)
+    ambiguous_dims = MultiDimensionReduction.calculate_output_ambiguous_dims(args, kwargs)
+    processed_args, processed_kwargs = MultiDimensionReduction.process_args(args, kwargs)
+    result = einarray(
+        x.__array_namespace__().var(*processed_args, **processed_kwargs), 
+        dims=out_dims, 
+        ambiguous_dims=ambiguous_dims)
     return result
 
 __all__ = ['max', 'mean', 'min', 'prod', 'std', 'sum', 'var']

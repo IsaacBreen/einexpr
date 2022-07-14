@@ -1,7 +1,5 @@
 from ._types import Optional, Tuple, Union, array
-from .. import SingleDimensionReduction, einarray
-from .. import einarray
-from .. import einarray
+from .. import MultiDimensionReduction, einarray
 
 def all(x: array, /, *, axis: Optional[Union[int, Tuple[int, ...]]] = None, keepdims: bool = False) -> array:
     """
@@ -30,10 +28,15 @@ def all(x: array, /, *, axis: Optional[Union[int, Tuple[int, ...]]] = None, keep
     out: array
         if a logical AND reduction was performed over the entire array, the returned array must be a zero-dimensional array containing the test result; otherwise, the returned array must be a non-zero-dimensional array containing the test results. The returned array must have a data type of ``bool``.
     """
-    out_dims = SingleDimensionReduction.calculate_output_dims(args, kwargs)
-    ambiguous_dims = SingleDimensionReduction.calculate_output_ambiguous_dims(args, kwargs)
-    processed_args, processed_kwargs = SingleDimensionReduction.process_args(args, kwargs)
-    result = einarray(all(*processed_args, **processed_kwargs), dims=out_dims, ambiguous_dims=ambiguous_dims)
+    args = (x,)
+    kwargs = {'axis': axis, 'keepdims': keepdims}
+    out_dims = MultiDimensionReduction.calculate_output_dims(args, kwargs)
+    ambiguous_dims = MultiDimensionReduction.calculate_output_ambiguous_dims(args, kwargs)
+    processed_args, processed_kwargs = MultiDimensionReduction.process_args(args, kwargs)
+    result = einarray(
+        x.__array_namespace__().all(*processed_args, **processed_kwargs), 
+        dims=out_dims, 
+        ambiguous_dims=ambiguous_dims)
     return result
 
 def any(x: array, /, *, axis: Optional[Union[int, Tuple[int, ...]]] = None, keepdims: bool = False) -> array:
@@ -63,10 +66,15 @@ def any(x: array, /, *, axis: Optional[Union[int, Tuple[int, ...]]] = None, keep
     out: array
         if a logical OR reduction was performed over the entire array, the returned array must be a zero-dimensional array containing the test result; otherwise, the returned array must be a non-zero-dimensional array containing the test results. The returned array must have a data type of ``bool``.
     """
-    out_dims = SingleDimensionReduction.calculate_output_dims(args, kwargs)
-    ambiguous_dims = SingleDimensionReduction.calculate_output_ambiguous_dims(args, kwargs)
-    processed_args, processed_kwargs = SingleDimensionReduction.process_args(args, kwargs)
-    result = einarray(any(*processed_args, **processed_kwargs), dims=out_dims, ambiguous_dims=ambiguous_dims)
+    args = (x,)
+    kwargs = {'axis': axis, 'keepdims': keepdims}
+    out_dims = MultiDimensionReduction.calculate_output_dims(args, kwargs)
+    ambiguous_dims = MultiDimensionReduction.calculate_output_ambiguous_dims(args, kwargs)
+    processed_args, processed_kwargs = MultiDimensionReduction.process_args(args, kwargs)
+    result = einarray(
+        x.__array_namespace__().any(*processed_args, **processed_kwargs), 
+        dims=out_dims, 
+        ambiguous_dims=ambiguous_dims)
     return result
 
 __all__ = ['all', 'any']

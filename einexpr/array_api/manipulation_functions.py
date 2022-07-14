@@ -1,7 +1,5 @@
 from ._types import List, Optional, Tuple, Union, array
-from .. import Concatenation, einarray
-from .. import einarray
-from .. import SingleArgumentElementwise, einarray
+from .. import Concatenation, SingleArgumentElementwise, einarray
 
 def broadcast_arrays(*arrays: array) -> List[array]:
     """
@@ -56,11 +54,7 @@ def concat(arrays: Union[Tuple[array, ...], List[array]], /, *, axis: Optional[i
         .. note::
            This specification leaves type promotion between data type families (i.e., ``intxx`` and ``floatxx``) unspecified.
     """
-    out_dims = Concatenation.calculate_output_dims(args, kwargs)
-    ambiguous_dims = Concatenation.calculate_output_ambiguous_dims(args, kwargs)
-    processed_args, processed_kwargs = Concatenation.process_args(args, kwargs)
-    result = einarray(concat(*processed_args, **processed_kwargs), dims=out_dims, ambiguous_dims=ambiguous_dims)
-    return result
+    raise NotImplementedError
 
 def expand_dims(x: array, /, *, axis: int = 0) -> array:
     """
@@ -96,10 +90,15 @@ def flip(x: array, /, *, axis: Optional[Union[int, Tuple[int, ...]]] = None) -> 
     out: array
         an output array having the same data type and shape as ``x`` and whose elements, relative to ``x``, are reordered.
     """
-    out_dims = {implementation_helper_name}.calculate_output_dims({params})
-    ambiguous_dims = {implementation_helper_name}.calculate_output_ambiguous_dims(args, kwargs)
-    processed_args, processed_kwargs = {implementation_helper_name}.process_args(args, kwargs)
-    result = einarray({func_name}(*processed_args, **processed_kwargs), dims=out_dims, ambiguous_dims=ambiguous_dims)
+    args = (x,)
+    kwargs = {'axis': axis}
+    out_dims = SingleArgumentElementwise.calculate_output_dims(args, kwargs)
+    ambiguous_dims = SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+    processed_args, processed_kwargs = SingleArgumentElementwise.process_args(args, kwargs)
+    result = einarray(
+        x.__array_namespace__().flip(*processed_args, **processed_kwargs), 
+        dims=out_dims, 
+        ambiguous_dims=ambiguous_dims)
     return result
 
 def permute_dims(x: array, /, axes: Tuple[int, ...]) -> array:

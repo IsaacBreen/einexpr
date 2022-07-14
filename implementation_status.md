@@ -1,193 +1,235 @@
 Functions implemented in einexpr/array_api/statistical_functions.py
-    ✅  einexpr.array_api.statistical_functions.max                             
-    ✅  einexpr.array_api.statistical_functions.mean                            
-    ✅  einexpr.array_api.statistical_functions.min                             
-    ✅  einexpr.array_api.statistical_functions.prod                            
-    ✅  einexpr.array_api.statistical_functions.std                             
-    ✅  einexpr.array_api.statistical_functions.sum                             
-    ✅  einexpr.array_api.statistical_functions.var                             
+    ✅  einexpr.array_api.statistical_functions.max(x: array, /, *, axis: Optional[Union[int, Tuple[int, ...]]] = None, keepdims: bool = False)                             
+    ✅  einexpr.array_api.statistical_functions.mean(x: array, /, *, axis: Optional[Union[int, Tuple[int, ...]]] = None, keepdims: bool = False)                            
+    ✅  einexpr.array_api.statistical_functions.min(x: array, /, *, axis: Optional[Union[int, Tuple[int, ...]]] = None, keepdims: bool = False)                             
+    ✅  einexpr.array_api.statistical_functions.prod(x: array, /, *, axis: Optional[Union[int, Tuple[int, ...]]] = None, dtype: Optional[dtype] = None, keepdims: bool = False)                            
+    ✅  einexpr.array_api.statistical_functions.std(x: array, /, *, axis: Optional[Union[int, Tuple[int, ...]]] = None, correction: Union[int, float] = 0.0, keepdims: bool = False)                             
+    ✅  einexpr.array_api.statistical_functions.sum(x: array, /, *, axis: Optional[Union[int, Tuple[int, ...]]] = None, dtype: Optional[dtype] = None, keepdims: bool = False)                             
+    ✅  einexpr.array_api.statistical_functions.var(x: array, /, *, axis: Optional[Union[int, Tuple[int, ...]]] = None, correction: Union[int, float] = 0.0, keepdims: bool = False)                             
 Functions implemented in einexpr/array_api/set_functions.py
-    ❌  einexpr.array_api.set_functions.unique_all                      
-    ❌  einexpr.array_api.set_functions.unique_counts                   
-    ❌  einexpr.array_api.set_functions.unique_inverse                  
-    ❌  einexpr.array_api.set_functions.unique_values                   
+    ❌  einexpr.array_api.set_functions.unique_all(x: array, /)                      
+    ❌  einexpr.array_api.set_functions.unique_counts(x: array, /)                   
+    ❌  einexpr.array_api.set_functions.unique_inverse(x: array, /)                  
+    ❌  einexpr.array_api.set_functions.unique_values(x: array, /)                   
 Functions implemented in einexpr/array_api/searching_functions.py
-    ✅  einexpr.array_api.searching_functions.argmax                          
-    ✅  einexpr.array_api.searching_functions.argmin                          
-    ✅  einexpr.array_api.searching_functions.nonzero                         
-    ✅  einexpr.array_api.searching_functions.where                           
+    ✅  einexpr.array_api.searching_functions.argmax(x: array, /, *, axis: Optional[int] = None, keepdims: bool = False)                          
+    ✅  einexpr.array_api.searching_functions.argmin(x: array, /, *, axis: Optional[int] = None, keepdims: bool = False)                          
+    ❌  einexpr.array_api.searching_functions.nonzero(x: array, /)                         
+    ✅  einexpr.array_api.searching_functions.where(condition: array, x1: array, x2: array, /)                           
 Functions implemented in einexpr/array_api/creation_functions.py
-    ❌  einexpr.array_api.creation_functions.arange                          
-    ❌  einexpr.array_api.creation_functions.asarray                         
-    ❌  einexpr.array_api.creation_functions.empty                           
-    ❌  einexpr.array_api.creation_functions.empty_like                      
-    ❌  einexpr.array_api.creation_functions.eye                             
-    ❌  einexpr.array_api.creation_functions.from_dlpack                     
-    ❌  einexpr.array_api.creation_functions.full                            
-    ✅  einexpr.array_api.creation_functions.full_like                       
-    ❌  einexpr.array_api.creation_functions.linspace                        
-    ❌  einexpr.array_api.creation_functions.meshgrid                        
-    ❌  einexpr.array_api.creation_functions.ones                            
-    ✅  einexpr.array_api.creation_functions.ones_like                       
-    ❌  einexpr.array_api.creation_functions.tril                            
-    ❌  einexpr.array_api.creation_functions.triu                            
-    ❌  einexpr.array_api.creation_functions.zeros                           
-    ✅  einexpr.array_api.creation_functions.zeros_like                      
+    ❌  einexpr.array_api.creation_functions.arange(start: Union[int, float], /, stop: Optional[Union[int, float]] = None, step: Union[int, float] = 1, *, dtype: Optional[dtype] = None, device: Optional[device] = None)                          
+    ❌  einexpr.array_api.creation_functions.asarray(obj: Union[array, bool, int, float, complex, NestedSequence, SupportsBufferProtocol], /, *, dtype: Optional[dtype] = None, device: Optional[device] = None, copy: Optional[bool] = None)                         
+    ❌  einexpr.array_api.creation_functions.empty(shape: Union[int, Tuple[int, ...]], *, dtype: Optional[dtype] = None, device: Optional[device] = None)                           
+    ❌  einexpr.array_api.creation_functions.empty_like(x: array, /, *, dtype: Optional[dtype] = None, device: Optional[device] = None)                      
+    ❌  einexpr.array_api.creation_functions.eye(n_rows: int, n_cols: Optional[int] = None, /, *, k: int = 0, dtype: Optional[dtype] = None, device: Optional[device] = None)                             
+    ❌  einexpr.array_api.creation_functions.from_dlpack(x: object, /)                     
+    ❌  einexpr.array_api.creation_functions.full(shape: Union[int, Tuple[int, ...]], fill_value: Union[bool, int, float, complex], *, dtype: Optional[dtype] = None, device: Optional[device] = None)                            
+    ✅  einexpr.array_api.creation_functions.full_like(x: array, /, fill_value: Union[bool, int, float, complex], *, dtype: Optional[dtype] = None, device: Optional[device] = None)                       
+    ❌  einexpr.array_api.creation_functions.linspace(start: Union[int, float], stop: Union[int, float], /, num: int, *, dtype: Optional[dtype] = None, device: Optional[device] = None, endpoint: bool = True)                        
+    ❌  einexpr.array_api.creation_functions.meshgrid(*arrays: array, indexing: str = 'xy')                        
+    ❌  einexpr.array_api.creation_functions.ones(shape: Union[int, Tuple[int, ...]], *, dtype: Optional[dtype] = None, device: Optional[device] = None)                            
+    ✅  einexpr.array_api.creation_functions.ones_like(x: array, /, *, dtype: Optional[dtype] = None, device: Optional[device] = None)                       
+    ❌  einexpr.array_api.creation_functions.tril(x: array, /, *, k: int = 0)                            
+    ❌  einexpr.array_api.creation_functions.triu(x: array, /, *, k: int = 0)                            
+    ❌  einexpr.array_api.creation_functions.zeros(shape: Union[int, Tuple[int, ...]], *, dtype: Optional[dtype] = None, device: Optional[device] = None)                           
+    ✅  einexpr.array_api.creation_functions.zeros_like(x: array, /, *, dtype: Optional[dtype] = None, device: Optional[device] = None)                      
 Functions implemented in einexpr/array_api/_types.py
-    ✅  einexpr.array_api._types.NestedSequence.__getitem__                     
-    ✅  einexpr.array_api._types.NestedSequence.__len__                         
+    ✅  einexpr.array_api._types.NestedSequence.__getitem__(self, key: int, /)                     
+    ✅  einexpr.array_api._types.NestedSequence.__len__(self, /)                         
 Functions implemented in einexpr/array_api/utility_functions.py
-    ✅  einexpr.array_api.utility_functions.all                             
-    ✅  einexpr.array_api.utility_functions.any                             
+    ✅  einexpr.array_api.utility_functions.all(x: array, /, *, axis: Optional[Union[int, Tuple[int, ...]]] = None, keepdims: bool = False)                             
+    ✅  einexpr.array_api.utility_functions.any(x: array, /, *, axis: Optional[Union[int, Tuple[int, ...]]] = None, keepdims: bool = False)                             
 Functions implemented in einexpr/array_api/manipulation_functions.py
-    ❌  einexpr.array_api.manipulation_functions.broadcast_arrays                
-    ❌  einexpr.array_api.manipulation_functions.broadcast_to                    
-    ✅  einexpr.array_api.manipulation_functions.concat                          
-    ❌  einexpr.array_api.manipulation_functions.expand_dims                     
-    ✅  einexpr.array_api.manipulation_functions.flip                            
-    ❌  einexpr.array_api.manipulation_functions.permute_dims                    
-    ❌  einexpr.array_api.manipulation_functions.reshape                         
-    ❌  einexpr.array_api.manipulation_functions.roll                            
-    ❌  einexpr.array_api.manipulation_functions.squeeze                         
-    ❌  einexpr.array_api.manipulation_functions.stack                           
+    ❌  einexpr.array_api.manipulation_functions.broadcast_arrays(*arrays: array)                
+    ❌  einexpr.array_api.manipulation_functions.broadcast_to(x: array, /, shape: Tuple[int, ...])                    
+    ❌  einexpr.array_api.manipulation_functions.concat(arrays: Union[Tuple[array, ...], List[array]], /, *, axis: Optional[int] = 0)                          
+    ❌  einexpr.array_api.manipulation_functions.expand_dims(x: array, /, *, axis: int = 0)                     
+    ✅  einexpr.array_api.manipulation_functions.flip(x: array, /, *, axis: Optional[Union[int, Tuple[int, ...]]] = None)                            
+    ❌  einexpr.array_api.manipulation_functions.permute_dims(x: array, /, axes: Tuple[int, ...])                    
+    ❌  einexpr.array_api.manipulation_functions.reshape(x: array, /, shape: Tuple[int, ...], *, copy: Optional[bool] = None)                         
+    ❌  einexpr.array_api.manipulation_functions.roll(x: array, /, shift: Union[int, Tuple[int, ...]], *, axis: Optional[Union[int, Tuple[int, ...]]] = None)                            
+    ❌  einexpr.array_api.manipulation_functions.squeeze(x: array, /, axis: Union[int, Tuple[int, ...]])                         
+    ❌  einexpr.array_api.manipulation_functions.stack(arrays: Union[Tuple[array, ...], List[array]], /, *, axis: int = 0)                           
 Functions implemented in einexpr/array_api/sorting_functions.py
-    ✅  einexpr.array_api.sorting_functions.argsort                         
-    ✅  einexpr.array_api.sorting_functions.sort                            
+    ✅  einexpr.array_api.sorting_functions.argsort(x: array, /, *, axis: int = -1, descending: bool = False, stable: bool = True)                         
+    ✅  einexpr.array_api.sorting_functions.sort(x: array, /, *, axis: int = -1, descending: bool = False, stable: bool = True)                            
+Functions implemented in einexpr/array_api/lazy_einarray.py
+    ❌  einexpr.array_api.lazy_einarray.lazy_einarray.__init__(self)                        
+    ❌  einexpr.array_api.lazy_einarray.lazy_einarray.dtype()                           
+    ❌  einexpr.array_api.lazy_einarray.lazy_einarray.device()                          
+    ❌  einexpr.array_api.lazy_einarray.lazy_einarray.mT()                              
+    ❌  einexpr.array_api.lazy_einarray.lazy_einarray.ndim()                            
+    ❌  einexpr.array_api.lazy_einarray.lazy_einarray.shape()                           
+    ❌  einexpr.array_api.lazy_einarray.lazy_einarray.size()                            
+    ❌  einexpr.array_api.lazy_einarray.lazy_einarray.T()                               
+    ✅  einexpr.array_api.lazy_einarray.lazy_einarray.__abs__(self: array, /)                         
+    ✅  einexpr.array_api.lazy_einarray.lazy_einarray.__add__(self: array, other: Union[int, float, array], /)                         
+    ✅  einexpr.array_api.lazy_einarray.lazy_einarray.__and__(self: array, other: Union[int, bool, array], /)                         
+    ❌  einexpr.array_api.lazy_einarray.lazy_einarray.__array_namespace__(self: array, /, *, api_version: Optional[str] = None)             
+    ❌  einexpr.array_api.lazy_einarray.lazy_einarray.__bool__(self: array, /)                        
+    ❌  einexpr.array_api.lazy_einarray.lazy_einarray.__dlpack__(self: array, /, *, stream: Optional[Union[int, Any]] = None)                      
+    ❌  einexpr.array_api.lazy_einarray.lazy_einarray.__dlpack_device__(self: array, /)               
+    ✅  einexpr.array_api.lazy_einarray.lazy_einarray.__eq__(self: array, other: Union[int, float, bool, array], /)                          
+    ❌  einexpr.array_api.lazy_einarray.lazy_einarray.__float__(self: array, /)                       
+    ✅  einexpr.array_api.lazy_einarray.lazy_einarray.__floordiv__(self: array, other: Union[int, float, array], /)                    
+    ✅  einexpr.array_api.lazy_einarray.lazy_einarray.__ge__(self: array, other: Union[int, float, array], /)                          
+    ❌  einexpr.array_api.lazy_einarray.lazy_einarray.__getitem__(self: array, key: Union[int, slice, ellipsis, Tuple[Union[int, slice, ellipsis], ...], array], /)                     
+    ✅  einexpr.array_api.lazy_einarray.lazy_einarray.__gt__(self: array, other: Union[int, float, array], /)                          
+    ❌  einexpr.array_api.lazy_einarray.lazy_einarray.__index__(self: array, /)                       
+    ❌  einexpr.array_api.lazy_einarray.lazy_einarray.__int__(self: array, /)                         
+    ✅  einexpr.array_api.lazy_einarray.lazy_einarray.__invert__(self: array, /)                      
+    ✅  einexpr.array_api.lazy_einarray.lazy_einarray.__le__(self: array, other: Union[int, float, array], /)                          
+    ✅  einexpr.array_api.lazy_einarray.lazy_einarray.__lshift__(self: array, other: Union[int, array], /)                      
+    ✅  einexpr.array_api.lazy_einarray.lazy_einarray.__lt__(self: array, other: Union[int, float, array], /)                          
+    ❌  einexpr.array_api.lazy_einarray.lazy_einarray.__matmul__(self: array, other: array, /)                      
+    ✅  einexpr.array_api.lazy_einarray.lazy_einarray.__mod__(self: array, other: Union[int, float, array], /)                         
+    ✅  einexpr.array_api.lazy_einarray.lazy_einarray.__mul__(self: array, other: Union[int, float, array], /)                         
+    ✅  einexpr.array_api.lazy_einarray.lazy_einarray.__ne__(self: array, other: Union[int, float, bool, array], /)                          
+    ✅  einexpr.array_api.lazy_einarray.lazy_einarray.__neg__(self: array, /)                         
+    ✅  einexpr.array_api.lazy_einarray.lazy_einarray.__or__(self: array, other: Union[int, bool, array], /)                          
+    ✅  einexpr.array_api.lazy_einarray.lazy_einarray.__pos__(self: array, /)                         
+    ✅  einexpr.array_api.lazy_einarray.lazy_einarray.__pow__(self: array, other: Union[int, float, array], /)                         
+    ✅  einexpr.array_api.lazy_einarray.lazy_einarray.__rshift__(self: array, other: Union[int, array], /)                      
+    ❌  einexpr.array_api.lazy_einarray.lazy_einarray.__setitem__(self: array, key: Union[int, slice, ellipsis, Tuple[Union[int, slice, ellipsis], ...], array], value: Union[int, float, bool, array], /)                     
+    ✅  einexpr.array_api.lazy_einarray.lazy_einarray.__sub__(self: array, other: Union[int, float, array], /)                         
+    ✅  einexpr.array_api.lazy_einarray.lazy_einarray.__truediv__(self: array, other: Union[int, float, array], /)                     
+    ✅  einexpr.array_api.lazy_einarray.lazy_einarray.__xor__(self: array, other: Union[int, bool, array], /)                         
+    ❌  einexpr.array_api.lazy_einarray.lazy_einarray.to_device(self: array, device: Device, /, *, stream: Optional[Union[int, Any]] = None)                       
 Functions implemented in einexpr/array_api/constants.py
 Functions implemented in einexpr/array_api/__init__.py
 Functions implemented in einexpr/array_api/data_type_functions.py
-    ✅  einexpr.array_api.data_type_functions.astype                          
-    ❌  einexpr.array_api.data_type_functions.can_cast                        
-    ❌  einexpr.array_api.data_type_functions.finfo                           
-    ❌  einexpr.array_api.data_type_functions.iinfo                           
-    ❌  einexpr.array_api.data_type_functions.result_type                     
+    ✅  einexpr.array_api.data_type_functions.astype(x: array, dtype: dtype, /, *, copy: bool = True)                          
+    ❌  einexpr.array_api.data_type_functions.can_cast(from_: Union[dtype, array], to: dtype, /)                        
+    ❌  einexpr.array_api.data_type_functions.finfo(type: Union[dtype, array], /)                           
+    ❌  einexpr.array_api.data_type_functions.iinfo(type: Union[dtype, array], /)                           
+    ❌  einexpr.array_api.data_type_functions.result_type(*arrays_and_dtypes: Union[array, dtype])                     
 Functions implemented in einexpr/array_api/data_types.py
-    ❌  einexpr.array_api.data_types.__eq__                          
+    ❌  einexpr.array_api.data_types.__eq__(self: dtype, other: dtype, /)                          
 Functions implemented in einexpr/array_api/elementwise_functions.py
-    ✅  einexpr.array_api.elementwise_functions.abs                             
-    ✅  einexpr.array_api.elementwise_functions.acos                            
-    ✅  einexpr.array_api.elementwise_functions.acosh                           
-    ✅  einexpr.array_api.elementwise_functions.add                             
-    ✅  einexpr.array_api.elementwise_functions.asin                            
-    ✅  einexpr.array_api.elementwise_functions.asinh                           
-    ✅  einexpr.array_api.elementwise_functions.atan                            
-    ✅  einexpr.array_api.elementwise_functions.atan2                           
-    ✅  einexpr.array_api.elementwise_functions.atanh                           
-    ✅  einexpr.array_api.elementwise_functions.bitwise_and                     
-    ✅  einexpr.array_api.elementwise_functions.bitwise_left_shift              
-    ✅  einexpr.array_api.elementwise_functions.bitwise_invert                  
-    ✅  einexpr.array_api.elementwise_functions.bitwise_or                      
-    ✅  einexpr.array_api.elementwise_functions.bitwise_right_shift             
-    ✅  einexpr.array_api.elementwise_functions.bitwise_xor                     
-    ✅  einexpr.array_api.elementwise_functions.ceil                            
-    ✅  einexpr.array_api.elementwise_functions.cos                             
-    ✅  einexpr.array_api.elementwise_functions.cosh                            
-    ✅  einexpr.array_api.elementwise_functions.divide                          
-    ✅  einexpr.array_api.elementwise_functions.equal                           
-    ✅  einexpr.array_api.elementwise_functions.exp                             
-    ✅  einexpr.array_api.elementwise_functions.expm1                           
-    ✅  einexpr.array_api.elementwise_functions.floor                           
-    ✅  einexpr.array_api.elementwise_functions.floor_divide                    
-    ✅  einexpr.array_api.elementwise_functions.greater                         
-    ✅  einexpr.array_api.elementwise_functions.greater_equal                   
-    ✅  einexpr.array_api.elementwise_functions.isfinite                        
-    ✅  einexpr.array_api.elementwise_functions.isinf                           
-    ✅  einexpr.array_api.elementwise_functions.isnan                           
-    ✅  einexpr.array_api.elementwise_functions.less                            
-    ✅  einexpr.array_api.elementwise_functions.less_equal                      
-    ✅  einexpr.array_api.elementwise_functions.log                             
-    ✅  einexpr.array_api.elementwise_functions.log1p                           
-    ✅  einexpr.array_api.elementwise_functions.log2                            
-    ✅  einexpr.array_api.elementwise_functions.log10                           
-    ✅  einexpr.array_api.elementwise_functions.logaddexp                       
-    ✅  einexpr.array_api.elementwise_functions.logical_and                     
-    ✅  einexpr.array_api.elementwise_functions.logical_not                     
-    ✅  einexpr.array_api.elementwise_functions.logical_or                      
-    ✅  einexpr.array_api.elementwise_functions.logical_xor                     
-    ✅  einexpr.array_api.elementwise_functions.multiply                        
-    ✅  einexpr.array_api.elementwise_functions.negative                        
-    ✅  einexpr.array_api.elementwise_functions.not_equal                       
-    ✅  einexpr.array_api.elementwise_functions.positive                        
-    ✅  einexpr.array_api.elementwise_functions.pow                             
-    ✅  einexpr.array_api.elementwise_functions.remainder                       
-    ✅  einexpr.array_api.elementwise_functions.round                           
-    ✅  einexpr.array_api.elementwise_functions.sign                            
-    ✅  einexpr.array_api.elementwise_functions.sin                             
-    ✅  einexpr.array_api.elementwise_functions.sinh                            
-    ✅  einexpr.array_api.elementwise_functions.square                          
-    ✅  einexpr.array_api.elementwise_functions.sqrt                            
-    ✅  einexpr.array_api.elementwise_functions.subtract                        
-    ✅  einexpr.array_api.elementwise_functions.tan                             
-    ✅  einexpr.array_api.elementwise_functions.tanh                            
-    ✅  einexpr.array_api.elementwise_functions.trunc                           
+    ✅  einexpr.array_api.elementwise_functions.abs(x: array, /)                             
+    ✅  einexpr.array_api.elementwise_functions.acos(x: array, /)                            
+    ✅  einexpr.array_api.elementwise_functions.acosh(x: array, /)                           
+    ✅  einexpr.array_api.elementwise_functions.add(x1: array, x2: array, /)                             
+    ✅  einexpr.array_api.elementwise_functions.asin(x: array, /)                            
+    ✅  einexpr.array_api.elementwise_functions.asinh(x: array, /)                           
+    ✅  einexpr.array_api.elementwise_functions.atan(x: array, /)                            
+    ✅  einexpr.array_api.elementwise_functions.atan2(x1: array, x2: array, /)                           
+    ✅  einexpr.array_api.elementwise_functions.atanh(x: array, /)                           
+    ✅  einexpr.array_api.elementwise_functions.bitwise_and(x1: array, x2: array, /)                     
+    ✅  einexpr.array_api.elementwise_functions.bitwise_left_shift(x1: array, x2: array, /)              
+    ✅  einexpr.array_api.elementwise_functions.bitwise_invert(x: array, /)                  
+    ✅  einexpr.array_api.elementwise_functions.bitwise_or(x1: array, x2: array, /)                      
+    ✅  einexpr.array_api.elementwise_functions.bitwise_right_shift(x1: array, x2: array, /)             
+    ✅  einexpr.array_api.elementwise_functions.bitwise_xor(x1: array, x2: array, /)                     
+    ✅  einexpr.array_api.elementwise_functions.ceil(x: array, /)                            
+    ✅  einexpr.array_api.elementwise_functions.cos(x: array, /)                             
+    ✅  einexpr.array_api.elementwise_functions.cosh(x: array, /)                            
+    ✅  einexpr.array_api.elementwise_functions.divide(x1: array, x2: array, /)                          
+    ✅  einexpr.array_api.elementwise_functions.equal(x1: array, x2: array, /)                           
+    ✅  einexpr.array_api.elementwise_functions.exp(x: array, /)                             
+    ✅  einexpr.array_api.elementwise_functions.expm1(x: array, /)                           
+    ✅  einexpr.array_api.elementwise_functions.floor(x: array, /)                           
+    ✅  einexpr.array_api.elementwise_functions.floor_divide(x1: array, x2: array, /)                    
+    ✅  einexpr.array_api.elementwise_functions.greater(x1: array, x2: array, /)                         
+    ✅  einexpr.array_api.elementwise_functions.greater_equal(x1: array, x2: array, /)                   
+    ✅  einexpr.array_api.elementwise_functions.isfinite(x: array, /)                        
+    ✅  einexpr.array_api.elementwise_functions.isinf(x: array, /)                           
+    ✅  einexpr.array_api.elementwise_functions.isnan(x: array, /)                           
+    ✅  einexpr.array_api.elementwise_functions.less(x1: array, x2: array, /)                            
+    ✅  einexpr.array_api.elementwise_functions.less_equal(x1: array, x2: array, /)                      
+    ✅  einexpr.array_api.elementwise_functions.log(x: array, /)                             
+    ✅  einexpr.array_api.elementwise_functions.log1p(x: array, /)                           
+    ✅  einexpr.array_api.elementwise_functions.log2(x: array, /)                            
+    ✅  einexpr.array_api.elementwise_functions.log10(x: array, /)                           
+    ✅  einexpr.array_api.elementwise_functions.logaddexp(x1: array, x2: array, /)                       
+    ✅  einexpr.array_api.elementwise_functions.logical_and(x1: array, x2: array, /)                     
+    ✅  einexpr.array_api.elementwise_functions.logical_not(x: array, /)                     
+    ✅  einexpr.array_api.elementwise_functions.logical_or(x1: array, x2: array, /)                      
+    ✅  einexpr.array_api.elementwise_functions.logical_xor(x1: array, x2: array, /)                     
+    ✅  einexpr.array_api.elementwise_functions.multiply(x1: array, x2: array, /)                        
+    ✅  einexpr.array_api.elementwise_functions.negative(x: array, /)                        
+    ✅  einexpr.array_api.elementwise_functions.not_equal(x1: array, x2: array, /)                       
+    ✅  einexpr.array_api.elementwise_functions.positive(x: array, /)                        
+    ✅  einexpr.array_api.elementwise_functions.pow(x1: array, x2: array, /)                             
+    ✅  einexpr.array_api.elementwise_functions.remainder(x1: array, x2: array, /)                       
+    ✅  einexpr.array_api.elementwise_functions.round(x: array, /)                           
+    ✅  einexpr.array_api.elementwise_functions.sign(x: array, /)                            
+    ✅  einexpr.array_api.elementwise_functions.sin(x: array, /)                             
+    ✅  einexpr.array_api.elementwise_functions.sinh(x: array, /)                            
+    ✅  einexpr.array_api.elementwise_functions.square(x: array, /)                          
+    ✅  einexpr.array_api.elementwise_functions.sqrt(x: array, /)                            
+    ✅  einexpr.array_api.elementwise_functions.subtract(x1: array, x2: array, /)                        
+    ✅  einexpr.array_api.elementwise_functions.tan(x: array, /)                             
+    ✅  einexpr.array_api.elementwise_functions.tanh(x: array, /)                            
+    ✅  einexpr.array_api.elementwise_functions.trunc(x: array, /)                           
 Functions implemented in einexpr/array_api/linalg.py
-    ❌  einexpr.array_api.linalg.cholesky                        
-    ❌  einexpr.array_api.linalg.cross                           
-    ❌  einexpr.array_api.linalg.det                             
-    ❌  einexpr.array_api.linalg.diagonal                        
-    ❌  einexpr.array_api.linalg.eigh                            
-    ❌  einexpr.array_api.linalg.eigvalsh                        
-    ✅  einexpr.array_api.linalg.inv                             
-    ❌  einexpr.array_api.linalg.matmul                          
-    ❌  einexpr.array_api.linalg.matrix_norm                     
-    ❌  einexpr.array_api.linalg.matrix_power                    
-    ❌  einexpr.array_api.linalg.matrix_rank                     
-    ❌  einexpr.array_api.linalg.matrix_transpose                
-    ❌  einexpr.array_api.linalg.outer                           
-    ❌  einexpr.array_api.linalg.pinv                            
-    ❌  einexpr.array_api.linalg.qr                              
-    ❌  einexpr.array_api.linalg.slogdet                         
-    ❌  einexpr.array_api.linalg.solve                           
-    ❌  einexpr.array_api.linalg.svd                             
-    ❌  einexpr.array_api.linalg.svdvals                         
-    ❌  einexpr.array_api.linalg.tensordot                       
-    ❌  einexpr.array_api.linalg.trace                           
-    ❌  einexpr.array_api.linalg.vecdot                          
-    ❌  einexpr.array_api.linalg.vector_norm                     
+    ❌  einexpr.array_api.linalg.cholesky(x: array, /, *, upper: bool = False)                        
+    ❌  einexpr.array_api.linalg.cross(x1: array, x2: array, /, *, axis: int = -1)                           
+    ❌  einexpr.array_api.linalg.det(x: array, /)                             
+    ❌  einexpr.array_api.linalg.diagonal(x: array, /, *, offset: int = 0)                        
+    ❌  einexpr.array_api.linalg.eigh(x: array, /)                            
+    ❌  einexpr.array_api.linalg.eigvalsh(x: array, /)                        
+    ✅  einexpr.array_api.linalg.inv(x: array, /)                             
+    ❌  einexpr.array_api.linalg.matmul(x1: array, x2: array, /)                          
+    ❌  einexpr.array_api.linalg.matrix_norm(x: array, /, *, keepdims: bool = False, ord: Optional[Union[int, float, Literal[inf, -inf, 'fro', 'nuc']]] = 'fro')                     
+    ❌  einexpr.array_api.linalg.matrix_power(x: array, n: int, /)                    
+    ❌  einexpr.array_api.linalg.matrix_rank(x: array, /, *, rtol: Optional[Union[float, array]] = None)                     
+    ❌  einexpr.array_api.linalg.matrix_transpose(x: array, /)                
+    ❌  einexpr.array_api.linalg.outer(x1: array, x2: array, /)                           
+    ❌  einexpr.array_api.linalg.pinv(x: array, /, *, rtol: Optional[Union[float, array]] = None)                            
+    ❌  einexpr.array_api.linalg.qr(x: array, /, *, mode: Literal['reduced', 'complete'] = 'reduced')                              
+    ❌  einexpr.array_api.linalg.slogdet(x: array, /)                         
+    ❌  einexpr.array_api.linalg.solve(x1: array, x2: array, /)                           
+    ❌  einexpr.array_api.linalg.svd(x: array, /, *, full_matrices: bool = True)                             
+    ❌  einexpr.array_api.linalg.svdvals(x: array, /)                         
+    ❌  einexpr.array_api.linalg.tensordot(x1: array, x2: array, /, *, axes: Union[int, Tuple[Sequence[int], Sequence[int]]] = 2)                       
+    ❌  einexpr.array_api.linalg.trace(x: array, /, *, offset: int = 0)                           
+    ❌  einexpr.array_api.linalg.vecdot(x1: array, x2: array, /, *, axis: int = None)                          
+    ❌  einexpr.array_api.linalg.vector_norm(x: array, /, *, axis: Optional[Union[int, Tuple[int, ...]]] = None, keepdims: bool = False, ord: Union[int, float, Literal[inf, -inf]] = 2)                     
 Functions implemented in einexpr/array_api/linear_algebra_functions.py
-    ❌  einexpr.array_api.linear_algebra_functions.matmul                          
-    ❌  einexpr.array_api.linear_algebra_functions.matrix_transpose                
-    ❌  einexpr.array_api.linear_algebra_functions.tensordot                       
-    ❌  einexpr.array_api.linear_algebra_functions.vecdot                          
-Functions implemented in einexpr/array_api/array_object.py
-    ❌  einexpr.array_api.array_object._array.__init__                        
-    ❌  einexpr.array_api.array_object._array.dtype                           
-    ❌  einexpr.array_api.array_object._array.device                          
-    ❌  einexpr.array_api.array_object._array.mT                              
-    ❌  einexpr.array_api.array_object._array.ndim                            
-    ❌  einexpr.array_api.array_object._array.shape                           
-    ❌  einexpr.array_api.array_object._array.size                            
-    ❌  einexpr.array_api.array_object._array.T                               
-    ❌  einexpr.array_api.array_object._array.__abs__                         
-    ❌  einexpr.array_api.array_object._array.__add__                         
-    ❌  einexpr.array_api.array_object._array.__and__                         
-    ❌  einexpr.array_api.array_object._array.__array_namespace__             
-    ❌  einexpr.array_api.array_object._array.__bool__                        
-    ❌  einexpr.array_api.array_object._array.__dlpack__                      
-    ❌  einexpr.array_api.array_object._array.__dlpack_device__               
-    ❌  einexpr.array_api.array_object._array.__eq__                          
-    ❌  einexpr.array_api.array_object._array.__float__                       
-    ❌  einexpr.array_api.array_object._array.__floordiv__                    
-    ❌  einexpr.array_api.array_object._array.__ge__                          
-    ❌  einexpr.array_api.array_object._array.__getitem__                     
-    ❌  einexpr.array_api.array_object._array.__gt__                          
-    ❌  einexpr.array_api.array_object._array.__index__                       
-    ❌  einexpr.array_api.array_object._array.__int__                         
-    ❌  einexpr.array_api.array_object._array.__invert__                      
-    ❌  einexpr.array_api.array_object._array.__le__                          
-    ❌  einexpr.array_api.array_object._array.__lshift__                      
-    ❌  einexpr.array_api.array_object._array.__lt__                          
-    ❌  einexpr.array_api.array_object._array.__matmul__                      
-    ❌  einexpr.array_api.array_object._array.__mod__                         
-    ❌  einexpr.array_api.array_object._array.__mul__                         
-    ❌  einexpr.array_api.array_object._array.__ne__                          
-    ❌  einexpr.array_api.array_object._array.__neg__                         
-    ❌  einexpr.array_api.array_object._array.__or__                          
-    ❌  einexpr.array_api.array_object._array.__pos__                         
-    ❌  einexpr.array_api.array_object._array.__pow__                         
-    ❌  einexpr.array_api.array_object._array.__rshift__                      
-    ❌  einexpr.array_api.array_object._array.__setitem__                     
-    ❌  einexpr.array_api.array_object._array.__sub__                         
-    ❌  einexpr.array_api.array_object._array.__truediv__                     
-    ❌  einexpr.array_api.array_object._array.__xor__                         
-    ❌  einexpr.array_api.array_object._array.to_device                       
+    ❌  einexpr.array_api.linear_algebra_functions.matmul(x1: array, x2: array, /)                          
+    ❌  einexpr.array_api.linear_algebra_functions.matrix_transpose(x: array, /)                
+    ❌  einexpr.array_api.linear_algebra_functions.tensordot(x1: array, x2: array, /, *, axes: Union[int, Tuple[Sequence[int], Sequence[int]]] = 2)                       
+    ❌  einexpr.array_api.linear_algebra_functions.vecdot(x1: array, x2: array, /, *, axis: int = -1)                          
+Functions implemented in einexpr/array_api/einarray.py
+    ❌  einexpr.array_api.einarray.einarray.__init__(self)                        
+    ❌  einexpr.array_api.einarray.einarray.dtype()                           
+    ❌  einexpr.array_api.einarray.einarray.device()                          
+    ❌  einexpr.array_api.einarray.einarray.mT()                              
+    ❌  einexpr.array_api.einarray.einarray.ndim()                            
+    ❌  einexpr.array_api.einarray.einarray.shape()                           
+    ❌  einexpr.array_api.einarray.einarray.size()                            
+    ❌  einexpr.array_api.einarray.einarray.T()                               
+    ✅  einexpr.array_api.einarray.einarray.__abs__(self: array, /)                         
+    ✅  einexpr.array_api.einarray.einarray.__add__(self: array, other: Union[int, float, array], /)                         
+    ✅  einexpr.array_api.einarray.einarray.__and__(self: array, other: Union[int, bool, array], /)                         
+    ❌  einexpr.array_api.einarray.einarray.__array_namespace__(self: array, /, *, api_version: Optional[str] = None)             
+    ❌  einexpr.array_api.einarray.einarray.__bool__(self: array, /)                        
+    ❌  einexpr.array_api.einarray.einarray.__dlpack__(self: array, /, *, stream: Optional[Union[int, Any]] = None)                      
+    ❌  einexpr.array_api.einarray.einarray.__dlpack_device__(self: array, /)               
+    ✅  einexpr.array_api.einarray.einarray.__eq__(self: array, other: Union[int, float, bool, array], /)                          
+    ❌  einexpr.array_api.einarray.einarray.__float__(self: array, /)                       
+    ✅  einexpr.array_api.einarray.einarray.__floordiv__(self: array, other: Union[int, float, array], /)                    
+    ✅  einexpr.array_api.einarray.einarray.__ge__(self: array, other: Union[int, float, array], /)                          
+    ❌  einexpr.array_api.einarray.einarray.__getitem__(self: array, key: Union[int, slice, ellipsis, Tuple[Union[int, slice, ellipsis], ...], array], /)                     
+    ✅  einexpr.array_api.einarray.einarray.__gt__(self: array, other: Union[int, float, array], /)                          
+    ❌  einexpr.array_api.einarray.einarray.__index__(self: array, /)                       
+    ❌  einexpr.array_api.einarray.einarray.__int__(self: array, /)                         
+    ✅  einexpr.array_api.einarray.einarray.__invert__(self: array, /)                      
+    ✅  einexpr.array_api.einarray.einarray.__le__(self: array, other: Union[int, float, array], /)                          
+    ✅  einexpr.array_api.einarray.einarray.__lshift__(self: array, other: Union[int, array], /)                      
+    ✅  einexpr.array_api.einarray.einarray.__lt__(self: array, other: Union[int, float, array], /)                          
+    ❌  einexpr.array_api.einarray.einarray.__matmul__(self: array, other: array, /)                      
+    ✅  einexpr.array_api.einarray.einarray.__mod__(self: array, other: Union[int, float, array], /)                         
+    ✅  einexpr.array_api.einarray.einarray.__mul__(self: array, other: Union[int, float, array], /)                         
+    ✅  einexpr.array_api.einarray.einarray.__ne__(self: array, other: Union[int, float, bool, array], /)                          
+    ✅  einexpr.array_api.einarray.einarray.__neg__(self: array, /)                         
+    ✅  einexpr.array_api.einarray.einarray.__or__(self: array, other: Union[int, bool, array], /)                          
+    ✅  einexpr.array_api.einarray.einarray.__pos__(self: array, /)                         
+    ✅  einexpr.array_api.einarray.einarray.__pow__(self: array, other: Union[int, float, array], /)                         
+    ✅  einexpr.array_api.einarray.einarray.__rshift__(self: array, other: Union[int, array], /)                      
+    ❌  einexpr.array_api.einarray.einarray.__setitem__(self: array, key: Union[int, slice, ellipsis, Tuple[Union[int, slice, ellipsis], ...], array], value: Union[int, float, bool, array], /)                     
+    ✅  einexpr.array_api.einarray.einarray.__sub__(self: array, other: Union[int, float, array], /)                         
+    ✅  einexpr.array_api.einarray.einarray.__truediv__(self: array, other: Union[int, float, array], /)                     
+    ✅  einexpr.array_api.einarray.einarray.__xor__(self: array, other: Union[int, bool, array], /)                         
+    ❌  einexpr.array_api.einarray.einarray.to_device(self: array, device: Device, /, *, stream: Optional[Union[int, Any]] = None)                       

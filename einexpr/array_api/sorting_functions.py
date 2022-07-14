@@ -1,7 +1,5 @@
 from ._types import array
 from .. import SingleArgumentElementwise, einarray
-from .. import einarray
-from .. import SingleArgumentElementwise, einarray
 
 def argsort(x: array, /, *, axis: int = -1, descending: bool = False, stable: bool = True) -> array:
     """
@@ -23,10 +21,15 @@ def argsort(x: array, /, *, axis: int = -1, descending: bool = False, stable: bo
     out : array
         an array of indices. The returned array must have the same shape as ``x``. The returned array must have the default array index data type.
     """
+    args = (x,)
+    kwargs = {'axis': axis, 'descending': descending, 'stable': stable}
     out_dims = SingleArgumentElementwise.calculate_output_dims(args, kwargs)
     ambiguous_dims = SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = SingleArgumentElementwise.process_args(args, kwargs)
-    result = einarray(argsort(*processed_args, **processed_kwargs), dims=out_dims, ambiguous_dims=ambiguous_dims)
+    result = einarray(
+        x.__array_namespace__().argsort(*processed_args, **processed_kwargs), 
+        dims=out_dims, 
+        ambiguous_dims=ambiguous_dims)
     return result
 
 def sort(x: array, /, *, axis: int = -1, descending: bool = False, stable: bool = True) -> array:
@@ -49,10 +52,15 @@ def sort(x: array, /, *, axis: int = -1, descending: bool = False, stable: bool 
     out : array
         a sorted array. The returned array must have the same data type and shape as ``x``.
     """
-    out_dims = {implementation_helper_name}.calculate_output_dims({params})
-    ambiguous_dims = {implementation_helper_name}.calculate_output_ambiguous_dims(args, kwargs)
-    processed_args, processed_kwargs = {implementation_helper_name}.process_args(args, kwargs)
-    result = einarray({func_name}(*processed_args, **processed_kwargs), dims=out_dims, ambiguous_dims=ambiguous_dims)
+    args = (x,)
+    kwargs = {'axis': axis, 'descending': descending, 'stable': stable}
+    out_dims = SingleArgumentElementwise.calculate_output_dims(args, kwargs)
+    ambiguous_dims = SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+    processed_args, processed_kwargs = SingleArgumentElementwise.process_args(args, kwargs)
+    result = einarray(
+        x.__array_namespace__().sort(*processed_args, **processed_kwargs), 
+        dims=out_dims, 
+        ambiguous_dims=ambiguous_dims)
     return result
 
 __all__ = ['argsort', 'sort']

@@ -1,8 +1,6 @@
 from ._types import Literal, Optional, Tuple, Union, Sequence, array
 from .constants import inf
 from .. import SingleArgumentElementwise, einarray
-from .. import einarray
-from .. import einarray
 
 def cholesky(x: array, /, *, upper: bool = False) -> array:
     r"""
@@ -178,10 +176,15 @@ def inv(x: array, /) -> array:
     out: array
         an array containing the multiplicative inverses. The returned array must have a real-valued floating-point data type determined by :ref:`type-promotion` and must have the same shape as ``x``.
     """
+    args = (x,)
+    kwargs = {}
     out_dims = SingleArgumentElementwise.calculate_output_dims(args, kwargs)
     ambiguous_dims = SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = SingleArgumentElementwise.process_args(args, kwargs)
-    result = einarray(inv(*processed_args, **processed_kwargs), dims=out_dims, ambiguous_dims=ambiguous_dims)
+    result = einarray(
+        x.__array_namespace__().inv(*processed_args, **processed_kwargs), 
+        dims=out_dims, 
+        ambiguous_dims=ambiguous_dims)
     return result
 
 def matmul(x1: array, x2: array, /) -> array:
