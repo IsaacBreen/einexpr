@@ -9,6 +9,15 @@ from typing import *
 
 import numpy as np
 
+from einexpr import einarray, DimensionlessLike
+
+
+def process_inp(inp):
+    if isinstance(inp, DimensionlessLike):
+        return einarray(inp, ())
+    else:
+        return inp
+
 
 def deprecated(func):
     """This is a decorator which can be used to mark functions

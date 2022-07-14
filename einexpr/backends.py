@@ -4,8 +4,6 @@ from typing import Callable, Union
 
 import einexpr
 
-from .base_typing import EinarrayLike
-from .einarray_utils import *
 from .out_dims_calculator import (
     SingleArgumentElementwise,
     MultiArgumentElementwise,

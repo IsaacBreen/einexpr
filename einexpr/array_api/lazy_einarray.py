@@ -4,12 +4,126 @@ from ._types import (array, dtype as Dtype, device as Device, Optional, Tuple,
                      Union, Any, PyCapsule, Enum, ellipsis)
 from .. import MultiArgumentElementwise, SingleArgumentElementwise, einarray
 
-class lazy_einarray():
-    def __init__(self) -> None:
+
+import string
+from itertools import chain, combinations, zip_longest
+from typing import *
+
+import numpy as np
+import numpy.typing as npt
+import torch as pt
+
+from ..backends import *
+from ..base_typing import *
+from ..dim_calcs import *
+from ..exceptions import *
+from ..parse_numpy_ufunc_signature import (make_empty_signature_str,
+                                          parse_ufunc_signature)
+from ..raw_ops import align_arrays, align_to_dims
+
+
+class lazy_einarray(LazyArrayLike):
+    def __init__(self, func: Callable, *inputs, **kwargs):
+        self.func = func
+        self.inputs = [process_inp(inp) for inp in inputs]
+        self.kwargs = kwargs
+    
+    @property
+    def dims(self) -> List[Dimension]:
         """
-        Initialize the attributes for the array object class.
+        Return the dimensions of the lazy_func.
         """
         raise NotImplementedError
+
+    @property
+    def ambiguous_dims(self) -> Set[Dimension]:
+        # Align input arrays
+        raise NotImplementedError
+    
+    def get_dims_unordered(self) -> Set[Dimension]:
+        return {dim for inp in self.inputs if hasattr(inp, "get_dims_unordered") for dim in inp.get_dims_unordered()}
+
+    def coerce(self, dims: List[Dimension], do_not_collapse: Set[Dimension] = None, force_align: bool = True, ambiguous_dims: Set[Dimension] = None) -> ConcreteArrayLike:
+        """
+        Coerce the lazy array to a concrete array of the given dimensions, ignoring dimensions that do not appear in self.inputs and collapsing those that don't appear in either dims or do_not_collapse.
+        """
+        do_not_collapse = do_not_collapse or set()
+        ambiguous_dims = ambiguous_dims or set()
+        if self.func in [np.add.__call__, np.subtract.__call__]:
+            # Coerce the inputs into the same dimensions.
+            inputs = [inp.coerce(dims, do_not_collapse, force_align=False) for inp in self.inputs]
+            # Collapse all dimensions except those in contained in dims or do_not_collapse.
+            dims_to_collapse = {dim for inp in inputs for dim in inp.dims} - set(dims) - do_not_collapse
+            if dims_to_collapse:
+                inputs = [reduce_sum(inp, set(inp.dims) & dims_to_collapse) for inp in inputs]
+            # Return the result.
+            raw_input_arrays, output_dims = align_arrays(*inputs, return_output_dims=True)
+            out = einarray(self.func(*raw_input_arrays, **self.kwargs), output_dims, ambiguous_dims=ambiguous_dims)
+            if force_align and not dims_are_aligned(dims, output_dims):
+                # Align the output to the given dimensions.
+                return out[[dim for dim in dims if dim in out.dims]]
+            else:
+                return out
+        elif self.func in [np.multiply.__call__, np.divide.__call__, np.true_divide.__call__, ]:
+            # Prevent collapsing along dimensions shared by two or more inputs.
+            all_input_dims = {dim for inp in self.inputs for dim in inp.dims}
+            # Coerce each input
+            inputs = [inp.coerce(dims, do_not_collapse | all_input_dims, force_align=False) for inp in self.inputs]
+            # Create the einsum signature
+            # einsum requires each dim to be represented by a single letter, so remap longer dims
+            all_input_dims = {dim for inp in inputs for dim in inp.dims}
+            available_letters = set(string.ascii_lowercase)
+            dim_map = dict()
+            for dim in all_input_dims:
+                if len(dim) == 1:
+                    dim_map[dim] = dim
+                elif dim[0] in available_letters:
+                    dim_map[dim] = dim[0]
+                    available_letters.remove(dim[0])
+                else:
+                    dim_map[dim] = available_letters.pop()
+            # Create the einsum signature
+            # TODO: the second part of this may result in needless transpositions. To fix, try to make output_dims more like the shape of the inputs.
+            out_dims = [dim for dim in dims if dim in all_input_dims] + [dim for dim in all_input_dims & do_not_collapse - set(dims)]
+            signature = ",".join("".join(dim_map[dim] for dim in inp.dims) for inp in inputs) + "->" + "".join(dim_map[dim] for dim in out_dims)
+            # Get the raw arrays and, if self.func is a divison operation, take the reciprocal of the second input
+            if self.func in [np.divide.__call__, np.true_divide.__call__]:
+                assert len(inputs) == 2
+                inputs[1] = np.reciprocal(inputs[1])
+            # Return the result
+            return einarray(np.einsum(signature, *(inp.a for inp in inputs), **self.kwargs), [dim for dim in out_dims], ambiguous_dims=ambiguous_dims)
+        else:
+            raise NotImplementedError(f"Lazy evaluation for {self.func} is not yet implemented.")
+    
+    def concretize(self) -> ConcreteArrayLike:
+        return self.coerce(self.dims, ambiguous_dims=self.ambiguous_dims)
+        
+    @property
+    def a(self) -> RawArrayLike:
+        return self.concretize().a
+    
+    def __array__(self, dtype: Optional[npt.DTypeLike] = None) -> ConcreteArrayLike:
+        return self.a
+    
+    def tracer(self) -> 'lazy_func':
+        return lazy_func(
+            self.func, 
+            *(inp.tracer() if isinstance(inp, EinarrayLike) else inp for inp in self.inputs), 
+            **{k: v.tracer() if isinstance(v, EinarrayLike) else v for k, v in self.kwargs.items()}
+        )
+    
+    # JAX support
+    def _tree_flatten(self):
+        children = (self.inputs,)
+        aux_data = {'func': self.func, 'kwargs': self.kwargs}
+        return (children, aux_data)
+    
+    @classmethod
+    def _tree_unflatten(cls, aux_data, children):
+        return cls(*children, **aux_data)
+
+    def __repr__(self) -> str:
+        return f"lazy_func({self.func}, {self.inputs}, {self.kwargs})"
 
     @property
     def dtype() -> Dtype:
@@ -525,7 +639,17 @@ class lazy_einarray():
         out: array
             an array containing the accessed value(s). The returned array must have the same data type as ``self``.
         """
-        raise NotImplementedError
+        if isinstance(key, tuple):
+            key = (key,)
+        for k in key:
+            if isinstance(k, slice):
+                if isinstance(k.start, int) or isinstance(k.stop, int) or isinstance(k.step, int):
+                    raise NotImplementedError("Slicing with integers is not yet supported.")
+            elif isinstance(k, int):
+                raise NotImplementedError("Indexing with integers is not yet supported.")
+            elif isinstance(k, ellipsis):
+                raise NotImplementedError("Ellipsis is not yet supported.")
+        return self.coerce(parse_dims_reshape(key))
 
     def __gt__(self: array, other: Union[int, float, array], /) -> array:
         """
@@ -1262,3 +1386,6 @@ class lazy_einarray():
         raise NotImplementedError
 
 
+from jax import tree_util
+
+tree_util.register_pytree_node(lazy_func, lazy_func._tree_flatten, lazy_func._tree_unflatten)

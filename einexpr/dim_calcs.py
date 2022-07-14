@@ -5,15 +5,11 @@ from typing import Any, Dict, List, Sequence, Set, Tuple
 import numpy as np
 from lark import Lark, Transformer, v_args
 
-from einexpr.base_typing import Dimension
+from einexpr import Dimension
 from einexpr.exceptions import AmbiguousDimensionException
 
-from .parse_numpy_ufunc_signature import (UfuncSignature,
-                                          UfuncSignatureDimensions,
-                                          parse_ufunc_signature)
-from .einexpr_typing import ConcreteArrayLike, RawArrayLike
+from .parse_numpy_ufunc_signature import UfuncSignature
 from .utils import *
-from .utils import get_all_scs_with_unique_elems, powerset
 
 
 def get_unambiguous_broadcast_dims(*dims: List[Dimension]) -> Set[Dimension]:

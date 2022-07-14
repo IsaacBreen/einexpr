@@ -3,14 +3,9 @@ from typing import Any, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 
-from einexpr.base_typing import Dimension
+from einexpr import Dimension, ConcreteArrayLike, RawArrayLike
 
 from .dim_calcs import *
-from .parse_numpy_ufunc_signature import (UfuncSignature,
-                                          UfuncSignatureDimensions,
-                                          parse_ufunc_signature)
-from .einexpr_typing import ConcreteArrayLike, RawArrayLike
-from .utils import powerset
 
 
 def apply_transexpand(a: RawArrayLike, transexpansion: List[int]) -> ConcreteArrayLike:
@@ -54,3 +49,14 @@ def align_arrays(*arrays: ConcreteArrayLike, return_output_dims: bool = False) -
             return raw_aligned_arrays, out_dims
         else:
             return raw_aligned_arrays
+
+
+def reduce_sum(a: ConcreteArrayLike, dims: Union[Container[Dimension], Iterator[Dimension]]) -> ConcreteArrayLike:
+    """
+    Collapse the given array along the given dimensions.
+    """
+    if not set(a.dims) & set(dims):
+        return a
+    if set(dims) - set(a.dims):
+        raise ValueError(f"The dimensions {dims} must be a subset of the dimensions {a.dims} of the input array.")
+    return einarray(a.a.sum(axis=tuple(i for i, dim in enumerate(a.dims) if dim in dims)), dims=[dim for dim in a.dims if dim not in dims], ambiguous_dims={dim for dim in a.dims if dim not in dims})

@@ -46,3 +46,23 @@ class NestedSequence(Protocol[_T_co]):
 __all__ = ['Any', 'List', 'Literal', 'NestedSequence', 'Optional',
 'PyCapsule', 'SupportsBufferProtocol', 'SupportsDLPack', 'Tuple', 'Union', 'Sequence',
 'array', 'device', 'dtype', 'ellipsis', 'finfo_object', 'iinfo_object', 'Enum']
+
+
+class ConcreteArrayLike:
+    def __init__(self, *args, **kwargs):
+        raise NotImplementedError
+
+
+Dimension = str
+
+class LazyArrayLike:
+    def __init__(self, *args, **kwargs):
+        raise NotImplementedError
+
+DimensionlessLike = Union[int, float]
+    
+EinarrayLike = Union[ConcreteArrayLike, LazyArrayLike]
+ConcreteLike = Union[DimensionlessLike, ConcreteArrayLike]
+
+
+__all__ += [EinarrayLike, ConcreteLike, Dimension, DimensionlessLike]

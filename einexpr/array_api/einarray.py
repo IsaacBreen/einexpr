@@ -4,12 +4,101 @@ from ._types import (array, dtype as Dtype, device as Device, Optional, Tuple,
                      Union, Any, PyCapsule, Enum, ellipsis)
 from .. import MultiArgumentElementwise, SingleArgumentElementwise, einarray
 
+import string
+from itertools import chain, combinations, zip_longest
+from typing import *
+
+import numpy as np
+import numpy.typing as npt
+import torch as pt
+
+from ..backends import *
+from ..base_typing import *
+from ..dim_calcs import *
+from ..exceptions import *
+from ..parse_numpy_ufunc_signature import (make_empty_signature_str,
+                                          parse_ufunc_signature)
+from ..raw_ops import align_arrays, align_to_dims
+
 class einarray():
-    def __init__(self) -> None:
-        """
-        Initialize the attributes for the array object class.
-        """
-        raise NotImplementedError
+    def __init__(self, a: Union[RawArrayLike, ConcreteArrayLike], dims: List[Dimension] = None, ambiguous_dims: Set[Dimension] = None, copy: bool=True, backend: Literal["numpy", "torch"] = None) -> None:
+        self.a = a
+        self.dims = parse_dims_declaration(dims)
+        self.ambiguous_dims = ambiguous_dims or set()
+        if isinstance(self.a, LazyArrayLike):
+            self.a = self.a.concretize()
+        if isinstance(self.a, EinarrayLike):
+            if self.dims != self.a.dims:
+                raise ValueError(f"The dimensions passed to the constructor must match the dimensions of the concrete array. Got {self.dims} but the array has dimensions {self.a.dims}.")
+            self.a = self.a.a
+        # Convert self.a to the specified backend
+        if backend is None:
+            if isinstance(self.a, RawArrayLike):
+                # Just use raw array as-is
+                self.a = self.a
+            else:
+                # The user may have passed a list array (e.g. a=[[1,2],[3,4]]). In this case, we hope that self.a can be converted into np.array.
+                self.a = np.array(self.a, copy=copy)
+                # If self.a is dimensionless (a value with a shape of () - generally an int or a float), we require the dimensions to be specified explicitly.
+                assert self.dims is not None, f"The dimensions must be specified explicitly when converting a {type(self.a).__name__} to a numpy array."
+        elif backend == "numpy":
+            self.a = np.array(self.a, copy=copy)
+        elif backend == "torch":
+            self.a = pt.asarray(self.a, copy=copy)
+        else:
+            raise ValueError(f"The backend must be either 'numpy' or 'torch'. Got {backend}.")
+        if isinstance(self.a, DimensionlessLike) or isinstance(self.a, RawArrayLike) and not isinstance(self.a, PseudoRawArray) and not self.a.shape:
+            assert not self.dims, f"The dimensions of a dimensionless value must be empty or None. Got {self.dims}."
+            self.dims = ()
+        elif not isinstance(self.dims, (tuple, list)):
+            if dims == self.dims:
+                raise ValueError(f"The dimensions passed to the constructor must be a list or tuple. Got value {dims!r} of type {type(dims).__name__}.")
+            else:
+                raise ValueError(f"Possible internal error. Dimensions must be a list or tuple. The value of the dims argument is {dims!r} of type {type(dims).__name__}, and {self.dims!r} of type {type(self.dims).__name__} was inferred.")
+        if isinstance(self.a, RawArrayLike) and not isinstance(self.a, PseudoRawArray) and self.a.ndim != len(self.dims):
+            raise ValueError(f"The number {self.a.ndim} of dimensions in the array does not match the number {len(self.dims)} of dimensions passed to the constructor.")
+        if not self.ambiguous_dims.issubset(self.dims):
+            raise ValueError(f"The ambiguous dimensions {self.ambiguous_dims} are must be a subset of the dimensions {self.dims}.")
+
+    @property
+    def backend(self) -> str:
+        detect_backend(self.a)
+        
+    def get_dims_unordered(self) -> Set[Dimension]:
+        return set(self.dims)
+    
+    def coerce(self, dims: List[Dimension], do_not_collapse: Set[Dimension], force_align: bool = True, ambiguous_dims: Set[Dimension] = None) -> ConcreteArrayLike:
+        ambiguous_dims = ambiguous_dims or set()
+        # Collapse all dimensions except those in contained in dims or do_not_collapse.
+        dims_to_collapse = set(self.dims) - set(dims) - do_not_collapse
+        out = reduce_sum(self, dims_to_collapse)
+        if not force_align:
+            return out
+        else:
+            out_dims = [dim for dim in dims if dim in out.dims] + [dim for dim in out.dims if dim not in dims and dim in do_not_collapse]
+            return einarray(align_to_dims(out, out_dims), out_dims, ambiguous_dims=ambiguous_dims)
+        
+    def __getitem__(self, dims: List[Dimension]) -> ConcreteArrayLike:
+        return self.coerce(parse_dims_reshape(dims), set())
+    
+    def __array__(self, dtype: Optional[npt.DTypeLike] = None) -> ConcreteArrayLike:
+        return self.a
+
+    def tracer(self) -> 'einarray':
+        return einarray(PseudoRawArray(), self.dims, self.ambiguous_dims)
+
+    # JAX support
+    def _tree_flatten(self):
+        children = (self.a,)
+        aux_data = {'dims': self.dims, 'ambiguous_dims': self.ambiguous_dims}
+        return (children, aux_data)
+
+    @classmethod
+    def _tree_unflatten(cls, aux_data, children):
+        return cls(*children, **aux_data)
+
+    def __repr__(self) -> str:
+        return f"einarray({self.a}, {self.dims})"
 
     @property
     def dtype() -> Dtype:
@@ -525,7 +614,17 @@ class einarray():
         out: array
             an array containing the accessed value(s). The returned array must have the same data type as ``self``.
         """
-        raise NotImplementedError
+        if isinstance(key, tuple):
+            key = (key,)
+        for k in key:
+            if isinstance(k, slice):
+                if isinstance(k.start, int) or isinstance(k.stop, int) or isinstance(k.step, int):
+                    raise NotImplementedError("Slicing with integers is not yet supported.")
+            elif isinstance(k, int):
+                raise NotImplementedError("Indexing with integers is not yet supported.")
+            elif isinstance(k, ellipsis):
+                raise NotImplementedError("Ellipsis is not yet supported.")
+        return self.coerce(parse_dims_reshape(key))
 
     def __gt__(self: array, other: Union[int, float, array], /) -> array:
         """
