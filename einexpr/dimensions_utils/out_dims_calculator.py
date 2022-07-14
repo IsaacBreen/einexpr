@@ -1,8 +1,6 @@
 from regex import R
 import einexpr
 
-from .base_typing import EinarrayLike
-from .einarray_utils import *
 
 Dimension = str
 
@@ -21,9 +19,9 @@ class SingleArgumentElementwise:
     def validate_args(args, kwargs):
         assert isinstance(args, (list, tuple))
         assert isinstance(kwargs, dict)
-        assert isinstance(args[0], EinarrayLike)
-        assert all(not isinstance(arg, EinarrayLike) for arg in args[1:])
-        assert all(not isinstance(arg, EinarrayLike) for arg in kwargs.values())
+        assert isinstance(args[0], einexpr.EinarrayLike)
+        assert all(not isinstance(arg, einexpr.EinarrayLike) for arg in args[1:])
+        assert all(not isinstance(arg, einexpr.EinarrayLike) for arg in kwargs.values())
     
     @staticmethod
     def process_args(args, kwargs):
@@ -43,8 +41,8 @@ class MultiArgumentElementwise:
     def validate_args(args, kwargs):
         assert isinstance(args, (list, tuple))
         assert isinstance(kwargs, dict)
-        assert all(isinstance(arg, EinarrayLike) for arg in args)
-        assert all(not isinstance(arg, EinarrayLike) for arg in kwargs.values())
+        assert all(isinstance(arg, einexpr.EinarrayLike) for arg in args)
+        assert all(not isinstance(arg, einexpr.EinarrayLike) for arg in kwargs.values())
     
     @staticmethod
     def process_args(args, kwargs):
@@ -70,9 +68,9 @@ class MultiDimensionReduction:
         # - raise error when there are duplicate axes, esp of different types (Dimension, int, and negative int)
         assert isinstance(args, (list, tuple))
         assert isinstance(kwargs, dict)
-        assert isinstance(args[0], EinarrayLike)
-        assert all(not isinstance(arg, EinarrayLike) for arg in args[1:]) # TODO: mapreduce over pytree
-        assert all(not isinstance(arg, EinarrayLike) for arg in kwargs.values())
+        assert isinstance(args[0], einexpr.EinarrayLike)
+        assert all(not isinstance(arg, einexpr.EinarrayLike) for arg in args[1:]) # TODO: mapreduce over pytree
+        assert all(not isinstance(arg, einexpr.EinarrayLike) for arg in kwargs.values())
         assert 'axis' in args        
     
     @staticmethod
@@ -119,8 +117,8 @@ class Concatenation:
     def validate_args(args, kwargs):
         assert isinstance(args, (list, tuple))
         assert isinstance(kwargs, dict)
-        assert isinstance(args[0], (list, tuple)) and all(isinstance(arg, EinarrayLike) for arg in args[0])
-        assert all(not isinstance(arg, EinarrayLike) for arg in args[1:])
+        assert isinstance(args[0], (list, tuple)) and all(isinstance(arg, einexpr.EinarrayLike) for arg in args[0])
+        assert all(not isinstance(arg, einexpr.EinarrayLike) for arg in args[1:])
         if kwargs['axis'] is None:
             raise ValueError("Using ``axis=None`` (flattening concatenation) is not yet supported")
     

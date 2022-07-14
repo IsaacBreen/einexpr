@@ -2,7 +2,9 @@ from __future__ import annotations
 
 from ._types import (array, dtype as Dtype, device as Device, Optional, Tuple,
                      Union, Any, PyCapsule, Enum, ellipsis)
-from .. import MultiArgumentElementwise, SingleArgumentElementwise, einarray
+import einexpr
+MultiArgumentElementwise = einexpr.MultiArgumentElementwise
+SingleArgumentElementwise = einexpr.SingleArgumentElementwise
 
 import string
 from itertools import chain, combinations, zip_longest

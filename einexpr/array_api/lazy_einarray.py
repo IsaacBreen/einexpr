@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from ._types import (array, dtype as Dtype, device as Device, Optional, Tuple,
                      Union, Any, PyCapsule, Enum, ellipsis)
-from .. import MultiArgumentElementwise, SingleArgumentElementwise, einarray
+from einexpr import MultiArgumentElementwise, SingleArgumentElementwise
 
 
 import string
