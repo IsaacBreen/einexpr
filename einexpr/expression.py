@@ -18,7 +18,6 @@ import torch as pt
 from .backends import *
 from .base_typing import *
 from .dim_calcs import *
-from .einarray_utils import *
 from .exceptions import *
 from .parse_numpy_ufunc_signature import (make_empty_signature_str,
                                           parse_ufunc_signature)
@@ -47,7 +46,7 @@ def process_inp(inp):
         return inp
 
 
-class lazy_func(LazyArrayLike, EinarrayOperatorsMixin):
+class lazy_func(LazyArrayLike):
     def __init__(self, func: Callable, *inputs, **kwargs):
         self.func = func
         self.inputs = [process_inp(inp) for inp in inputs]
@@ -168,7 +167,7 @@ class lazy_func(LazyArrayLike, EinarrayOperatorsMixin):
         return f"lazy_func({self.func}, {self.inputs}, {self.kwargs})"
 
 
-class einarray(ConcreteArrayLike, EinarrayOperatorsMixin):
+class einarray(ConcreteArrayLike):
     def __init__(self, a: Union[RawArrayLike, ConcreteArrayLike], dims: List[Dimension] = None, ambiguous_dims: Set[Dimension] = None, copy: bool=True, backend: Literal["numpy", "torch"] = None) -> None:
         self.a = a
         self.dims = parse_dims_declaration(dims)
