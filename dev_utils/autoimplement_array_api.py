@@ -117,6 +117,8 @@ class ImplementFunctions(m.MatcherDecoratableTransformer):
 
 
 def add_reflected_operators(code):
+    operators_to_reflect = 'add sub mul truediv floordiv pow mod matmul and or xor lshift rshift'.split()
+    
     class OperatorReflector(m.MatcherDecoratableTransformer):
         @m.leave(m.FunctionDef(name=m.OneOf(*(m.Name(value=f'__{op}__') for op in operators_to_reflect))))
         def reflect_operator(self, original_node: cst.FunctionDef, updated_node: cst.FunctionDef):
@@ -140,7 +142,6 @@ def add_reflected_operators(code):
             reflected_node = reflected_node.visit(ReplaceOperator())
             return cst.FlattenSentinel([original_node, cst.EmptyLine(), reflected_node])
 
-    operators_to_reflect = 'add sub mul truediv floordiv pow mod matmul and or xor lshift rshift'.split()
     tree = cst.parse_module(code)
     tree = tree.visit(OperatorReflector())
     return tree.code
@@ -188,9 +189,9 @@ if __name__ == '__main__':
     with open(einexpr_array_api_path / "__init__.py", 'w') as f:
         f.write(code)
         
-    # einarray.py
-    print("Processing einarray.py")
-    with open(einexpr_array_api_path / "einarray.py", 'r') as f:
+    # einarray_object.py
+    print("Processing einarray_object.py")
+    with open(einexpr_array_api_path / "einarray_object.py", 'r') as f:
         code = f.read()
     # Remove the line 
     print("    Removing lines `array = _array` and `__all__ = ['array']`")
@@ -205,12 +206,12 @@ if __name__ == '__main__':
     # Add reflected operators
     code = add_reflected_operators(code)
     # Write the code back to the file
-    with open(einexpr_array_api_path / "einarray.py", 'w') as f:
+    with open(einexpr_array_api_path / "einarray_object.py", 'w') as f:
         f.write(code)
 
-    # lazy_einarray.py
-    print("Processing lazy_einarray.py")
-    with open(einexpr_array_api_path / "lazy_einarray.py", 'r') as f:
+    # lazy_einarray_object.py
+    print("Processing lazy_einarray_object.py")
+    with open(einexpr_array_api_path / "lazy_einarray_object.py", 'r') as f:
         code = f.read()
     # Remove thes lines ``array = _array`` and ``__all__ = ['array']``
     print("    Removing lines `array = _array` and `__all__ = ['array']`")
@@ -220,5 +221,5 @@ if __name__ == '__main__':
     print("    Changing the name of the _array class to lazy_einarray")
     code = re.sub(r'class _array(?P<args>.*?):', r'class lazy_einarray\g<args>:', code)
     # Write the code back to the file
-    with open(einexpr_array_api_path / "lazy_einarray.py", 'w') as f:
+    with open(einexpr_array_api_path / "lazy_einarray_object.py", 'w') as f:
         f.write(code)
