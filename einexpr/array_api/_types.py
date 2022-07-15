@@ -9,7 +9,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, List, Literal, Optional, Sequence, Tuple, TypeVar, Union, Protocol
 from enum import Enum
-from .. import einarray
+
+import einexpr
 
 array = TypeVar('array')
 device = TypeVar('device')

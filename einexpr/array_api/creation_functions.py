@@ -1,7 +1,7 @@
 from ._types import (List, NestedSequence, Optional, SupportsBufferProtocol, Tuple, Union, array,
                      device, dtype)
 import einexpr
-from .. import einarray
+
 
 def arange(start: Union[int, float], /, stop: Optional[Union[int, float]] = None, step: Union[int, float] = 1, *, dtype: Optional[dtype] = None, device: Optional[device] = None) -> array:
     """

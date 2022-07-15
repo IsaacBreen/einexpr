@@ -1,6 +1,6 @@
 from ._types import Optional, Tuple, array
 import einexpr
-from .. import einarray
+
 
 def argmax(x: array, /, *, axis: Optional[int] = None, keepdims: bool = False) -> array:
     """

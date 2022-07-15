@@ -1,5 +1,7 @@
 e = 2.718281828459045
-from .. import einarray
+import einexpr
+
+
 
 """
 IEEE 754 floating-point representation of Euler's constant.

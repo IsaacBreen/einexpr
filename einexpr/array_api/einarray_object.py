@@ -355,6 +355,40 @@ class einarray():
             dims=out_dims, 
             ambiguous_dims=ambiguous_dims)
         return result
+    
+
+    def __rand__(self: array, other: Union[int, bool, array], /) -> array:
+        """
+        Reflection of __and__. Original comments:
+
+        Evaluates ``self_i & other_i`` for each element of an array instance with the respective element of the array ``other``.
+
+        Parameters
+        ----------
+        self: array
+            array instance. Should have an integer or boolean data type.
+        other: Union[int, bool, array]
+            other array. Must be compatible with ``self`` (see :ref:`broadcasting`). Should have an integer or boolean data type.
+
+        Returns
+        -------
+        out: array
+            an array containing the element-wise results. The returned array must have a data type determined by :ref:`type-promotion`.
+
+
+        .. note::
+           Element-wise results must equal the results returned by the equivalent element-wise function :func:`~array_api.bitwise_and`.
+        """
+        args = (self, other,)
+        kwargs = {}
+        out_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_dims(args, kwargs)
+        ambiguous_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+        processed_args, processed_kwargs = einexpr.dimension_utils.MultiArgumentElementwise.process_args(args, kwargs)
+        result = einexpr.einarray(
+            type(self.a).__rand__(*processed_args, **processed_kwargs), 
+            dims=out_dims, 
+            ambiguous_dims=ambiguous_dims)
+        return result
 
     def __array_namespace__(self: array, /, *, api_version: Optional[str] = None) -> Any:
         """
@@ -589,6 +623,79 @@ class einarray():
             dims=out_dims, 
             ambiguous_dims=ambiguous_dims)
         return result
+    
+
+    def __rfloordiv__(self: array, other: Union[int, float, array], /) -> array:
+        """
+        Reflection of __floordiv__. Original comments:
+
+        Evaluates ``self_i // other_i`` for each element of an array instance with the respective element of the array ``other``.
+
+        .. note::
+           For input arrays which promote to an integer data type, the result of division by zero is unspecified and thus implementation-defined.
+
+        **Special cases**
+
+        .. note::
+            Floor division was introduced in Python via `PEP 238 <https://www.python.org/dev/peps/pep-0238/>`_ with the goal to disambiguate "true division" (i.e., computing an approximation to the mathematical operation of division) from "floor division" (i.e., rounding the result of division toward negative infinity). The former was computed when one of the operands was a ``float``, while the latter was computed when both operands were ``int``s. Overloading the ``/`` operator to support both behaviors led to subtle numerical bugs when integers are possible, but not expected.
+
+            To resolve this ambiguity, ``/`` was designated for true division, and ``//`` was designated for floor division. Semantically, floor division was `defined <https://www.python.org/dev/peps/pep-0238/#semantics-of-floor-division>`_ as equivalent to ``a // b == floor(a/b)``; however, special floating-point cases were left ill-defined.
+
+            Accordingly, floor division is not implemented consistently across array libraries for some of the special cases documented below. Namely, when one of the operands is ``infinity``, libraries may diverge with some choosing to strictly follow ``floor(a/b)`` and others choosing to pair ``//`` with ``%`` according to the relation ``b = a % b + b * (a // b)``. The special cases leading to divergent behavior are documented below.
+
+            This specification prefers floor division to match ``floor(divide(x1, x2))`` in order to avoid surprising and unexpected results; however, array libraries may choose to more strictly follow Python behavior.
+
+        For floating-point operands, let ``self`` equal ``x1`` and ``other`` equal ``x2``.
+
+        -   If either ``x1_i`` or ``x2_i`` is ``NaN``, the result is ``NaN``.
+        -   If ``x1_i`` is either ``+infinity`` or ``-infinity`` and ``x2_i`` is either ``+infinity`` or ``-infinity``, the result is ``NaN``.
+        -   If ``x1_i`` is either ``+0`` or ``-0`` and ``x2_i`` is either ``+0`` or ``-0``, the result is ``NaN``.
+        -   If ``x1_i`` is ``+0`` and ``x2_i`` is greater than ``0``, the result is ``+0``.
+        -   If ``x1_i`` is ``-0`` and ``x2_i`` is greater than ``0``, the result is ``-0``.
+        -   If ``x1_i`` is ``+0`` and ``x2_i`` is less than ``0``, the result is ``-0``.
+        -   If ``x1_i`` is ``-0`` and ``x2_i`` is less than ``0``, the result is ``+0``.
+        -   If ``x1_i`` is greater than ``0`` and ``x2_i`` is ``+0``, the result is ``+infinity``.
+        -   If ``x1_i`` is greater than ``0`` and ``x2_i`` is ``-0``, the result is ``-infinity``.
+        -   If ``x1_i`` is less than ``0`` and ``x2_i`` is ``+0``, the result is ``-infinity``.
+        -   If ``x1_i`` is less than ``0`` and ``x2_i`` is ``-0``, the result is ``+infinity``.
+        -   If ``x1_i`` is ``+infinity`` and ``x2_i`` is a positive (i.e., greater than ``0``) finite number, the result is ``+infinity``. (**note**: libraries may return ``NaN`` to match Python behavior.)
+        -   If ``x1_i`` is ``+infinity`` and ``x2_i`` is a negative (i.e., less than ``0``) finite number, the result is ``-infinity``. (**note**: libraries may return ``NaN`` to match Python behavior.)
+        -   If ``x1_i`` is ``-infinity`` and ``x2_i`` is a positive (i.e., greater than ``0``) finite number, the result is ``-infinity``. (**note**: libraries may return ``NaN`` to match Python behavior.)
+        -   If ``x1_i`` is ``-infinity`` and ``x2_i`` is a negative (i.e., less than ``0``) finite number, the result is ``+infinity``. (**note**: libraries may return ``NaN`` to match Python behavior.)
+        -   If ``x1_i`` is a positive (i.e., greater than ``0``) finite number and ``x2_i`` is ``+infinity``, the result is ``+0``.
+        -   If ``x1_i`` is a positive (i.e., greater than ``0``) finite number and ``x2_i`` is ``-infinity``, the result is ``-0``. (**note**: libraries may return ``-1.0`` to match Python behavior.)
+        -   If ``x1_i`` is a negative (i.e., less than ``0``) finite number and ``x2_i`` is ``+infinity``, the result is ``-0``. (**note**: libraries may return ``-1.0`` to match Python behavior.)
+        -   If ``x1_i`` is a negative (i.e., less than ``0``) finite number and ``x2_i`` is ``-infinity``, the result is ``+0``.
+        -   If ``x1_i`` and ``x2_i`` have the same mathematical sign and are both nonzero finite numbers, the result has a positive mathematical sign.
+        -   If ``x1_i`` and ``x2_i`` have different mathematical signs and are both nonzero finite numbers, the result has a negative mathematical sign.
+        -   In the remaining cases, where neither ``-infinity``, ``+0``, ``-0``, nor ``NaN`` is involved, the quotient must be computed and rounded to the greatest (i.e., closest to ``+infinity``) representable integer-value number that is not greater than the division result. If the magnitude is too large to represent, the operation overflows and the result is an ``infinity`` of appropriate mathematical sign. If the magnitude is too small to represent, the operation underflows and the result is a zero of appropriate mathematical sign.
+
+        Parameters
+        ----------
+        self: array
+            array instance. Should have a real-valued data type.
+        other: Union[int, float, array]
+            other array. Must be compatible with ``self`` (see :ref:`broadcasting`). Should have a real-valued data type.
+
+        Returns
+        -------
+        out: array
+            an array containing the element-wise results. The returned array must have a data type determined by :ref:`type-promotion`.
+
+
+        .. note::
+           Element-wise results must equal the results returned by the equivalent element-wise function :func:`~array_api.floor_divide`.
+        """
+        args = (self, other,)
+        kwargs = {}
+        out_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_dims(args, kwargs)
+        ambiguous_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+        processed_args, processed_kwargs = einexpr.dimension_utils.MultiArgumentElementwise.process_args(args, kwargs)
+        result = einexpr.einarray(
+            type(self.a).__rfloordiv__(*processed_args, **processed_kwargs), 
+            dims=out_dims, 
+            ambiguous_dims=ambiguous_dims)
+        return result
 
     def __ge__(self: array, other: Union[int, float, array], /) -> array:
         """
@@ -805,6 +912,40 @@ class einarray():
             dims=out_dims, 
             ambiguous_dims=ambiguous_dims)
         return result
+    
+
+    def __rlshift__(self: array, other: Union[int, array], /) -> array:
+        """
+        Reflection of __lshift__. Original comments:
+
+        Evaluates ``self_i << other_i`` for each element of an array instance with the respective element  of the array ``other``.
+
+        Parameters
+        ----------
+        self: array
+            array instance. Should have an integer data type.
+        other: Union[int, array]
+            other array. Must be compatible with ``self`` (see :ref:`broadcasting`). Should have an integer data type. Each element must be greater than or equal to ``0``.
+
+        Returns
+        -------
+        out: array
+            an array containing the element-wise results. The returned array must have the same data type as ``self``.
+
+
+        .. note::
+           Element-wise results must equal the results returned by the equivalent element-wise function :func:`~array_api.bitwise_left_shift`.
+        """
+        args = (self, other,)
+        kwargs = {}
+        out_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_dims(args, kwargs)
+        ambiguous_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+        processed_args, processed_kwargs = einexpr.dimension_utils.MultiArgumentElementwise.process_args(args, kwargs)
+        result = einexpr.einarray(
+            type(self.a).__rlshift__(*processed_args, **processed_kwargs), 
+            dims=out_dims, 
+            ambiguous_dims=ambiguous_dims)
+        return result
 
     def __lt__(self: array, other: Union[int, float, array], /) -> array:
         """
@@ -839,6 +980,49 @@ class einarray():
 
     def __matmul__(self: array, other: array, /) -> array:
         """
+        Computes the matrix product.
+
+        .. note::
+           The ``matmul`` function must implement the same semantics as the built-in ``@`` operator (see `PEP 465 <https://www.python.org/dev/peps/pep-0465>`_).
+
+        Parameters
+        ----------
+        self: array
+            array instance. Should have a real-valued data type. Must have at least one dimension. If ``self`` is one-dimensional having shape ``(M,)`` and ``other`` has more than one dimension, ``self`` must be promoted to a two-dimensional array by prepending ``1`` to its dimensions (i.e., must have shape ``(1, M)``). After matrix multiplication, the prepended dimensions in the returned array must be removed. If ``self`` has more than one dimension (including after vector-to-matrix promotion), ``shape(self)[:-2]`` must be compatible with ``shape(other)[:-2]`` (after vector-to-matrix promotion) (see :ref:`broadcasting`). If ``self`` has shape ``(..., M, K)``, the innermost two dimensions form matrices on which to perform matrix multiplication.
+        other: array
+            other array. Should have a real-valued data type. Must have at least one dimension. If ``other`` is one-dimensional having shape ``(N,)`` and ``self`` has more than one dimension, ``other`` must be promoted to a two-dimensional array by appending ``1`` to its dimensions (i.e., must have shape ``(N, 1)``). After matrix multiplication, the appended dimensions in the returned array must be removed. If ``other`` has more than one dimension (including after vector-to-matrix promotion), ``shape(other)[:-2]`` must be compatible with ``shape(self)[:-2]`` (after vector-to-matrix promotion) (see :ref:`broadcasting`). If ``other`` has shape ``(..., K, N)``, the innermost two dimensions form matrices on which to perform matrix multiplication.
+
+        Returns
+        -------
+        out: array
+            -   if both ``self`` and ``other`` are one-dimensional arrays having shape ``(N,)``, a zero-dimensional array containing the inner product as its only element.
+            -   if ``self`` is a two-dimensional array having shape ``(M, K)`` and ``other`` is a two-dimensional array having shape ``(K, N)``, a two-dimensional array containing the `conventional matrix product <https://en.wikipedia.org/wiki/Matrix_multiplication>`_ and having shape ``(M, N)``.
+            -   if ``self`` is a one-dimensional array having shape ``(K,)`` and ``other`` is an array having shape ``(..., K, N)``, an array having shape ``(..., N)`` (i.e., prepended dimensions during vector-to-matrix promotion must be removed) and containing the `conventional matrix product <https://en.wikipedia.org/wiki/Matrix_multiplication>`_.
+            -   if ``self`` is an array having shape ``(..., M, K)`` and ``other`` is a one-dimensional array having shape ``(K,)``, an array having shape ``(..., M)`` (i.e., appended dimensions during vector-to-matrix promotion must be removed) and containing the `conventional matrix product <https://en.wikipedia.org/wiki/Matrix_multiplication>`_.
+            -   if ``self`` is a two-dimensional array having shape ``(M, K)`` and ``other`` is an array having shape ``(..., K, N)``, an array having shape ``(..., M, N)`` and containing the `conventional matrix product <https://en.wikipedia.org/wiki/Matrix_multiplication>`_ for each stacked matrix.
+            -   if ``self`` is an array having shape ``(..., M, K)`` and ``other`` is a two-dimensional array having shape ``(K, N)``, an array having shape ``(..., M, N)`` and containing the `conventional matrix product <https://en.wikipedia.org/wiki/Matrix_multiplication>`_ for each stacked matrix.
+            -   if either ``self`` or ``other`` has more than two dimensions, an array having a shape determined by :ref:`broadcasting` ``shape(self)[:-2]`` against ``shape(other)[:-2]`` and containing the `conventional matrix product <https://en.wikipedia.org/wiki/Matrix_multiplication>`_ for each stacked matrix.
+            -   The returned array must have a data type determined by :ref:`type-promotion`.
+
+
+        .. note::
+           Results must equal the results returned by the equivalent function :func:`~array_api.matmul`.
+
+        **Raises**
+
+        - if either ``self`` or ``other`` is a zero-dimensional array.
+        - if ``self`` is a one-dimensional array having shape ``(K,)``, ``other`` is a one-dimensional array having shape ``(L,)``, and ``K != L``.
+        - if ``self`` is a one-dimensional array having shape ``(K,)``, ``other`` is an array having shape ``(..., L, N)``, and ``K != L``.
+        - if ``self`` is an array having shape ``(..., M, K)``, ``other`` is a one-dimensional array having shape ``(L,)``, and ``K != L``.
+        - if ``self`` is an array having shape ``(..., M, K)``, ``other`` is an array having shape ``(..., L, N)``, and ``K != L``.
+        """
+        raise NotImplementedError
+    
+
+    def __rmatmul__(self: array, other: array, /) -> array:
+        """
+        Reflection of __matmul__. Original comments:
+
         Computes the matrix product.
 
         .. note::
@@ -938,6 +1122,71 @@ class einarray():
             dims=out_dims, 
             ambiguous_dims=ambiguous_dims)
         return result
+    
+
+    def __rmod__(self: array, other: Union[int, float, array], /) -> array:
+        """
+        Reflection of __mod__. Original comments:
+
+        Evaluates ``self_i % other_i`` for each element of an array instance with the respective element of the array ``other``.
+
+        .. note::
+           For input arrays which promote to an integer data type, the result of division by zero is unspecified and thus implementation-defined.
+
+        **Special Cases**
+
+        .. note::
+           In general, this method is **not** recommended for floating-point operands as semantics do not follow IEEE 754. That this method is specified to accept floating-point operands is primarily for reasons of backward compatibility.
+
+        For floating-point operands, let ``self`` equal ``x1`` and ``other`` equal ``x2``.
+
+        - If either ``x1_i`` or ``x2_i`` is ``NaN``, the result is ``NaN``.
+        - If ``x1_i`` is either ``+infinity`` or ``-infinity`` and ``x2_i`` is either ``+infinity`` or ``-infinity``, the result is ``NaN``.
+        - If ``x1_i`` is either ``+0`` or ``-0`` and ``x2_i`` is either ``+0`` or ``-0``, the result is ``NaN``.
+        - If ``x1_i`` is ``+0`` and ``x2_i`` is greater than ``0``, the result is ``+0``.
+        - If ``x1_i`` is ``-0`` and ``x2_i`` is greater than ``0``, the result is ``+0``.
+        - If ``x1_i`` is ``+0`` and ``x2_i`` is less than ``0``, the result is ``-0``.
+        - If ``x1_i`` is ``-0`` and ``x2_i`` is less than ``0``, the result is ``-0``.
+        - If ``x1_i`` is greater than ``0`` and ``x2_i`` is ``+0``, the result is ``NaN``.
+        - If ``x1_i`` is greater than ``0`` and ``x2_i`` is ``-0``, the result is ``NaN``.
+        - If ``x1_i`` is less than ``0`` and ``x2_i`` is ``+0``, the result is ``NaN``.
+        - If ``x1_i`` is less than ``0`` and ``x2_i`` is ``-0``, the result is ``NaN``.
+        - If ``x1_i`` is ``+infinity`` and ``x2_i`` is a positive (i.e., greater than ``0``) finite number, the result is ``NaN``.
+        - If ``x1_i`` is ``+infinity`` and ``x2_i`` is a negative (i.e., less than ``0``) finite number, the result is ``NaN``.
+        - If ``x1_i`` is ``-infinity`` and ``x2_i`` is a positive (i.e., greater than ``0``) finite number, the result is ``NaN``.
+        - If ``x1_i`` is ``-infinity`` and ``x2_i`` is a negative (i.e., less than ``0``) finite number, the result is ``NaN``.
+        - If ``x1_i`` is a positive (i.e., greater than ``0``) finite number and ``x2_i`` is ``+infinity``, the result is ``x1_i``. (**note**: this result matches Python behavior.)
+        - If ``x1_i`` is a positive (i.e., greater than ``0``) finite number and ``x2_i`` is ``-infinity``, the result is ``x2_i``. (**note**: this result matches Python behavior.)
+        - If ``x1_i`` is a negative (i.e., less than ``0``) finite number and ``x2_i`` is ``+infinity``, the result is ``x2_i``. (**note**: this results matches Python behavior.)
+        - If ``x1_i`` is a negative (i.e., less than ``0``) finite number and ``x2_i`` is ``-infinity``, the result is ``x1_i``. (**note**: this result matches Python behavior.)
+        - In the remaining cases, the result must match that of the Python ``%`` operator.
+
+        Parameters
+        ----------
+        self: array
+            array instance. Should have a real-valued data type.
+        other: Union[int, float, array]
+            other array. Must be compatible with ``self`` (see :ref:`broadcasting`). Should have a real-valued data type.
+
+        Returns
+        -------
+        out: array
+            an array containing the element-wise results. Each element-wise result must have the same sign as the respective element ``other_i``. The returned array must have a real-valued floating-point data type determined by :ref:`type-promotion`.
+
+
+        .. note::
+           Element-wise results must equal the results returned by the equivalent element-wise function :func:`~array_api.remainder`.
+        """
+        args = (self, other,)
+        kwargs = {}
+        out_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_dims(args, kwargs)
+        ambiguous_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+        processed_args, processed_kwargs = einexpr.dimension_utils.MultiArgumentElementwise.process_args(args, kwargs)
+        result = einexpr.einarray(
+            type(self.a).__rmod__(*processed_args, **processed_kwargs), 
+            dims=out_dims, 
+            ambiguous_dims=ambiguous_dims)
+        return result
 
     def __mul__(self: array, other: Union[int, float, array], /) -> array:
         """
@@ -984,6 +1233,58 @@ class einarray():
         processed_args, processed_kwargs = einexpr.dimension_utils.MultiArgumentElementwise.process_args(args, kwargs)
         result = einexpr.einarray(
             type(self.a).__mul__(*processed_args, **processed_kwargs), 
+            dims=out_dims, 
+            ambiguous_dims=ambiguous_dims)
+        return result
+    
+
+    def __rmul__(self: array, other: Union[int, float, array], /) -> array:
+        """
+        Reflection of __mul__. Original comments:
+
+        Calculates the product for each element of an array instance with the respective element of the array ``other``.
+
+        **Special cases**
+
+        For floating-point operands, let ``self`` equal ``x1`` and ``other`` equal ``x2``.
+
+        -   If either ``x1_i`` or ``x2_i`` is ``NaN``, the result is ``NaN``.
+        -   If ``x1_i`` is either ``+infinity`` or ``-infinity`` and ``x2_i`` is either ``+0`` or ``-0``, the result is ``NaN``.
+        -   If ``x1_i`` is either ``+0`` or ``-0`` and ``x2_i`` is either ``+infinity`` or ``-infinity``, the result is ``NaN``.
+        -   If ``x1_i`` and ``x2_i`` have the same mathematical sign, the result has a positive mathematical sign, unless the result is ``NaN``. If the result is ``NaN``, the "sign" of ``NaN`` is implementation-defined.
+        -   If ``x1_i`` and ``x2_i`` have different mathematical signs, the result has a negative mathematical sign, unless the result is ``NaN``. If the result is ``NaN``, the "sign" of ``NaN`` is implementation-defined.
+        -   If ``x1_i`` is either ``+infinity`` or ``-infinity`` and ``x2_i`` is either ``+infinity`` or ``-infinity``, the result is a signed infinity with the mathematical sign determined by the rule already stated above.
+        -   If ``x1_i`` is either ``+infinity`` or ``-infinity`` and ``x2_i`` is a nonzero finite number, the result is a signed infinity with the mathematical sign determined by the rule already stated above.
+        -   If ``x1_i`` is a nonzero finite number and ``x2_i`` is either ``+infinity`` or ``-infinity``, the result is a signed infinity with the mathematical sign determined by the rule already stated above.
+        -   In the remaining cases, where neither ``infinity`` nor `NaN` is involved, the product must be computed and rounded to the nearest representable value according to IEEE 754-2019 and a supported rounding mode. If the magnitude is too large to represent, the result is an ``infinity`` of appropriate mathematical sign. If the magnitude is too small to represent, the result is a zero of appropriate mathematical sign.
+
+
+        .. note::
+           Floating-point multiplication is not always associative due to finite precision.
+
+        Parameters
+        ----------
+        self: array
+            array instance. Should have a real-valued data type.
+        other: Union[int, float, array]
+            other array. Must be compatible with ``self`` (see :ref:`broadcasting`). Should have a real-valued data type.
+
+        Returns
+        -------
+        out: array
+            an array containing the element-wise products. The returned array must have a data type determined by :ref:`type-promotion`.
+
+
+        .. note::
+           Element-wise results must equal the results returned by the equivalent element-wise function :func:`~array_api.multiply`.
+        """
+        args = (self, other,)
+        kwargs = {}
+        out_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_dims(args, kwargs)
+        ambiguous_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+        processed_args, processed_kwargs = einexpr.dimension_utils.MultiArgumentElementwise.process_args(args, kwargs)
+        result = einexpr.einarray(
+            type(self.a).__rmul__(*processed_args, **processed_kwargs), 
             dims=out_dims, 
             ambiguous_dims=ambiguous_dims)
         return result
@@ -1084,6 +1385,40 @@ class einarray():
             dims=out_dims, 
             ambiguous_dims=ambiguous_dims)
         return result
+    
+
+    def __ror__(self: array, other: Union[int, bool, array], /) -> array:
+        """
+        Reflection of __or__. Original comments:
+
+        Evaluates ``self_i | other_i`` for each element of an array instance with the respective element of the array ``other``.
+
+        Parameters
+        ----------
+        self: array
+            array instance. Should have an integer or boolean data type.
+        other: Union[int, bool, array]
+            other array. Must be compatible with ``self`` (see :ref:`broadcasting`). Should have an integer or boolean data type.
+
+        Returns
+        -------
+        out: array
+            an array containing the element-wise results. The returned array must have a data type determined by :ref:`type-promotion`.
+
+
+        .. note::
+           Element-wise results must equal the results returned by the equivalent element-wise function :func:`~array_api.bitwise_or`.
+        """
+        args = (self, other,)
+        kwargs = {}
+        out_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_dims(args, kwargs)
+        ambiguous_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+        processed_args, processed_kwargs = einexpr.dimension_utils.MultiArgumentElementwise.process_args(args, kwargs)
+        result = einexpr.einarray(
+            type(self.a).__ror__(*processed_args, **processed_kwargs), 
+            dims=out_dims, 
+            ambiguous_dims=ambiguous_dims)
+        return result
 
     def __pos__(self: array, /) -> array:
         """
@@ -1178,6 +1513,74 @@ class einarray():
             dims=out_dims, 
             ambiguous_dims=ambiguous_dims)
         return result
+    
+
+    def __rpow__(self: array, other: Union[int, float, array], /) -> array:
+        """
+        Reflection of __pow__. Original comments:
+
+        Calculates an implementation-dependent approximation of exponentiation by raising each element (the base) of an array instance to the power of ``other_i`` (the exponent), where ``other_i`` is the corresponding element of the array ``other``.
+
+        .. note::
+           If both ``self`` and ``other`` have integer data types, the result of ``__pow__`` when `other_i` is negative (i.e., less than zero) is unspecified and thus implementation-dependent.
+
+           If ``self`` has an integer data type and ``other`` has a real-valued floating-point data type, behavior is implementation-dependent, as type promotion between data type "kinds" (e.g., integer versus floating-point) is unspecified.
+
+        **Special cases**
+
+        For floating-point operands, let ``self`` equal ``x1`` and ``other`` equal ``x2``.
+
+        -   If ``x1_i`` is not equal to ``1`` and ``x2_i`` is ``NaN``, the result is ``NaN``.
+        -   If ``x2_i`` is ``+0``, the result is ``1``, even if ``x1_i`` is ``NaN``.
+        -   If ``x2_i`` is ``-0``, the result is `1`, even if ``x1_i`` is ``NaN``.
+        -   If ``x1_i`` is ``NaN`` and ``x2_i`` is not equal to ``0``, the result is ``NaN``.
+        -   If ``abs(x1_i)`` is greater than ``1`` and ``x2_i`` is ``+infinity``, the result is ``+infinity``.
+        -   If ``abs(x1_i)`` is greater than ``1`` and ``x2_i`` is ``-infinity``, the result is ``+0``.
+        -   If ``abs(x1_i)`` is ``1`` and ``x2_i`` is ``+infinity``, the result is ``1``.
+        -   If ``abs(x1_i)`` is ``1`` and ``x2_i`` is ``-infinity``, the result is ``1``.
+        -   If ``x1_i`` is ``1`` and ``x2_i`` is not ``NaN``, the result is ``1``.
+        -   If ``abs(x1_i)`` is less than ``1`` and ``x2_i`` is ``+infinity``, the result is ``+0``.
+        -   If ``abs(x1_i)`` is less than ``1`` and ``x2_i`` is ``-infinity``, the result is ``+infinity``.
+        -   If ``x1_i`` is ``+infinity`` and ``x2_i`` is greater than ``0``, the result is ``+infinity``.
+        -   If ``x1_i`` is ``+infinity`` and ``x2_i`` is less than ``0``, the result is ``+0``.
+        -   If ``x1_i`` is ``-infinity``, ``x2_i`` is greater than ``0``, and ``x2_i`` is an odd integer value, the result is ``-infinity``.
+        -   If ``x1_i`` is ``-infinity``, ``x2_i`` is greater than ``0``, and ``x2_i`` is not an odd integer value, the result is ``+infinity``.
+        -   If ``x1_i`` is ``-infinity``, ``x2_i`` is less than ``0``, and ``x2_i`` is an odd integer value, the result is ``-0``.
+        -   If ``x1_i`` is ``-infinity``, ``x2_i`` is less than ``0``, and ``x2_i`` is not an odd integer value, the result is ``+0``.
+        -   If ``x1_i`` is ``+0`` and ``x2_i`` is greater than ``0``, the result is ``+0``.
+        -   If ``x1_i`` is ``+0`` and ``x2_i`` is less than ``0``, the result is ``+infinity``.
+        -   If ``x1_i`` is ``-0``, ``x2_i`` is greater than ``0``, and ``x2_i`` is an odd integer value, the result is ``-0``.
+        -   If ``x1_i`` is ``-0``, ``x2_i`` is greater than ``0``, and ``x2_i`` is not an odd integer value, the result is ``+0``.
+        -   If ``x1_i`` is ``-0``, ``x2_i`` is less than ``0``, and ``x2_i`` is an odd integer value, the result is ``-infinity``.
+        -   If ``x1_i`` is ``-0``, ``x2_i`` is less than ``0``, and ``x2_i`` is not an odd integer value, the result is ``+infinity``.
+        -   If ``x1_i`` is less than ``0``, ``x1_i`` is a finite number, ``x2_i`` is a finite number, and ``x2_i`` is not an integer value, the result is ``NaN``.
+
+        Parameters
+        ----------
+        self: array
+            array instance whose elements correspond to the exponentiation base. Should have a real-valued data type.
+        other: Union[int, float, array]
+            other array whose elements correspond to the exponentiation exponent. Must be compatible with ``self`` (see :ref:`broadcasting`). Should have a real-valued data type.
+
+        Returns
+        -------
+        out: array
+            an array containing the element-wise results. The returned array must have a data type determined by :ref:`type-promotion`.
+
+
+        .. note::
+           Element-wise results must equal the results returned by the equivalent element-wise function :func:`~array_api.pow`.
+        """
+        args = (self, other,)
+        kwargs = {}
+        out_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_dims(args, kwargs)
+        ambiguous_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+        processed_args, processed_kwargs = einexpr.dimension_utils.MultiArgumentElementwise.process_args(args, kwargs)
+        result = einexpr.einarray(
+            type(self.a).__rpow__(*processed_args, **processed_kwargs), 
+            dims=out_dims, 
+            ambiguous_dims=ambiguous_dims)
+        return result
 
     def __rshift__(self: array, other: Union[int, array], /) -> array:
         """
@@ -1206,6 +1609,40 @@ class einarray():
         processed_args, processed_kwargs = einexpr.dimension_utils.MultiArgumentElementwise.process_args(args, kwargs)
         result = einexpr.einarray(
             type(self.a).__rshift__(*processed_args, **processed_kwargs), 
+            dims=out_dims, 
+            ambiguous_dims=ambiguous_dims)
+        return result
+    
+
+    def __rrshift__(self: array, other: Union[int, array], /) -> array:
+        """
+        Reflection of __rshift__. Original comments:
+
+        Evaluates ``self_i >> other_i`` for each element of an array instance with the respective element of the array ``other``.
+
+        Parameters
+        ----------
+        self: array
+            array instance. Should have an integer data type.
+        other: Union[int, array]
+            other array. Must be compatible with ``self`` (see :ref:`broadcasting`). Should have an integer data type. Each element must be greater than or equal to ``0``.
+
+        Returns
+        -------
+        out: array
+            an array containing the element-wise results. The returned array must have the same data type as ``self``.
+
+
+        .. note::
+           Element-wise results must equal the results returned by the equivalent element-wise function :func:`~array_api.bitwise_right_shift`.
+        """
+        args = (self, other,)
+        kwargs = {}
+        out_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_dims(args, kwargs)
+        ambiguous_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+        processed_args, processed_kwargs = einexpr.dimension_utils.MultiArgumentElementwise.process_args(args, kwargs)
+        result = einexpr.einarray(
+            type(self.a).__rrshift__(*processed_args, **processed_kwargs), 
             dims=out_dims, 
             ambiguous_dims=ambiguous_dims)
         return result
@@ -1358,6 +1795,72 @@ class einarray():
             dims=out_dims, 
             ambiguous_dims=ambiguous_dims)
         return result
+    
+    
+    def __rtruediv__(self: array, other: Union[int, float, array], /) -> array:
+        """
+        Reflection of __truediv__. Original comments:
+
+        Evaluates ``self_i / other_i`` for each element of an array instance with the respective element of the array ``other``.
+
+        .. note::
+           If one or both of ``self`` and ``other`` have integer data types, the result is implementation-dependent, as type promotion between data type "kinds" (e.g., integer versus floating-point) is unspecified.
+
+           Specification-compliant libraries may choose to raise an error or return an array containing the element-wise results. If an array is returned, the array must have a real-valued floating-point data type.
+
+        **Special cases**
+
+        For floating-point operands, let ``self`` equal ``x1`` and ``other`` equal ``x2``.
+
+        -   If either ``x1_i`` or ``x2_i`` is ``NaN``, the result is ``NaN``.
+        -   If ``x1_i`` is either ``+infinity`` or ``-infinity`` and ``x2_i`` is either ``+infinity`` or ``-infinity``, the result is `NaN`.
+        -   If ``x1_i`` is either ``+0`` or ``-0`` and ``x2_i`` is either ``+0`` or ``-0``, the result is ``NaN``.
+        -   If ``x1_i`` is ``+0`` and ``x2_i`` is greater than ``0``, the result is ``+0``.
+        -   If ``x1_i`` is ``-0`` and ``x2_i`` is greater than ``0``, the result is ``-0``.
+        -   If ``x1_i`` is ``+0`` and ``x2_i`` is less than ``0``, the result is ``-0``.
+        -   If ``x1_i`` is ``-0`` and ``x2_i`` is less than ``0``, the result is ``+0``.
+        -   If ``x1_i`` is greater than ``0`` and ``x2_i`` is ``+0``, the result is ``+infinity``.
+        -   If ``x1_i`` is greater than ``0`` and ``x2_i`` is ``-0``, the result is ``-infinity``.
+        -   If ``x1_i`` is less than ``0`` and ``x2_i`` is ``+0``, the result is ``-infinity``.
+        -   If ``x1_i`` is less than ``0`` and ``x2_i`` is ``-0``, the result is ``+infinity``.
+        -   If ``x1_i`` is ``+infinity`` and ``x2_i`` is a positive (i.e., greater than ``0``) finite number, the result is ``+infinity``.
+        -   If ``x1_i`` is ``+infinity`` and ``x2_i`` is a negative (i.e., less than ``0``) finite number, the result is ``-infinity``.
+        -   If ``x1_i`` is ``-infinity`` and ``x2_i`` is a positive (i.e., greater than ``0``) finite number, the result is ``-infinity``.
+        -   If ``x1_i`` is ``-infinity`` and ``x2_i`` is a negative (i.e., less than ``0``) finite number, the result is ``+infinity``.
+        -   If ``x1_i`` is a positive (i.e., greater than ``0``) finite number and ``x2_i`` is ``+infinity``, the result is ``+0``.
+        -   If ``x1_i`` is a positive (i.e., greater than ``0``) finite number and ``x2_i`` is ``-infinity``, the result is ``-0``.
+        -   If ``x1_i`` is a negative (i.e., less than ``0``) finite number and ``x2_i`` is ``+infinity``, the result is ``-0``.
+        -   If ``x1_i`` is a negative (i.e., less than ``0``) finite number and ``x2_i`` is ``-infinity``, the result is ``+0``.
+        -   If ``x1_i`` and ``x2_i`` have the same mathematical sign and are both nonzero finite numbers, the result has a positive mathematical sign.
+        -   If ``x1_i`` and ``x2_i`` have different mathematical signs and are both nonzero finite numbers, the result has a negative mathematical sign.
+        -   In the remaining cases, where neither ``-infinity``, ``+0``, ``-0``, nor ``NaN`` is involved, the quotient must be computed and rounded to the nearest representable value according to IEEE 754-2019 and a supported rounding mode. If the magnitude is too large to represent, the operation overflows and the result is an ``infinity`` of appropriate mathematical sign. If the magnitude is too small to represent, the operation underflows and the result is a zero of appropriate mathematical sign.
+
+        Parameters
+        ----------
+        self: array
+            array instance. Should have a real-valued data type.
+        other: Union[int, float, array]
+            other array. Must be compatible with ``self`` (see :ref:`broadcasting`). Should have a real-valued data type.
+
+        Returns
+        -------
+        out: array
+            an array containing the element-wise results. The returned array should have a real-valued floating-point data type determined by :ref:`type-promotion`.
+
+
+        .. note::
+           Element-wise results must equal the results returned by the equivalent element-wise function :func:`~array_api.divide`.
+        """
+        args = (self, other,)
+        kwargs = {}
+        out_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_dims(args, kwargs)
+        ambiguous_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+        processed_args, processed_kwargs = einexpr.dimension_utils.MultiArgumentElementwise.process_args(args, kwargs)
+        result = einexpr.einarray(
+            type(self.a).__rtruediv__(*processed_args, **processed_kwargs), 
+            dims=out_dims, 
+            ambiguous_dims=ambiguous_dims)
+        return result
 
     def __truediv__(self: array, other: Union[int, float, array], /) -> array:
         """
@@ -1421,6 +1924,72 @@ class einarray():
             dims=out_dims, 
             ambiguous_dims=ambiguous_dims)
         return result
+    
+
+    def __rtruediv__(self: array, other: Union[int, float, array], /) -> array:
+        """
+        Reflection of __truediv__. Original comments:
+
+        Evaluates ``self_i / other_i`` for each element of an array instance with the respective element of the array ``other``.
+
+        .. note::
+           If one or both of ``self`` and ``other`` have integer data types, the result is implementation-dependent, as type promotion between data type "kinds" (e.g., integer versus floating-point) is unspecified.
+
+           Specification-compliant libraries may choose to raise an error or return an array containing the element-wise results. If an array is returned, the array must have a real-valued floating-point data type.
+
+        **Special cases**
+
+        For floating-point operands, let ``self`` equal ``x1`` and ``other`` equal ``x2``.
+
+        -   If either ``x1_i`` or ``x2_i`` is ``NaN``, the result is ``NaN``.
+        -   If ``x1_i`` is either ``+infinity`` or ``-infinity`` and ``x2_i`` is either ``+infinity`` or ``-infinity``, the result is `NaN`.
+        -   If ``x1_i`` is either ``+0`` or ``-0`` and ``x2_i`` is either ``+0`` or ``-0``, the result is ``NaN``.
+        -   If ``x1_i`` is ``+0`` and ``x2_i`` is greater than ``0``, the result is ``+0``.
+        -   If ``x1_i`` is ``-0`` and ``x2_i`` is greater than ``0``, the result is ``-0``.
+        -   If ``x1_i`` is ``+0`` and ``x2_i`` is less than ``0``, the result is ``-0``.
+        -   If ``x1_i`` is ``-0`` and ``x2_i`` is less than ``0``, the result is ``+0``.
+        -   If ``x1_i`` is greater than ``0`` and ``x2_i`` is ``+0``, the result is ``+infinity``.
+        -   If ``x1_i`` is greater than ``0`` and ``x2_i`` is ``-0``, the result is ``-infinity``.
+        -   If ``x1_i`` is less than ``0`` and ``x2_i`` is ``+0``, the result is ``-infinity``.
+        -   If ``x1_i`` is less than ``0`` and ``x2_i`` is ``-0``, the result is ``+infinity``.
+        -   If ``x1_i`` is ``+infinity`` and ``x2_i`` is a positive (i.e., greater than ``0``) finite number, the result is ``+infinity``.
+        -   If ``x1_i`` is ``+infinity`` and ``x2_i`` is a negative (i.e., less than ``0``) finite number, the result is ``-infinity``.
+        -   If ``x1_i`` is ``-infinity`` and ``x2_i`` is a positive (i.e., greater than ``0``) finite number, the result is ``-infinity``.
+        -   If ``x1_i`` is ``-infinity`` and ``x2_i`` is a negative (i.e., less than ``0``) finite number, the result is ``+infinity``.
+        -   If ``x1_i`` is a positive (i.e., greater than ``0``) finite number and ``x2_i`` is ``+infinity``, the result is ``+0``.
+        -   If ``x1_i`` is a positive (i.e., greater than ``0``) finite number and ``x2_i`` is ``-infinity``, the result is ``-0``.
+        -   If ``x1_i`` is a negative (i.e., less than ``0``) finite number and ``x2_i`` is ``+infinity``, the result is ``-0``.
+        -   If ``x1_i`` is a negative (i.e., less than ``0``) finite number and ``x2_i`` is ``-infinity``, the result is ``+0``.
+        -   If ``x1_i`` and ``x2_i`` have the same mathematical sign and are both nonzero finite numbers, the result has a positive mathematical sign.
+        -   If ``x1_i`` and ``x2_i`` have different mathematical signs and are both nonzero finite numbers, the result has a negative mathematical sign.
+        -   In the remaining cases, where neither ``-infinity``, ``+0``, ``-0``, nor ``NaN`` is involved, the quotient must be computed and rounded to the nearest representable value according to IEEE 754-2019 and a supported rounding mode. If the magnitude is too large to represent, the operation overflows and the result is an ``infinity`` of appropriate mathematical sign. If the magnitude is too small to represent, the operation underflows and the result is a zero of appropriate mathematical sign.
+
+        Parameters
+        ----------
+        self: array
+            array instance. Should have a real-valued data type.
+        other: Union[int, float, array]
+            other array. Must be compatible with ``self`` (see :ref:`broadcasting`). Should have a real-valued data type.
+
+        Returns
+        -------
+        out: array
+            an array containing the element-wise results. The returned array should have a real-valued floating-point data type determined by :ref:`type-promotion`.
+
+
+        .. note::
+           Element-wise results must equal the results returned by the equivalent element-wise function :func:`~array_api.divide`.
+        """
+        args = (self, other,)
+        kwargs = {}
+        out_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_dims(args, kwargs)
+        ambiguous_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+        processed_args, processed_kwargs = einexpr.dimension_utils.MultiArgumentElementwise.process_args(args, kwargs)
+        result = einexpr.einarray(
+            type(self.a).__rtruediv__(*processed_args, **processed_kwargs), 
+            dims=out_dims, 
+            ambiguous_dims=ambiguous_dims)
+        return result
 
     def __xor__(self: array, other: Union[int, bool, array], /) -> array:
         """
@@ -1452,6 +2021,40 @@ class einarray():
             dims=out_dims, 
             ambiguous_dims=ambiguous_dims)
         return result
+    
+
+    def __rxor__(self: array, other: Union[int, bool, array], /) -> array:
+        """
+        Reflection of __xor__. Original comments:
+
+        Evaluates ``self_i ^ other_i`` for each element of an array instance with the respective element of the array ``other``.
+
+        Parameters
+        ----------
+        self: array
+            array instance. Should have an integer or boolean data type.
+        other: Union[int, bool, array]
+            other array. Must be compatible with ``self`` (see :ref:`broadcasting`). Should have an integer or boolean data type.
+
+        Returns
+        -------
+        out: array
+            an array containing the element-wise results. The returned array must have a data type determined by :ref:`type-promotion`.
+
+
+        .. note::
+           Element-wise results must equal the results returned by the equivalent element-wise function :func:`~array_api.bitwise_xor`.
+        """
+        args = (self, other,)
+        kwargs = {}
+        out_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_dims(args, kwargs)
+        ambiguous_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+        processed_args, processed_kwargs = einexpr.dimension_utils.MultiArgumentElementwise.process_args(args, kwargs)
+        result = einexpr.einarray(
+            type(self.a).__rxor__(*processed_args, **processed_kwargs), 
+            dims=out_dims, 
+            ambiguous_dims=ambiguous_dims)
+        return result
 
     def to_device(self: array, device: Device, /, *, stream: Optional[Union[int, Any]] = None) -> array:
         """
@@ -1479,7 +2082,7 @@ class einarray():
 
 
 from jax import tree_util
-from .. import einarray
+
 
 tree_util.register_pytree_node(einarray, einarray._tree_flatten, einarray._tree_unflatten)
 

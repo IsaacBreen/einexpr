@@ -1,6 +1,5 @@
 from ._types import List, Optional, Tuple, Union, array
 import einexpr
-from .. import Concatenation, einarray
 
 def broadcast_arrays(*arrays: array) -> List[array]:
     """

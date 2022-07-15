@@ -1,6 +1,6 @@
 from ._types import array
 import einexpr
-from .. import einarray
+
 
 def argsort(x: array, /, *, axis: int = -1, descending: bool = False, stable: bool = True) -> array:
     """

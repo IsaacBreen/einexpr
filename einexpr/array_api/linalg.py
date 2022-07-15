@@ -1,7 +1,7 @@
 from ._types import Literal, Optional, Tuple, Union, Sequence, array
 from .constants import inf
 import einexpr
-from .. import einarray
+
 
 def cholesky(x: array, /, *, upper: bool = False) -> array:
     r"""

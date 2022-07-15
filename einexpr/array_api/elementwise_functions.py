@@ -1,6 +1,6 @@
 from ._types import array
 import einexpr
-from .. import einarray
+
 
 def abs(x: array, /) -> array:
     """

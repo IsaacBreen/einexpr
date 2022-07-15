@@ -13,4 +13,5 @@ from .sorting_functions import *
 from .statistical_functions import *
 from .utility_functions import *
 from . import linalg
-from .. import einarray
+
+import einexpr

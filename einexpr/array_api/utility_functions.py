@@ -1,6 +1,6 @@
 from ._types import Optional, Tuple, Union, array
 import einexpr
-from .. import einarray
+
 
 def all(x: array, /, *, axis: Optional[Union[int, Tuple[int, ...]]] = None, keepdims: bool = False) -> array:
     """

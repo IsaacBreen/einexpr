@@ -1,6 +1,6 @@
 from ._types import Union, array, dtype, finfo_object, iinfo_object
 import einexpr
-from .. import einarray
+
 
 def astype(x: array, dtype: dtype, /, *, copy: bool = True) -> array:
     """

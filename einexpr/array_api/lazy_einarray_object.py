@@ -1381,7 +1381,7 @@ class lazy_einarray:
 
 
 from jax import tree_util
-from .. import einarray
+
 
 tree_util.register_pytree_node(lazy_einarray, lazy_einarray._tree_flatten, lazy_einarray._tree_unflatten)
 

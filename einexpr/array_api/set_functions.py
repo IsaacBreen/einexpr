@@ -1,5 +1,6 @@
 from ._types import Tuple, array
-from .. import einarray
+
+import einexpr
 
 def unique_all(x: array, /) -> Tuple[array, array, array, array]:
     """
