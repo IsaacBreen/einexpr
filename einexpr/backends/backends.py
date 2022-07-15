@@ -1,31 +1,20 @@
 import importlib
 from collections import namedtuple
-from typing import Callable, Union
+from typing import Any, Callable, Union
 
-import einexpr
 
-from .out_dims_calculator import (
+from einexpr.dimension_utils import (
     SingleArgumentElementwise,
     MultiArgumentElementwise,
     MultiDimensionReduction,
     SingleDimensionReduction,
     Concatenation,
 )
-from .utils import pytree_mapreduce
-
-Dimension = str
 
 backend_array_types = dict()
 backend_dim_kwargs_to_resolve = ['dim', 'axis']
 
 function_registry = []
-
-
-def temp_dispatch_integrator(DimensionCalculatorSubclass, func, args, kwargs):
-    out_dims = DimensionCalculatorSubclass.calculate_ouptut_dims(args, kwargs)
-    ambiguous_dims = DimensionCalculatorSubclass.calculate_output_ambiguous_dims(args, kwargs)
-    processed_args, processed_kwargs = DimensionCalculatorSubclass.process_args(args, kwargs)
-    return einexpr.einarray(func(*processed_args, **processed_kwargs), dims=out_dims, ambiguous_dims=ambiguous_dims)
 
 
 def single_arg_elementwise_dispatch(func, args, kwargs):
@@ -180,4 +169,8 @@ def detect_backend(array: RawArrayLike) -> str:
     raise ValueError(f"Could not detect backend for array {array}")
 
 
-
+def conforms_to_array_api(array: Any):
+    """
+    Returns True if the given array conforms to the array API.
+    """
+    return hasattr(array, '__array_namespace__')

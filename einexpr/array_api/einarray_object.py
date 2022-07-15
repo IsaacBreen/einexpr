@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 from ._types import (array, dtype as Dtype, device as Device, Optional, Tuple,
-                     Union, Any, PyCapsule, Enum, ellipsis)
+                     Union, Any, PyCapsule, Enum, ellipsis,
+                     Dimension, DimensionlessLike)
 import einexpr
-MultiArgumentElementwise = einexpr.MultiArgumentElementwise
-SingleArgumentElementwise = einexpr.SingleArgumentElementwise
+
 
 import string
 from itertools import chain, combinations, zip_longest
@@ -14,80 +14,45 @@ import numpy as np
 import numpy.typing as npt
 import torch as pt
 
-from ..backends import *
-from ..base_typing import *
-from ..dim_calcs import *
-from ..exceptions import *
-from ..parse_numpy_ufunc_signature import (make_empty_signature_str,
-                                          parse_ufunc_signature)
-from ..raw_ops import align_arrays, align_to_dims
+import einexpr
+
 
 class einarray():
-    def __init__(self, a: Union[RawArrayLike, ConcreteArrayLike], dims: List[Dimension] = None, ambiguous_dims: Set[Dimension] = None, copy: bool=True, backend: Literal["numpy", "torch"] = None) -> None:
+    def __init__(self, a: Union[einexpr.backends.RawArrayLike, einexpr.einarray], dims: Tuple[Optional[Dimension], ...], ambiguous_dims: Set[Dimension] = None, copy: bool=True, backend: Literal["numpy", "torch"] = None) -> None:
         self.a = a
-        self.dims = parse_dims_declaration(dims)
+        self.dims = einexpr.dimension_utils.parse_dims_declaration(dims)
         self.ambiguous_dims = ambiguous_dims or set()
-        if isinstance(self.a, LazyArrayLike):
-            self.a = self.a.concretize()
-        if isinstance(self.a, EinarrayLike):
-            if self.dims != self.a.dims:
-                raise ValueError(f"The dimensions passed to the constructor must match the dimensions of the concrete array. Got {self.dims} but the array has dimensions {self.a.dims}.")
-            self.a = self.a.a
-        # Convert self.a to the specified backend
-        if backend is None:
-            if isinstance(self.a, RawArrayLike):
-                # Just use raw array as-is
-                self.a = self.a
-            else:
-                # The user may have passed a list array (e.g. a=[[1,2],[3,4]]). In this case, we hope that self.a can be converted into np.array.
-                self.a = np.array(self.a, copy=copy)
-                # If self.a is dimensionless (a value with a shape of () - generally an int or a float), we require the dimensions to be specified explicitly.
-                assert self.dims is not None, f"The dimensions must be specified explicitly when converting a {type(self.a).__name__} to a numpy array."
-        elif backend == "numpy":
-            self.a = np.array(self.a, copy=copy)
-        elif backend == "torch":
-            self.a = pt.asarray(self.a, copy=copy)
-        else:
-            raise ValueError(f"The backend must be either 'numpy' or 'torch'. Got {backend}.")
-        if isinstance(self.a, DimensionlessLike) or isinstance(self.a, RawArrayLike) and not isinstance(self.a, PseudoRawArray) and not self.a.shape:
-            assert not self.dims, f"The dimensions of a dimensionless value must be empty or None. Got {self.dims}."
-            self.dims = ()
-        elif not isinstance(self.dims, (tuple, list)):
-            if dims == self.dims:
-                raise ValueError(f"The dimensions passed to the constructor must be a list or tuple. Got value {dims!r} of type {type(dims).__name__}.")
-            else:
-                raise ValueError(f"Possible internal error. Dimensions must be a list or tuple. The value of the dims argument is {dims!r} of type {type(dims).__name__}, and {self.dims!r} of type {type(self.dims).__name__} was inferred.")
-        if isinstance(self.a, RawArrayLike) and not isinstance(self.a, PseudoRawArray) and self.a.ndim != len(self.dims):
-            raise ValueError(f"The number {self.a.ndim} of dimensions in the array does not match the number {len(self.dims)} of dimensions passed to the constructor.")
+        if not einexpr.backends.conforms_to_array_api(self.a):
+            raise ValueError(f"{self.a} does not conform to the Python array API standard")
+        if self.a.ndim != len(self.dims) and not isinstance(self.a, einexpr.backends.PseudoRawArray):
+            raise ValueError(f"The number ({self.a.ndim}) of dimensions in the array does not match the number ({len(self.dims)}) of dimensions passed to the constructor.")
         if not self.ambiguous_dims.issubset(self.dims):
-            raise ValueError(f"The ambiguous dimensions {self.ambiguous_dims} are must be a subset of the dimensions {self.dims}.")
+            raise ValueError(f"The ambiguous dimensions {self.ambiguous_dims} must be a subset of the dimensions {self.dims} passed to the constructor.")
 
     @property
     def backend(self) -> str:
-        detect_backend(self.a)
+        einexpr.backends.detect_backend(self.a)
         
     def get_dims_unordered(self) -> Set[Dimension]:
         return set(self.dims)
     
-    def coerce(self, dims: List[Dimension], do_not_collapse: Set[Dimension], force_align: bool = True, ambiguous_dims: Set[Dimension] = None) -> ConcreteArrayLike:
+    def coerce(self, dims: List[Dimension], do_not_collapse: Set[Dimension] = None, force_align: bool = True, ambiguous_dims: Set[Dimension] = None) -> einexpr.einarray:
+        do_not_collapse = do_not_collapse or set()
         ambiguous_dims = ambiguous_dims or set()
         # Collapse all dimensions except those in contained in dims or do_not_collapse.
         dims_to_collapse = set(self.dims) - set(dims) - do_not_collapse
-        out = reduce_sum(self, dims_to_collapse)
+        out = einexpr.backends.reduce_sum(self, dims_to_collapse)
         if not force_align:
             return out
         else:
             out_dims = [dim for dim in dims if dim in out.dims] + [dim for dim in out.dims if dim not in dims and dim in do_not_collapse]
-            return einarray(align_to_dims(out, out_dims), out_dims, ambiguous_dims=ambiguous_dims)
-        
-    def __getitem__(self, dims: List[Dimension]) -> ConcreteArrayLike:
-        return self.coerce(parse_dims_reshape(dims), set())
+            return einarray(einexpr.backends.align_to_dims(out, out_dims), out_dims, ambiguous_dims=ambiguous_dims)
     
-    def __array__(self, dtype: Optional[npt.DTypeLike] = None) -> ConcreteArrayLike:
+    def __array__(self, dtype: Optional[npt.DTypeLike] = None) -> einexpr.einarray:
         return self.a
 
     def tracer(self) -> 'einarray':
-        return einarray(PseudoRawArray(), self.dims, self.ambiguous_dims)
+        return einarray(einexpr.backends.PseudoRawArray(), self.dims, self.ambiguous_dims)
 
     # JAX support
     def _tree_flatten(self):
@@ -239,11 +204,11 @@ class einarray():
         """
         args = (self,)
         kwargs = {}
-        out_dims = SingleArgumentElementwise.calculate_output_dims(args, kwargs)
-        ambiguous_dims = SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
-        processed_args, processed_kwargs = SingleArgumentElementwise.process_args(args, kwargs)
-        result = einarray(
-            self.__array_namespace__().__abs__(*processed_args, **processed_kwargs), 
+        out_dims = einexpr.dimension_utils.SingleArgumentElementwise.calculate_output_dims(args, kwargs)
+        ambiguous_dims = einexpr.dimension_utils.SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+        processed_args, processed_kwargs = einexpr.dimension_utils.SingleArgumentElementwise.process_args(args, kwargs)
+        result = einexpr.einarray(
+            type(self.a).__abs__(*processed_args, **processed_kwargs), 
             dims=out_dims, 
             ambiguous_dims=ambiguous_dims)
         return result
@@ -295,11 +260,67 @@ class einarray():
         """
         args = (self, other,)
         kwargs = {}
-        out_dims = MultiArgumentElementwise.calculate_output_dims(args, kwargs)
-        ambiguous_dims = MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
-        processed_args, processed_kwargs = MultiArgumentElementwise.process_args(args, kwargs)
-        result = einarray(
-            self.__array_namespace__().__add__(*processed_args, **processed_kwargs), 
+        out_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_dims(args, kwargs)
+        ambiguous_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+        processed_args, processed_kwargs = einexpr.dimension_utils.MultiArgumentElementwise.process_args(args, kwargs)
+        result = einexpr.einarray(
+            type(self.a).__add__(*processed_args, **processed_kwargs), 
+            dims=out_dims, 
+            ambiguous_dims=ambiguous_dims)
+        return result
+    
+    def __radd__(self: array, other: Union[int, float, array], /) -> array:
+        """
+        Calculates the sum for each element of an array instance with the respective element of the array ``other``.
+
+        **Special cases**
+
+        For floating-point operands, let ``self`` equal ``x1`` and ``other`` equal ``x2``.
+
+        -   If either ``x1_i`` or ``x2_i`` is ``NaN``, the result is ``NaN``.
+        -   If ``x1_i`` is ``+infinity`` and ``x2_i`` is ``-infinity``, the result is ``NaN``.
+        -   If ``x1_i`` is ``-infinity`` and ``x2_i`` is ``+infinity``, the result is ``NaN``.
+        -   If ``x1_i`` is ``+infinity`` and ``x2_i`` is ``+infinity``, the result is ``+infinity``.
+        -   If ``x1_i`` is ``-infinity`` and ``x2_i`` is ``-infinity``, the result is ``-infinity``.
+        -   If ``x1_i`` is ``+infinity`` and ``x2_i`` is a finite number, the result is ``+infinity``.
+        -   If ``x1_i`` is ``-infinity`` and ``x2_i`` is a finite number, the result is ``-infinity``.
+        -   If ``x1_i`` is a finite number and ``x2_i`` is ``+infinity``, the result is ``+infinity``.
+        -   If ``x1_i`` is a finite number and ``x2_i`` is ``-infinity``, the result is ``-infinity``.
+        -   If ``x1_i`` is ``-0`` and ``x2_i`` is ``-0``, the result is ``-0``.
+        -   If ``x1_i`` is ``-0`` and ``x2_i`` is ``+0``, the result is ``+0``.
+        -   If ``x1_i`` is ``+0`` and ``x2_i`` is ``-0``, the result is ``+0``.
+        -   If ``x1_i`` is ``+0`` and ``x2_i`` is ``+0``, the result is ``+0``.
+        -   If ``x1_i`` is either ``+0`` or ``-0`` and ``x2_i`` is a nonzero finite number, the result is ``x2_i``.
+        -   If ``x1_i`` is a nonzero finite number and ``x2_i`` is either ``+0`` or ``-0``, the result is ``x1_i``.
+        -   If ``x1_i`` is a nonzero finite number and ``x2_i`` is ``-x1_i``, the result is ``+0``.
+        -   In the remaining cases, when neither ``infinity``, ``+0``, ``-0``, nor a ``NaN`` is involved, and the operands have the same mathematical sign or have different magnitudes, the sum must be computed and rounded to the nearest representable value according to IEEE 754-2019 and a supported round mode. If the magnitude is too large to represent, the operation overflows and the result is an ``infinity`` of appropriate mathematical sign.
+
+        .. note::
+           Floating-point addition is a commutative operation, but not always associative.
+
+        Parameters
+        ----------
+        self: array
+            array instance (augend array). Should have a real-valued data type.
+        other: Union[int, float, array]
+            addend array. Must be compatible with ``self`` (see :ref:`broadcasting`). Should have a real-valued data type.
+
+        Returns
+        -------
+        out: array
+            an array containing the element-wise sums. The returned array must have a data type determined by :ref:`type-promotion`.
+
+
+        .. note::
+           Element-wise results must equal the results returned by the equivalent element-wise function :func:`~array_api.add`.
+        """
+        args = (self, other,)
+        kwargs = {}
+        out_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_dims(args, kwargs)
+        ambiguous_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+        processed_args, processed_kwargs = einexpr.dimension_utils.MultiArgumentElementwise.process_args(args, kwargs)
+        result = einexpr.einarray(
+            type(self.a).__radd__(*processed_args, **processed_kwargs), 
             dims=out_dims, 
             ambiguous_dims=ambiguous_dims)
         return result
@@ -326,11 +347,11 @@ class einarray():
         """
         args = (self, other,)
         kwargs = {}
-        out_dims = MultiArgumentElementwise.calculate_output_dims(args, kwargs)
-        ambiguous_dims = MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
-        processed_args, processed_kwargs = MultiArgumentElementwise.process_args(args, kwargs)
-        result = einarray(
-            self.__array_namespace__().__and__(*processed_args, **processed_kwargs), 
+        out_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_dims(args, kwargs)
+        ambiguous_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+        processed_args, processed_kwargs = einexpr.dimension_utils.MultiArgumentElementwise.process_args(args, kwargs)
+        result = einexpr.einarray(
+            type(self.a).__and__(*processed_args, **processed_kwargs), 
             dims=out_dims, 
             ambiguous_dims=ambiguous_dims)
         return result
@@ -351,7 +372,7 @@ class einarray():
         out: Any
             an object representing the array API namespace. It should have every top-level function defined in the specification as an attribute. It may contain other public names as well, but it is recommended to only include those names that are part of the specification.
         """
-        raise NotImplementedError
+        return einexpr.array_api
 
     def __bool__(self: array, /) -> bool:
         """
@@ -474,11 +495,11 @@ class einarray():
         """
         args = (self, other,)
         kwargs = {}
-        out_dims = MultiArgumentElementwise.calculate_output_dims(args, kwargs)
-        ambiguous_dims = MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
-        processed_args, processed_kwargs = MultiArgumentElementwise.process_args(args, kwargs)
-        result = einarray(
-            self.__array_namespace__().__eq__(*processed_args, **processed_kwargs), 
+        out_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_dims(args, kwargs)
+        ambiguous_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+        processed_args, processed_kwargs = einexpr.dimension_utils.MultiArgumentElementwise.process_args(args, kwargs)
+        result = einexpr.einarray(
+            type(self.a).__eq__(*processed_args, **processed_kwargs), 
             dims=out_dims, 
             ambiguous_dims=ambiguous_dims)
         return result
@@ -560,11 +581,11 @@ class einarray():
         """
         args = (self, other,)
         kwargs = {}
-        out_dims = MultiArgumentElementwise.calculate_output_dims(args, kwargs)
-        ambiguous_dims = MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
-        processed_args, processed_kwargs = MultiArgumentElementwise.process_args(args, kwargs)
-        result = einarray(
-            self.__array_namespace__().__floordiv__(*processed_args, **processed_kwargs), 
+        out_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_dims(args, kwargs)
+        ambiguous_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+        processed_args, processed_kwargs = einexpr.dimension_utils.MultiArgumentElementwise.process_args(args, kwargs)
+        result = einexpr.einarray(
+            type(self.a).__floordiv__(*processed_args, **processed_kwargs), 
             dims=out_dims, 
             ambiguous_dims=ambiguous_dims)
         return result
@@ -591,11 +612,11 @@ class einarray():
         """
         args = (self, other,)
         kwargs = {}
-        out_dims = MultiArgumentElementwise.calculate_output_dims(args, kwargs)
-        ambiguous_dims = MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
-        processed_args, processed_kwargs = MultiArgumentElementwise.process_args(args, kwargs)
-        result = einarray(
-            self.__array_namespace__().__ge__(*processed_args, **processed_kwargs), 
+        out_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_dims(args, kwargs)
+        ambiguous_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+        processed_args, processed_kwargs = einexpr.dimension_utils.MultiArgumentElementwise.process_args(args, kwargs)
+        result = einexpr.einarray(
+            type(self.a).__ge__(*processed_args, **processed_kwargs), 
             dims=out_dims, 
             ambiguous_dims=ambiguous_dims)
         return result
@@ -624,9 +645,9 @@ class einarray():
                     raise NotImplementedError("Slicing with integers is not yet supported.")
             elif isinstance(k, int):
                 raise NotImplementedError("Indexing with integers is not yet supported.")
-            elif isinstance(k, ellipsis):
+            elif k is ellipsis:
                 raise NotImplementedError("Ellipsis is not yet supported.")
-        return self.coerce(parse_dims_reshape(key))
+        return self.coerce(einexpr.dimension_utils.parse_dims_reshape(key))
 
     def __gt__(self: array, other: Union[int, float, array], /) -> array:
         """
@@ -650,11 +671,11 @@ class einarray():
         """
         args = (self, other,)
         kwargs = {}
-        out_dims = MultiArgumentElementwise.calculate_output_dims(args, kwargs)
-        ambiguous_dims = MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
-        processed_args, processed_kwargs = MultiArgumentElementwise.process_args(args, kwargs)
-        result = einarray(
-            self.__array_namespace__().__gt__(*processed_args, **processed_kwargs), 
+        out_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_dims(args, kwargs)
+        ambiguous_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+        processed_args, processed_kwargs = einexpr.dimension_utils.MultiArgumentElementwise.process_args(args, kwargs)
+        result = einexpr.einarray(
+            type(self.a).__gt__(*processed_args, **processed_kwargs), 
             dims=out_dims, 
             ambiguous_dims=ambiguous_dims)
         return result
@@ -714,11 +735,11 @@ class einarray():
         """
         args = (self,)
         kwargs = {}
-        out_dims = SingleArgumentElementwise.calculate_output_dims(args, kwargs)
-        ambiguous_dims = SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
-        processed_args, processed_kwargs = SingleArgumentElementwise.process_args(args, kwargs)
-        result = einarray(
-            self.__array_namespace__().__invert__(*processed_args, **processed_kwargs), 
+        out_dims = einexpr.dimension_utils.SingleArgumentElementwise.calculate_output_dims(args, kwargs)
+        ambiguous_dims = einexpr.dimension_utils.SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+        processed_args, processed_kwargs = einexpr.dimension_utils.SingleArgumentElementwise.process_args(args, kwargs)
+        result = einexpr.einarray(
+            type(self.a).__invert__(*processed_args, **processed_kwargs), 
             dims=out_dims, 
             ambiguous_dims=ambiguous_dims)
         return result
@@ -745,11 +766,11 @@ class einarray():
         """
         args = (self, other,)
         kwargs = {}
-        out_dims = MultiArgumentElementwise.calculate_output_dims(args, kwargs)
-        ambiguous_dims = MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
-        processed_args, processed_kwargs = MultiArgumentElementwise.process_args(args, kwargs)
-        result = einarray(
-            self.__array_namespace__().__le__(*processed_args, **processed_kwargs), 
+        out_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_dims(args, kwargs)
+        ambiguous_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+        processed_args, processed_kwargs = einexpr.dimension_utils.MultiArgumentElementwise.process_args(args, kwargs)
+        result = einexpr.einarray(
+            type(self.a).__le__(*processed_args, **processed_kwargs), 
             dims=out_dims, 
             ambiguous_dims=ambiguous_dims)
         return result
@@ -776,11 +797,11 @@ class einarray():
         """
         args = (self, other,)
         kwargs = {}
-        out_dims = MultiArgumentElementwise.calculate_output_dims(args, kwargs)
-        ambiguous_dims = MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
-        processed_args, processed_kwargs = MultiArgumentElementwise.process_args(args, kwargs)
-        result = einarray(
-            self.__array_namespace__().__lshift__(*processed_args, **processed_kwargs), 
+        out_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_dims(args, kwargs)
+        ambiguous_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+        processed_args, processed_kwargs = einexpr.dimension_utils.MultiArgumentElementwise.process_args(args, kwargs)
+        result = einexpr.einarray(
+            type(self.a).__lshift__(*processed_args, **processed_kwargs), 
             dims=out_dims, 
             ambiguous_dims=ambiguous_dims)
         return result
@@ -807,11 +828,11 @@ class einarray():
         """
         args = (self, other,)
         kwargs = {}
-        out_dims = MultiArgumentElementwise.calculate_output_dims(args, kwargs)
-        ambiguous_dims = MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
-        processed_args, processed_kwargs = MultiArgumentElementwise.process_args(args, kwargs)
-        result = einarray(
-            self.__array_namespace__().__lt__(*processed_args, **processed_kwargs), 
+        out_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_dims(args, kwargs)
+        ambiguous_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+        processed_args, processed_kwargs = einexpr.dimension_utils.MultiArgumentElementwise.process_args(args, kwargs)
+        result = einexpr.einarray(
+            type(self.a).__lt__(*processed_args, **processed_kwargs), 
             dims=out_dims, 
             ambiguous_dims=ambiguous_dims)
         return result
@@ -909,11 +930,11 @@ class einarray():
         """
         args = (self, other,)
         kwargs = {}
-        out_dims = MultiArgumentElementwise.calculate_output_dims(args, kwargs)
-        ambiguous_dims = MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
-        processed_args, processed_kwargs = MultiArgumentElementwise.process_args(args, kwargs)
-        result = einarray(
-            self.__array_namespace__().__mod__(*processed_args, **processed_kwargs), 
+        out_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_dims(args, kwargs)
+        ambiguous_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+        processed_args, processed_kwargs = einexpr.dimension_utils.MultiArgumentElementwise.process_args(args, kwargs)
+        result = einexpr.einarray(
+            type(self.a).__mod__(*processed_args, **processed_kwargs), 
             dims=out_dims, 
             ambiguous_dims=ambiguous_dims)
         return result
@@ -958,11 +979,11 @@ class einarray():
         """
         args = (self, other,)
         kwargs = {}
-        out_dims = MultiArgumentElementwise.calculate_output_dims(args, kwargs)
-        ambiguous_dims = MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
-        processed_args, processed_kwargs = MultiArgumentElementwise.process_args(args, kwargs)
-        result = einarray(
-            self.__array_namespace__().__mul__(*processed_args, **processed_kwargs), 
+        out_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_dims(args, kwargs)
+        ambiguous_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+        processed_args, processed_kwargs = einexpr.dimension_utils.MultiArgumentElementwise.process_args(args, kwargs)
+        result = einexpr.einarray(
+            type(self.a).__mul__(*processed_args, **processed_kwargs), 
             dims=out_dims, 
             ambiguous_dims=ambiguous_dims)
         return result
@@ -989,11 +1010,11 @@ class einarray():
         """
         args = (self, other,)
         kwargs = {}
-        out_dims = MultiArgumentElementwise.calculate_output_dims(args, kwargs)
-        ambiguous_dims = MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
-        processed_args, processed_kwargs = MultiArgumentElementwise.process_args(args, kwargs)
-        result = einarray(
-            self.__array_namespace__().__ne__(*processed_args, **processed_kwargs), 
+        out_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_dims(args, kwargs)
+        ambiguous_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+        processed_args, processed_kwargs = einexpr.dimension_utils.MultiArgumentElementwise.process_args(args, kwargs)
+        result = einexpr.einarray(
+            type(self.a).__ne__(*processed_args, **processed_kwargs), 
             dims=out_dims, 
             ambiguous_dims=ambiguous_dims)
         return result
@@ -1024,11 +1045,11 @@ class einarray():
         """
         args = (self,)
         kwargs = {}
-        out_dims = SingleArgumentElementwise.calculate_output_dims(args, kwargs)
-        ambiguous_dims = SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
-        processed_args, processed_kwargs = SingleArgumentElementwise.process_args(args, kwargs)
-        result = einarray(
-            self.__array_namespace__().__neg__(*processed_args, **processed_kwargs), 
+        out_dims = einexpr.dimension_utils.SingleArgumentElementwise.calculate_output_dims(args, kwargs)
+        ambiguous_dims = einexpr.dimension_utils.SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+        processed_args, processed_kwargs = einexpr.dimension_utils.SingleArgumentElementwise.process_args(args, kwargs)
+        result = einexpr.einarray(
+            type(self.a).__neg__(*processed_args, **processed_kwargs), 
             dims=out_dims, 
             ambiguous_dims=ambiguous_dims)
         return result
@@ -1055,11 +1076,11 @@ class einarray():
         """
         args = (self, other,)
         kwargs = {}
-        out_dims = MultiArgumentElementwise.calculate_output_dims(args, kwargs)
-        ambiguous_dims = MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
-        processed_args, processed_kwargs = MultiArgumentElementwise.process_args(args, kwargs)
-        result = einarray(
-            self.__array_namespace__().__or__(*processed_args, **processed_kwargs), 
+        out_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_dims(args, kwargs)
+        ambiguous_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+        processed_args, processed_kwargs = einexpr.dimension_utils.MultiArgumentElementwise.process_args(args, kwargs)
+        result = einexpr.einarray(
+            type(self.a).__or__(*processed_args, **processed_kwargs), 
             dims=out_dims, 
             ambiguous_dims=ambiguous_dims)
         return result
@@ -1084,11 +1105,11 @@ class einarray():
         """
         args = (self,)
         kwargs = {}
-        out_dims = SingleArgumentElementwise.calculate_output_dims(args, kwargs)
-        ambiguous_dims = SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
-        processed_args, processed_kwargs = SingleArgumentElementwise.process_args(args, kwargs)
-        result = einarray(
-            self.__array_namespace__().__pos__(*processed_args, **processed_kwargs), 
+        out_dims = einexpr.dimension_utils.SingleArgumentElementwise.calculate_output_dims(args, kwargs)
+        ambiguous_dims = einexpr.dimension_utils.SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+        processed_args, processed_kwargs = einexpr.dimension_utils.SingleArgumentElementwise.process_args(args, kwargs)
+        result = einexpr.einarray(
+            type(self.a).__pos__(*processed_args, **processed_kwargs), 
             dims=out_dims, 
             ambiguous_dims=ambiguous_dims)
         return result
@@ -1149,11 +1170,11 @@ class einarray():
         """
         args = (self, other,)
         kwargs = {}
-        out_dims = MultiArgumentElementwise.calculate_output_dims(args, kwargs)
-        ambiguous_dims = MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
-        processed_args, processed_kwargs = MultiArgumentElementwise.process_args(args, kwargs)
-        result = einarray(
-            self.__array_namespace__().__pow__(*processed_args, **processed_kwargs), 
+        out_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_dims(args, kwargs)
+        ambiguous_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+        processed_args, processed_kwargs = einexpr.dimension_utils.MultiArgumentElementwise.process_args(args, kwargs)
+        result = einexpr.einarray(
+            type(self.a).__pow__(*processed_args, **processed_kwargs), 
             dims=out_dims, 
             ambiguous_dims=ambiguous_dims)
         return result
@@ -1180,11 +1201,11 @@ class einarray():
         """
         args = (self, other,)
         kwargs = {}
-        out_dims = MultiArgumentElementwise.calculate_output_dims(args, kwargs)
-        ambiguous_dims = MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
-        processed_args, processed_kwargs = MultiArgumentElementwise.process_args(args, kwargs)
-        result = einarray(
-            self.__array_namespace__().__rshift__(*processed_args, **processed_kwargs), 
+        out_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_dims(args, kwargs)
+        ambiguous_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+        processed_args, processed_kwargs = einexpr.dimension_utils.MultiArgumentElementwise.process_args(args, kwargs)
+        result = einexpr.einarray(
+            type(self.a).__rshift__(*processed_args, **processed_kwargs), 
             dims=out_dims, 
             ambiguous_dims=ambiguous_dims)
         return result
@@ -1235,11 +1256,105 @@ class einarray():
         """
         args = (self, other,)
         kwargs = {}
-        out_dims = MultiArgumentElementwise.calculate_output_dims(args, kwargs)
-        ambiguous_dims = MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
-        processed_args, processed_kwargs = MultiArgumentElementwise.process_args(args, kwargs)
-        result = einarray(
-            self.__array_namespace__().__sub__(*processed_args, **processed_kwargs), 
+        out_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_dims(args, kwargs)
+        ambiguous_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+        processed_args, processed_kwargs = einexpr.dimension_utils.MultiArgumentElementwise.process_args(args, kwargs)
+        result = einexpr.einarray(
+            type(self.a).__sub__(*processed_args, **processed_kwargs), 
+            dims=out_dims, 
+            ambiguous_dims=ambiguous_dims)
+        return result
+
+    def __rsub__(self: array, other: Union[int, float, array], /) -> array:
+        """
+        Calculates the difference for each element of an array instance with the respective element of the array ``other``. The result of ``self_i - other_i`` must be the same as ``self_i + (-other_i)`` and must be governed by the same floating-point rules as addition (see :meth:`array.__add__`).
+
+        Parameters
+        ----------
+        self: array
+            array instance (minuend array). Should have a real-valued data type.
+        other: Union[int, float, array]
+            subtrahend array. Must be compatible with ``self`` (see :ref:`broadcasting`). Should have a real-valued data type.
+
+        Returns
+        -------
+        out: array
+            an array containing the element-wise differences. The returned array must have a data type determined by :ref:`type-promotion`.
+
+
+        .. note::
+           Element-wise results must equal the results returned by the equivalent element-wise function :func:`~array_api.subtract`.
+        """
+        args = (self, other,)
+        kwargs = {}
+        out_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_dims(args, kwargs)
+        ambiguous_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+        processed_args, processed_kwargs = einexpr.dimension_utils.MultiArgumentElementwise.process_args(args, kwargs)
+        result = einexpr.einarray(
+            type(self.a).__rsub__(*processed_args, **processed_kwargs), 
+            dims=out_dims, 
+            ambiguous_dims=ambiguous_dims)
+        return result
+    
+    def __truediv__(self: array, other: Union[int, float, array], /) -> array:
+        """
+        Evaluates ``self_i / other_i`` for each element of an array instance with the respective element of the array ``other``.
+
+        .. note::
+           If one or both of ``self`` and ``other`` have integer data types, the result is implementation-dependent, as type promotion between data type "kinds" (e.g., integer versus floating-point) is unspecified.
+
+           Specification-compliant libraries may choose to raise an error or return an array containing the element-wise results. If an array is returned, the array must have a real-valued floating-point data type.
+
+        **Special cases**
+
+        For floating-point operands, let ``self`` equal ``x1`` and ``other`` equal ``x2``.
+
+        -   If either ``x1_i`` or ``x2_i`` is ``NaN``, the result is ``NaN``.
+        -   If ``x1_i`` is either ``+infinity`` or ``-infinity`` and ``x2_i`` is either ``+infinity`` or ``-infinity``, the result is `NaN`.
+        -   If ``x1_i`` is either ``+0`` or ``-0`` and ``x2_i`` is either ``+0`` or ``-0``, the result is ``NaN``.
+        -   If ``x1_i`` is ``+0`` and ``x2_i`` is greater than ``0``, the result is ``+0``.
+        -   If ``x1_i`` is ``-0`` and ``x2_i`` is greater than ``0``, the result is ``-0``.
+        -   If ``x1_i`` is ``+0`` and ``x2_i`` is less than ``0``, the result is ``-0``.
+        -   If ``x1_i`` is ``-0`` and ``x2_i`` is less than ``0``, the result is ``+0``.
+        -   If ``x1_i`` is greater than ``0`` and ``x2_i`` is ``+0``, the result is ``+infinity``.
+        -   If ``x1_i`` is greater than ``0`` and ``x2_i`` is ``-0``, the result is ``-infinity``.
+        -   If ``x1_i`` is less than ``0`` and ``x2_i`` is ``+0``, the result is ``-infinity``.
+        -   If ``x1_i`` is less than ``0`` and ``x2_i`` is ``-0``, the result is ``+infinity``.
+        -   If ``x1_i`` is ``+infinity`` and ``x2_i`` is a positive (i.e., greater than ``0``) finite number, the result is ``+infinity``.
+        -   If ``x1_i`` is ``+infinity`` and ``x2_i`` is a negative (i.e., less than ``0``) finite number, the result is ``-infinity``.
+        -   If ``x1_i`` is ``-infinity`` and ``x2_i`` is a positive (i.e., greater than ``0``) finite number, the result is ``-infinity``.
+        -   If ``x1_i`` is ``-infinity`` and ``x2_i`` is a negative (i.e., less than ``0``) finite number, the result is ``+infinity``.
+        -   If ``x1_i`` is a positive (i.e., greater than ``0``) finite number and ``x2_i`` is ``+infinity``, the result is ``+0``.
+        -   If ``x1_i`` is a positive (i.e., greater than ``0``) finite number and ``x2_i`` is ``-infinity``, the result is ``-0``.
+        -   If ``x1_i`` is a negative (i.e., less than ``0``) finite number and ``x2_i`` is ``+infinity``, the result is ``-0``.
+        -   If ``x1_i`` is a negative (i.e., less than ``0``) finite number and ``x2_i`` is ``-infinity``, the result is ``+0``.
+        -   If ``x1_i`` and ``x2_i`` have the same mathematical sign and are both nonzero finite numbers, the result has a positive mathematical sign.
+        -   If ``x1_i`` and ``x2_i`` have different mathematical signs and are both nonzero finite numbers, the result has a negative mathematical sign.
+        -   In the remaining cases, where neither ``-infinity``, ``+0``, ``-0``, nor ``NaN`` is involved, the quotient must be computed and rounded to the nearest representable value according to IEEE 754-2019 and a supported rounding mode. If the magnitude is too large to represent, the operation overflows and the result is an ``infinity`` of appropriate mathematical sign. If the magnitude is too small to represent, the operation underflows and the result is a zero of appropriate mathematical sign.
+
+        Parameters
+        ----------
+        self: array
+            array instance. Should have a real-valued data type.
+        other: Union[int, float, array]
+            other array. Must be compatible with ``self`` (see :ref:`broadcasting`). Should have a real-valued data type.
+
+        Returns
+        -------
+        out: array
+            an array containing the element-wise results. The returned array should have a real-valued floating-point data type determined by :ref:`type-promotion`.
+
+
+        .. note::
+           Element-wise results must equal the results returned by the equivalent element-wise function :func:`~array_api.divide`.
+        """
+        args = (self, other,)
+        kwargs = {}
+        out_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_dims(args, kwargs)
+        ambiguous_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+        processed_args, processed_kwargs = einexpr.dimension_utils.MultiArgumentElementwise.process_args(args, kwargs)
+        result = einexpr.einarray(
+            type(self.a).__truediv__(*processed_args, **processed_kwargs), 
             dims=out_dims, 
             ambiguous_dims=ambiguous_dims)
         return result
@@ -1298,11 +1413,11 @@ class einarray():
         """
         args = (self, other,)
         kwargs = {}
-        out_dims = MultiArgumentElementwise.calculate_output_dims(args, kwargs)
-        ambiguous_dims = MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
-        processed_args, processed_kwargs = MultiArgumentElementwise.process_args(args, kwargs)
-        result = einarray(
-            self.__array_namespace__().__truediv__(*processed_args, **processed_kwargs), 
+        out_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_dims(args, kwargs)
+        ambiguous_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+        processed_args, processed_kwargs = einexpr.dimension_utils.MultiArgumentElementwise.process_args(args, kwargs)
+        result = einexpr.einarray(
+            type(self.a).__truediv__(*processed_args, **processed_kwargs), 
             dims=out_dims, 
             ambiguous_dims=ambiguous_dims)
         return result
@@ -1329,11 +1444,11 @@ class einarray():
         """
         args = (self, other,)
         kwargs = {}
-        out_dims = MultiArgumentElementwise.calculate_output_dims(args, kwargs)
-        ambiguous_dims = MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
-        processed_args, processed_kwargs = MultiArgumentElementwise.process_args(args, kwargs)
-        result = einarray(
-            self.__array_namespace__().__xor__(*processed_args, **processed_kwargs), 
+        out_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_dims(args, kwargs)
+        ambiguous_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+        processed_args, processed_kwargs = einexpr.dimension_utils.MultiArgumentElementwise.process_args(args, kwargs)
+        result = einexpr.einarray(
+            type(self.a).__xor__(*processed_args, **processed_kwargs), 
             dims=out_dims, 
             ambiguous_dims=ambiguous_dims)
         return result
@@ -1362,6 +1477,12 @@ class einarray():
         """
         raise NotImplementedError
 
+
+from jax import tree_util
+from .. import einarray
+
+tree_util.register_pytree_node(einarray, einarray._tree_flatten, einarray._tree_unflatten)
+
 array = einarray
 
-__all__ = ['array']
+__all__ = ['array', 'einarray']

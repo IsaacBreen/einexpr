@@ -1,6 +1,5 @@
-from .einarray import *
-from .lazy_einarray import *
-from .lazy_einarray import *
+from .einarray_object import *
+from .lazy_einarray_object import *
 from .constants import *
 from .creation_functions import *
 from .data_type_functions import *
@@ -14,3 +13,4 @@ from .sorting_functions import *
 from .statistical_functions import *
 from .utility_functions import *
 from . import linalg
+from .. import einarray

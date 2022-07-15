@@ -1,6 +1,5 @@
-from regex import R
 import einexpr
-
+from regex import R
 
 Dimension = str
 
@@ -46,16 +45,16 @@ class MultiArgumentElementwise:
     
     @staticmethod
     def process_args(args, kwargs):
-        raw_aligned_arrays = einexpr.align_arrays(*args)
+        raw_aligned_arrays = einexpr.backends.align_arrays(*args)
         return raw_aligned_arrays, kwargs
 
     @staticmethod
     def calculate_output_dims(args, kwargs):
-        return einexpr.get_final_aligned_dims(*(arg.dims for arg in args))
+        return einexpr.dimension_utils.get_final_aligned_dims(*(arg.dims for arg in args))
     
     @staticmethod
     def calculate_output_ambiguous_dims(args, kwargs):
-        ambiguous_dims = einexpr.calculate_ambiguous_final_aligned_dims(*(arg.dims for arg in args))
+        ambiguous_dims = einexpr.dimension_utils.calculate_ambiguous_final_aligned_dims(*(arg.dims for arg in args))
         ambiguous_dims |= {dim for arg in args for dim in arg.ambiguous_dims}
         return ambiguous_dims
 

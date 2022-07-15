@@ -1,5 +1,6 @@
 from ._types import List, Optional, Tuple, Union, array
-from .. import Concatenation, SingleArgumentElementwise, einarray
+import einexpr
+from .. import Concatenation, einarray
 
 def broadcast_arrays(*arrays: array) -> List[array]:
     """
@@ -92,11 +93,11 @@ def flip(x: array, /, *, axis: Optional[Union[int, Tuple[int, ...]]] = None) -> 
     """
     args = (x,)
     kwargs = {'axis': axis}
-    out_dims = SingleArgumentElementwise.calculate_output_dims(args, kwargs)
-    ambiguous_dims = SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
-    processed_args, processed_kwargs = SingleArgumentElementwise.process_args(args, kwargs)
-    result = einarray(
-        x.__array_namespace__().flip(*processed_args, **processed_kwargs), 
+    out_dims = einexpr.dimension_utils.SingleArgumentElementwise.calculate_output_dims(args, kwargs)
+    ambiguous_dims = einexpr.dimension_utils.SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+    processed_args, processed_kwargs = einexpr.dimension_utils.SingleArgumentElementwise.process_args(args, kwargs)
+    result = einexpr.einarray(
+        x.a.__array_namespace__().flip(*processed_args, **processed_kwargs), 
         dims=out_dims, 
         ambiguous_dims=ambiguous_dims)
     return result

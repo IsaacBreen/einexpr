@@ -1,5 +1,6 @@
 from ._types import Union, array, dtype, finfo_object, iinfo_object
-from .. import SingleArgumentElementwise, einarray
+import einexpr
+from .. import einarray
 
 def astype(x: array, dtype: dtype, /, *, copy: bool = True) -> array:
     """
@@ -29,11 +30,11 @@ def astype(x: array, dtype: dtype, /, *, copy: bool = True) -> array:
     """
     args = (x, dtype,)
     kwargs = {'copy': copy}
-    out_dims = SingleArgumentElementwise.calculate_output_dims(args, kwargs)
-    ambiguous_dims = SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
-    processed_args, processed_kwargs = SingleArgumentElementwise.process_args(args, kwargs)
-    result = einarray(
-        x.__array_namespace__().astype(*processed_args, **processed_kwargs), 
+    out_dims = einexpr.dimension_utils.SingleArgumentElementwise.calculate_output_dims(args, kwargs)
+    ambiguous_dims = einexpr.dimension_utils.SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+    processed_args, processed_kwargs = einexpr.dimension_utils.SingleArgumentElementwise.process_args(args, kwargs)
+    result = einexpr.einarray(
+        x.a.__array_namespace__().astype(*processed_args, **processed_kwargs), 
         dims=out_dims, 
         ambiguous_dims=ambiguous_dims)
     return result

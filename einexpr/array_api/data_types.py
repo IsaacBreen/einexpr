@@ -1,4 +1,5 @@
 from ._types import dtype
+from .. import einarray
 
 def __eq__(self: dtype, other: dtype, /) -> bool:
     """

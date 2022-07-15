@@ -10,17 +10,17 @@ from collections import namedtuple
 from ssl import OP_NO_SSLv3
 from typing import List
 
-import jax
-import jax.numpy as jnp
+# import jax
+# import jax.numpy as jnp
 import numpy as np
+import numpy.array_api as npa
 import pytest
-from einexpr import AmbiguousDimensionException, __version__, einarray
-from einexpr.backends import PseudoRawArray, concatenation_dispatch
+import einexpr
 
 pp = pprint.PrettyPrinter(indent=4)
 
 tolerance = 1e-12
-default_dtype = np.longfloat
+default_dtype = npa.float64
 
 unary_arithmetic_magics_str = {"__neg__", "__pos__", "__invert__"}
 
@@ -50,9 +50,8 @@ class NamedLambda:
 binary_arithmetic_magics = {key: {NamedLambda(lambda x, y: getattr(x, op)(y), op) for op in ops} for key, ops in binary_arithmetic_magics_str.items()}
 # Soft clip any exponents between 1/3 and 3 + 1/3
 binary_arithmetic_magics['power'] = {
-    NamedLambda(lambda x, y: getattr(np.abs(x), '__pow__')( 3/(1+np.e**-y) + 3/10 ), "__pow__"), 
-    NamedLambda(lambda x, y: getattr(3/(1+np.e**-x) + 1/3, '__rpow__')(np.abs(y)), "__rpow__"),
-    }
+    NamedLambda(lambda x, y: getattr(x.__array_namespace__().abs(x), '__pow__')( 3/(1+npa.e**-y) + 3/10 ), "__pow__"), 
+}
 
 default_binary_ops = {op for ops in binary_arithmetic_magics.values() for op in ops}
 default_unary_ops = [getattr(np, op) for op in 
@@ -61,40 +60,40 @@ default_unary_ops = [getattr(np, op) for op in
 
 RandomExpressionData = namedtuple("RandomExpressionData", ["expr", "expr_json", "var"])
 
-N_TRIALS_MULTIPLIER=1000
+N_TRIALS_MULTIPLIER=100
 # N_TRIALS_MULTIPLIER=0
 
 @pytest.fixture
 def X():
-    return np.array([[1, 2], [3, 4]])
+    return npa.asarray([[1, 2], [3, 4]])
     
 @pytest.fixture
 def Y():
-    return np.array([[5, 6, 7], [7, 8, 9]])
+    return npa.asarray([[5, 6, 7], [7, 8, 9]])
     
 @pytest.fixture
 def x():
-    return np.array([1,2])
+    return npa.asarray([1,2])
     
 @pytest.fixture
 def y():
-    return np.array([3,4,5])
+    return npa.asarray([3,4,5])
 
 
 def test_pow():
     rng = np.random.default_rng(2022)
-    w = einarray(rng.uniform(size=(4,2)), dims='b,i')
-    x = einarray(rng.uniform(size=2), dims='i')
+    w = einexpr.einarray(rng.uniform(size=(4,2)), dims='b,i')
+    x = einexpr.einarray(rng.uniform(size=2), dims='i')
     expr = w['b,i'] * x['i']
     expr = expr['']
     print(expr)
     assert np.allclose(expr.__array__(), np.einsum('bi,i->', w.__array__(), x.__array__()), tolerance)
 
 def test_simple_expr1(X, Y, x, y):
-    Xe = einarray(X, dims='i j')
-    Ye = einarray(Y, dims='j k')
-    xe = einarray(x, dims='i')
-    ye = einarray(y, dims='j')
+    Xe = einexpr.einarray(X, dims='i j')
+    Ye = einexpr.einarray(Y, dims='j k')
+    xe = einexpr.einarray(x, dims='i')
+    ye = einexpr.einarray(y, dims='j')
     
     Ye['j']
 
@@ -102,7 +101,7 @@ def test_simple_expr1(X, Y, x, y):
     assert np.allclose(np.einsum('ij,jk->ik', X, Y), (Xe['i j'] * Ye['j k'])['i k'].a, tolerance)
 
     # ADDITION
-    assert np.allclose(np.sum(X[:, :, np.newaxis] + Y[np.newaxis, :, :], axis=1), (Xe['i j'] + Ye['j k'])['i k'].a, tolerance)
+    assert np.allclose(npa.sum(X[:, :, npa.newaxis] + Y[npa.newaxis, :, :], axis=1), (Xe['i j'] + Ye['j k'])['i k'].a, tolerance)
 
     # LINEAR TRANSFORMATION
     def linear(x, W, b):
@@ -116,9 +115,9 @@ def test_simple_expr1(X, Y, x, y):
 
 @pytest.mark.skip
 def test_commonly_failed1(X, Y, x, y):    
-    Xe = einarray(X, dims='i j')
-    xe = einarray(x, dims='i')
-    ye = einarray(x, dims='j')
+    Xe = einexpr.einarray(X, dims='i j')
+    xe = einexpr.einarray(x, dims='i')
+    ye = einexpr.einarray(x, dims='j')
     
     ze = xe['i'] ** (Xe['j i'] ** xe['i'])
     assert np.allclose(ze['j i'].__array__(), x ** (X ** x), tolerance)
@@ -126,18 +125,18 @@ def test_commonly_failed1(X, Y, x, y):
     z = xe['i'] ** (xe['j'] + xe['j'])
     assert np.allclose(z['i j'].__array__(), x[:, None] ** (x[None, :] + x[None, :]), tolerance)
     print(z.coerce_into_shape('i'))
-    assert np.allclose(z['i'].a, np.sum(x[:, None] ** (x[None, :] + x[None, :]), axis=1), tolerance)
+    assert np.allclose(z['i'].a, npa.sum(x[:, None] ** (x[None, :] + x[None, :]), axis=1), tolerance)
 
 def test_numpy_ufunc_override1(X, Y, x, y):
-    Xe = einarray(X, dims='i j')
-    xe = einarray(x, dims='j')
+    Xe = einexpr.einarray(X, dims='i j')
+    xe = einexpr.einarray(x, dims='j')
 
-    Z = X ** np.abs(-x)
-    Ze = Xe['i j'] ** np.abs(-xe['j'])
+    Z = X ** npa.abs(-x)
+    Ze = Xe['i j'] ** npa.abs(-xe['j'])
     assert np.allclose(Z, Ze['i j'].__array__(), tolerance)
 
-    Z = X ** np.abs(-x)
-    Ze = Xe['i j'] ** np.abs(-xe['j'])
+    Z = X ** npa.abs(-x)
+    Ze = Xe['i j'] ** npa.abs(-xe['j'])
     assert np.allclose(Z, Ze['i j'].__array__(), tolerance)
 
 
@@ -162,7 +161,7 @@ def random_expr_json(seed, unary_ops=default_unary_ops, binary_ops=default_binar
     per_var_indices = [list(rng.choice(index_names, size=rng.integers(1, max_indices_per_var), replace=False)) for _ in range(n_vars)]
     vars = [rng.integers(low, high, size=[index_sizes[i] for i in var_indices]) for var_indices in per_var_indices]
     # vars = [rng.uniform(low, high, [index_sizes[i] for i in var_indices]) for var_indices in per_var_indices]
-    vars = [np.array(v, dtype=default_dtype) for v in vars]
+    vars = [npa.asarray(v, dtype=default_dtype) for v in vars]
     
     def _make_random_expr_json(max_nodes):
         if max_nodes >= 2:
@@ -176,16 +175,16 @@ def random_expr_json(seed, unary_ops=default_unary_ops, binary_ops=default_binar
             var_num = rng.integers(0, n_vars)
             return {"type": "leaf", "value": vars[var_num], "indices": set(per_var_indices[var_num]), "shape": per_var_indices[var_num], "num_nodes": 1}
         elif node_type == "unary_op":
-            op = rng.choice(list(unary_ops))
+            op = rng.choice(sorted(unary_ops, key=id))
             expr_json = _make_random_expr_json(max_nodes)
             return {"type": "unary_op", "op": op, "indices": expr_json["indices"], "operand": expr_json, "num_nodes": expr_json["num_nodes"]}
         elif node_type == "binary_op":
-            op = rng.choice(list(binary_ops))
+            op = rng.choice(sorted(binary_ops, key=id))
             expr_json_lhs = _make_random_expr_json(max_nodes)
             expr_json_rhs = _make_random_expr_json(max_nodes - expr_json_lhs["num_nodes"])
             indices = expr_json_lhs["indices"] | expr_json_rhs["indices"]
             expr_json = {"type": "binary_op", "op": op, "lhs": expr_json_lhs, "rhs": expr_json_rhs, "indices": indices, "num_nodes": 1 + expr_json_lhs["num_nodes"] + expr_json_rhs["num_nodes"]}
-            # expr_json = {"type": "unary_op", "op": lambda x: 1/(1+np.e**-x), "op_name": "softmax", "indices": indices, "operand": expr_json, "num_nodes": expr_json["num_nodes"]}
+            # expr_json = {"type": "unary_op", "op": lambda x: 1/(1+npa.e**-x), "op_name": "softmax", "indices": indices, "operand": expr_json, "num_nodes": expr_json["num_nodes"]}
             return expr_json
 
     expr_json = _make_random_expr_json(max_nodes)
@@ -212,11 +211,11 @@ def json_eval(expr_json, non_collapsable_indices, index_names: List[str], index_
         # TODO: is the below line necessary?
         var_normshaped = np.einsum(f"{''.join(i for i in expr_json['shape'])}->{''.join(i for i in index_names if i in expr_json['indices'])}", expr_json["value"])
         expand_indices = [n for n, i in enumerate(index_names) if i not in expr_json["indices"]]
-        return np.expand_dims(var_normshaped, expand_indices)
+        return npa.expand_dims(npa.asarray(var_normshaped), axis=expand_indices)
     elif expr_json["type"] == "unary_op":
         val = expr_json["op"](json_eval(expr_json["operand"], non_collapsable_indices, index_names, index_sizes))
         expr_json['value'] = val
-        return val
+        return npa.asarray(val)
     elif expr_json["type"] == "binary_op":
         child_non_collapsable_indices = non_collapsable_indices.copy()
         if expr_json["op"] in binary_arithmetic_magics["add"]:
@@ -226,11 +225,11 @@ def json_eval(expr_json, non_collapsable_indices, index_names: List[str], index_
         # if expr_json["op"] in binary_arithmetic_magics["add"]:
         #     collapsable_broadcast_indices_lhs = expr_json["rhs"]["indices"] - expr_json["lhs"]["indices"] - non_collapsable_indices
         #     collapsable_broadcast_indices_rhs = expr_json["lhs"]["indices"] - expr_json["rhs"]["indices"] - non_collapsable_indices
-        #     lhs = lhs / np.prod([index_sizes[i] for i in collapsable_broadcast_indices_lhs])
-        #     rhs = rhs / np.prod([index_sizes[i] for i in collapsable_broadcast_indices_rhs])
+        #     lhs = lhs / npa.prod([index_sizes[i] for i in collapsable_broadcast_indices_lhs])
+        #     rhs = rhs / npa.prod([index_sizes[i] for i in collapsable_broadcast_indices_rhs])
         val = expr_json["op"](lhs, rhs)
         expr_json['value'] = val
-        return val
+        return npa.asarray(val)
     else:
         raise ValueError(f"Unknown expression type: {expr_json['type']}")
 
@@ -240,9 +239,9 @@ def random_expr_value(random_expr_json):
     with np.errstate(divide='ignore', invalid='ignore', over='ignore'):
         try:
             val = json_eval(random_expr_json["expr_json"], set(random_expr_json["out_dims"]), random_expr_json["dims"], random_expr_json["dim_sizes"])
-            val = np.sum(val, axis=tuple(n for n, i in enumerate(random_expr_json["dims"]) if i not in random_expr_json["out_dims"]))
+            val = npa.sum(val, axis=tuple(n for n, i in enumerate(random_expr_json["dims"]) if i not in random_expr_json["out_dims"]))
             dims_after_sum = [i for i in random_expr_json["dims"] if i in random_expr_json["out_dims"]]
-            val = np.transpose(val, tuple(dims_after_sum.index(dim) for dim in random_expr_json["out_dims"]))
+            val = npa.permute_dims(val, tuple(dims_after_sum.index(dim) for dim in random_expr_json["out_dims"]))
         except Exception as e:
             print(expr_json_to_str(random_expr_json))
             raise e
@@ -282,14 +281,14 @@ def test_myexpr(random_expr_value):
     
 @pytest.mark.skip
 def test_expr2():
-    x = einarray(np.array([1, 2, 3]), ['i'])
-    y = einarray(np.array([4, 5, 6]), ['i'])
-    x = einarray(np.array([[1, 2, 3]]), ['j', 'i'])
-    y = einarray(np.array([[4], [5], [6]]), ['i', 'k'])
+    x = einexpr.einarray(npa.asarray([1, 2, 3]), ['i'])
+    y = einexpr.einarray(npa.asarray([4, 5, 6]), ['i'])
+    x = einexpr.einarray(npa.asarray([[1, 2, 3]]), ['j', 'i'])
+    y = einexpr.einarray(npa.asarray([[4], [5], [6]]), ['i', 'k'])
 
     print(x+y)
     print(x*y)
-    print(np.matmul(x, y))
+    print(npa.matmul(x, y))
     print((x+y).coerce([], set()))
     print((x+y)[''])
     assert len((x+y)[''].dims) == 0
@@ -309,25 +308,25 @@ def expr_json_to_str(expr_json):
             return f"{op_name}({helper(j['lhs'])}, {helper(j['rhs'])})"
         else:
             raise ValueError(f"Unknown expression type: {j['type']}")
-    return helper(expr_json['expr_json']) + ' where ' + ', '.join(f"{var_names[id(v['value'])]}[{','.join(v['indices'])}] = {v['value'].tolist()}" for v in expr_json['leaves'])
+    return helper(expr_json['expr_json']) + ' where ' + ', '.join(f"{var_names[id(v['value'])]}[{','.join(v['indices'])}] = {v['value']}" for v in expr_json['leaves'])
 
 
 # @pytest.mark.skip
 @pytest.mark.parametrize("seed", range(1*N_TRIALS_MULTIPLIER))
-@pytest.mark.parametrize("expr_maker", [einarray])
+@pytest.mark.parametrize("expr_maker", [einexpr.einarray])
 def test_random_expr(seed, random_expr_json, random_expr_value, random_einexpr):
     val = random_expr_value
     expr = random_einexpr
     with np.errstate(divide='ignore', invalid='ignore', over='ignore'):
         if expr.__array__().shape != val.shape:
             raise ValueError(f"Shape mismatch: {expr.__array__().shape} != {val.shape}")
-        if not np.allclose(expr.__array__(), val, tolerance) and np.all(~np.isnan(expr.__array__())) and np.all(~np.isnan(val)):
+        if not np.allclose(expr.__array__(), val, tolerance) and npa.all(~npa.isnan(expr.__array__())) and npa.all(~npa.isnan(val)):
             print(f"val: {val}")
             print(f"expr: {expr}")
             # print(f"expr_json: {pp.pformat(random_expr_json)}")
             print(f"expr_str: {expr_json_to_str(random_expr_json)}")
             if val.shape == ():
-                raise ValueError(f"Values do not match: {expr.__array__().tolist()} != {val.tolist()}")
+                raise ValueError(f"Values do not match: {expr.__array__()} != {val}")
 
 # @pytest.mark.parametrize("seed", range(1*N_TRIALS_MULTIPLIER))
 # @pytest.mark.parametrize("np_like", [np])
@@ -347,7 +346,7 @@ def test_random_expr(seed, random_expr_json, random_expr_value, random_einexpr):
     
 #     with np.errstate(divide='ignore', invalid='ignore', over='ignore'):
 #         assert eval_expr(expr) is not None
-#         if not np.allclose(eval_expr(expr), var, tolerance) and np.all([~np.isnan(eval_expr(expr)), ~np.isnan(var)]):
+#         if not np.allclose(eval_expr(expr), var, tolerance) and npa.all([~npa.isnan(eval_expr(expr)), ~npa.isnan(var)]):
 #             print(expr)
 #             pp.pprint(expr_json)
 #             print(expr.get_shape())
@@ -360,8 +359,8 @@ def test_simple_expr_jax_jit():
     rng = np.random.default_rng(seed=0)
     @jax.jit
     def add(x, y):
-        x = einarray(x, dims='i')
-        y = einarray(y,  dims='j')
+        x = einexpr.einarray(x, dims='i')
+        y = einexpr.einarray(y,  dims='j')
         z = x['i'] + y['i']
         return z[''].a
     x = rng.uniform(size=2)
@@ -372,58 +371,58 @@ def test_simple_expr_jax_jit():
     def add_and_reduce(x,y):
         z = x['i'] + y['i']
         return z['']
-    x = einarray(rng.uniform(size=2), dims='i')
-    y = einarray(rng.uniform(size=2), dims='i')
+    x = einexpr.einarray(rng.uniform(size=2), dims='i')
+    y = einexpr.einarray(rng.uniform(size=2), dims='i')
     add_and_reduce(x,y)
 
 def test_list_to_einarray():
-    x = einarray([1,2,3], dims='i')
+    x = einexpr.einarray([1,2,3], dims='i')
     y = x+x
     y.dims
     
 
 @pytest.mark.skip
 def test_ambiguous_matmul():
-    a = einarray([1,2,3], ['i'])
-    b = einarray([4,5,6,7], ['j'])
-    c = einarray([8,9,10,11], ['j'])
+    a = einexpr.einarray([1,2,3], ['i'])
+    b = einexpr.einarray([4,5,6,7], ['j'])
+    c = einexpr.einarray([8,9,10,11], ['j'])
     X = a*b
     try:
-        Y = np.matmul(X, a)
-    except AmbiguousDimensionException:
+        Y = npa.matmul(X, a)
+    except einexpr.AmbiguousDimensionException:
         pass
     else:
         raise Exception("Expected ValueError for ambiguous dims")
     try:
-        Y = np.matmul(a, X)
-    except AmbiguousDimensionException:
+        Y = npa.matmul(a, X)
+    except einexpr.AmbiguousDimensionException:
         pass
     else:
         raise Exception("Expected ValueError for ambiguous dims")
 
 
 def test_concatenate(X, Y, x, y):
-    X = einarray(X, dims='i j')
-    Y = einarray(Y, dims='i k')
-    x = einarray(x, dims='i')
-    y = einarray(y, dims='k')
+    X = einexpr.einarray(X, dims='i j')
+    Y = einexpr.einarray(Y, dims='i k')
+    x = einexpr.einarray(x, dims='i')
+    y = einexpr.einarray(y, dims='k')
     
     z = X*x
     z.a
     assert z.dims == ('i', 'j')
     
     # Concatenate X to itself along the first dimension
-    z = np.concatenate([X, X], axis=0)
+    z = npa.concatenate([X, X], axis=0)
     
     # Concatenate X to Y
-    z = np.concatenate([X, Y], axis=1)
+    z = npa.concatenate([X, Y], axis=1)
     
     # mean
-    z0 = np.mean(X, axis=0)
-    z1 = np.mean(X, axis='i')
-    z2 = np.mean(X, axis=['i'])
-    assert np.all(z0 == z1)
-    assert np.all(z0 == z2)
+    z0 = npa.mean(X, axis=0)
+    z1 = npa.mean(X, axis='i')
+    z2 = npa.mean(X, axis=['i'])
+    assert npa.all(z0 == z1)
+    assert npa.all(z0 == z2)
     
     # clip
     
@@ -467,20 +466,20 @@ def test_concatenate(X, Y, x, y):
     
     
 def test_commonly_failed_2():
-    y = einarray([29., 38.], 'i')
+    y = einexpr.einarray([29., 38.], 'i')
     
     def f(y):
-        return 1/(1+np.e**-(getattr(y, '__truediv__')(y)))
+        return 1/(1+npa.e**-(getattr(y, '__truediv__')(y)))
     z = f(y)
     assert all(z['i'].a == f(y.a))
 
 def test_commonly_failed_3():
-    y = einarray([[190.,156.],[58.,64.]], 'i j')
+    y = einexpr.einarray([[190.,156.],[58.,64.]], 'i j')
     
     def f(y):
-        return 1/(1+np.e**-y)
+        return 1/(1+npa.e**-y)
     z = f(y)
-    assert z[''].a == np.sum(f(y.a))
+    assert z[''].a == npa.sum(f(y.a))
     
     # multiply = {"__mul__", "__rmul__", "__truediv__", "__rtruediv__"},
     # add = {"__add__", "__radd__", "__sub__", "__rsub__"},
@@ -488,9 +487,9 @@ def test_commonly_failed_3():
 
 
 def test_concat_dispatch():
-    x = einarray(PseudoRawArray(), dims='i j')
-    y = einarray(PseudoRawArray(), dims='i j')
-    c1 = concatenation_dispatch(np.concatenate, ((x, y),), dict(axis=0))
-    c2 = concatenation_dispatch(np.concatenate, ((x, y),), dict(axis='i'))
-    c3 = concatenation_dispatch(np.concatenate, ((x, y),), dict(axis=['i']))
+    x = einexpr.einarray(einexpr.backends.PseudoRawArray(), dims='i j')
+    y = einexpr.einarray(einexpr.backends.PseudoRawArray(), dims='i j')
+    c1 = einexpr.backends.concatenation_dispatch(npa.concatenate, ((x, y),), dict(axis=0))
+    c2 = einexpr.backends.concatenation_dispatch(npa.concatenate, ((x, y),), dict(axis='i'))
+    c3 = einexpr.backends.concatenation_dispatch(npa.concatenate, ((x, y),), dict(axis=['i']))
     

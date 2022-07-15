@@ -9,6 +9,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, List, Literal, Optional, Sequence, Tuple, TypeVar, Union, Protocol
 from enum import Enum
+from .. import einarray
 
 array = TypeVar('array')
 device = TypeVar('device')
@@ -47,21 +48,11 @@ __all__ = ['Any', 'List', 'Literal', 'NestedSequence', 'Optional',
 'array', 'device', 'dtype', 'ellipsis', 'finfo_object', 'iinfo_object', 'Enum']
 
 
-class ConcreteArrayLike:
-    def __init__(self, *args, **kwargs):
-        raise NotImplementedError
-
-
 Dimension = str
-
-class LazyArrayLike:
-    def __init__(self, *args, **kwargs):
-        raise NotImplementedError
 
 DimensionlessLike = Union[int, float]
     
-EinarrayLike = Union[ConcreteArrayLike, LazyArrayLike]
-ConcreteLike = Union[DimensionlessLike, ConcreteArrayLike]
+EinarrayLike = TypeVar('EinarrayLike')
 
 
-__all__ += [EinarrayLike, ConcreteLike, Dimension, DimensionlessLike]
+__all__ += [EinarrayLike, Dimension, DimensionlessLike]

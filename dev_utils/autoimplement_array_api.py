@@ -98,7 +98,7 @@ class ImplementFunctions(m.MatcherDecoratableTransformer):
             f'out_dims = {implementation_helper_name}.calculate_output_dims(args, kwargs)',
             f'ambiguous_dims = {implementation_helper_name}.calculate_output_ambiguous_dims(args, kwargs)',
             f'processed_args, processed_kwargs = {implementation_helper_name}.process_args(args, kwargs)',
-            f'result = einarray(\n    {array_param_name}.__array_namespace__().{func_name}(*processed_args, **processed_kwargs), \n    dims=out_dims, \n    ambiguous_dims=ambiguous_dims)',
+            f'result = einarray(\n    {array_param_name}.a.__array_namespace__().{func_name}(*processed_args, **processed_kwargs), \n    dims=out_dims, \n    ambiguous_dims=ambiguous_dims)',
             f'return result',
         ]
         
@@ -114,6 +114,36 @@ class ImplementFunctions(m.MatcherDecoratableTransformer):
                 ])
             )
         )
+
+
+def add_reflected_operators(code):
+    class OperatorReflector(m.MatcherDecoratableTransformer):
+        @m.leave(m.FunctionDef(name=m.OneOf(*(m.Name(value=f'__{op}__') for op in operators_to_reflect))))
+        def reflect_operator(self, original_node: cst.FunctionDef, updated_node: cst.FunctionDef):
+            op_name = original_node.name.value
+            original_comment_node = updated_node.body.body[0].body[0].value
+            original_comment = original_comment_node.value
+            assert original_comment.split()[0] in ['"""', "'''"], f"Expected comment to start with ''' or '\"\"', got {original_comment}"
+            comment_start = original_comment.split('\n')[0]
+            comment_body = '\n'.join(original_comment.split('\n')[1:])
+            indent = re.search(r'\s*', comment_body).group(0)
+            new_comment = f'{comment_start}\n{indent}Reflection of {op_name}. Original comments:\n\n{comment_body}'
+            reflected_node = updated_node
+            # Replace the comment string
+            reflected_node = reflected_node.deep_replace(original_comment_node, original_comment_node.with_changes(value=new_comment))
+            # Replace all instances of the symbol of the operator with the reflected operator
+            class ReplaceOperator(m.MatcherDecoratableTransformer):
+                @m.leave(m.Name(value=op_name))
+                def replace_operator(self, original_node: cst.Name, updated_node: cst.Name):
+                    return updated_node.with_changes(value=f'__r{op_name[2:]}')
+                
+            reflected_node = reflected_node.visit(ReplaceOperator())
+            return cst.FlattenSentinel([original_node, cst.EmptyLine(), reflected_node])
+
+    operators_to_reflect = 'add sub mul truediv floordiv pow mod matmul and or xor lshift rshift'.split()
+    tree = cst.parse_module(code)
+    tree = tree.visit(OperatorReflector())
+    return tree.code
 
 
 def process_file(file_path):
@@ -172,6 +202,8 @@ if __name__ == '__main__':
     # Warn the user if the symbol _array is used anywhere else. Won't trigger if it's used within a symbol (e.g. _array2)
     if re.search(r'[^\w_]_array[^\w\d_]', code):
         print("    WARNING: _array is used somewhere else. This will not trigger if it's used within a symbol (e.g. _array2)")
+    # Add reflected operators
+    code = add_reflected_operators(code)
     # Write the code back to the file
     with open(einexpr_array_api_path / "einarray.py", 'w') as f:
         f.write(code)

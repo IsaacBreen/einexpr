@@ -1,6 +1,7 @@
 from ._types import Literal, Optional, Tuple, Union, Sequence, array
 from .constants import inf
-from .. import SingleArgumentElementwise, einarray
+import einexpr
+from .. import einarray
 
 def cholesky(x: array, /, *, upper: bool = False) -> array:
     r"""
@@ -178,11 +179,11 @@ def inv(x: array, /) -> array:
     """
     args = (x,)
     kwargs = {}
-    out_dims = SingleArgumentElementwise.calculate_output_dims(args, kwargs)
-    ambiguous_dims = SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
-    processed_args, processed_kwargs = SingleArgumentElementwise.process_args(args, kwargs)
-    result = einarray(
-        x.__array_namespace__().inv(*processed_args, **processed_kwargs), 
+    out_dims = einexpr.dimension_utils.SingleArgumentElementwise.calculate_output_dims(args, kwargs)
+    ambiguous_dims = einexpr.dimension_utils.SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+    processed_args, processed_kwargs = einexpr.dimension_utils.SingleArgumentElementwise.process_args(args, kwargs)
+    result = einexpr.einarray(
+        x.a.__array_namespace__().inv(*processed_args, **processed_kwargs), 
         dims=out_dims, 
         ambiguous_dims=ambiguous_dims)
     return result

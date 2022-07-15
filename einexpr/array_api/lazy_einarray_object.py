@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 from ._types import (array, dtype as Dtype, device as Device, Optional, Tuple,
-                     Union, Any, PyCapsule, Enum, ellipsis)
-from einexpr import MultiArgumentElementwise, SingleArgumentElementwise
+                     Union, Any, PyCapsule, Enum, ellipsis, Dimension, DimensionlessLike)
+
 
 
 import string
@@ -13,25 +13,19 @@ import numpy as np
 import numpy.typing as npt
 import torch as pt
 
-from ..backends import *
-from ..base_typing import *
-from ..dim_calcs import *
-from ..exceptions import *
-from ..parse_numpy_ufunc_signature import (make_empty_signature_str,
-                                          parse_ufunc_signature)
-from ..raw_ops import align_arrays, align_to_dims
+import einexpr
 
 
-class lazy_einarray(LazyArrayLike):
+class lazy_einarray:
     def __init__(self, func: Callable, *inputs, **kwargs):
         self.func = func
-        self.inputs = [process_inp(inp) for inp in inputs]
+        self.inputs = inputs
         self.kwargs = kwargs
     
     @property
     def dims(self) -> List[Dimension]:
         """
-        Return the dimensions of the lazy_func.
+        Return the dimensions of the lazy_einarray.
         """
         raise NotImplementedError
 
@@ -43,7 +37,7 @@ class lazy_einarray(LazyArrayLike):
     def get_dims_unordered(self) -> Set[Dimension]:
         return {dim for inp in self.inputs if hasattr(inp, "get_dims_unordered") for dim in inp.get_dims_unordered()}
 
-    def coerce(self, dims: List[Dimension], do_not_collapse: Set[Dimension] = None, force_align: bool = True, ambiguous_dims: Set[Dimension] = None) -> ConcreteArrayLike:
+    def coerce(self, dims: List[Dimension], do_not_collapse: Set[Dimension] = None, force_align: bool = True, ambiguous_dims: Set[Dimension] = None) -> einarray:
         """
         Coerce the lazy array to a concrete array of the given dimensions, ignoring dimensions that do not appear in self.inputs and collapsing those that don't appear in either dims or do_not_collapse.
         """
@@ -95,18 +89,18 @@ class lazy_einarray(LazyArrayLike):
         else:
             raise NotImplementedError(f"Lazy evaluation for {self.func} is not yet implemented.")
     
-    def concretize(self) -> ConcreteArrayLike:
+    def concretize(self) -> einarray:
         return self.coerce(self.dims, ambiguous_dims=self.ambiguous_dims)
         
     @property
     def a(self) -> RawArrayLike:
         return self.concretize().a
     
-    def __array__(self, dtype: Optional[npt.DTypeLike] = None) -> ConcreteArrayLike:
+    def __array__(self, dtype: Optional[npt.DTypeLike] = None) -> einarray:
         return self.a
     
-    def tracer(self) -> 'lazy_func':
-        return lazy_func(
+    def tracer(self) -> 'lazy_einarray':
+        return lazy_einarray(
             self.func, 
             *(inp.tracer() if isinstance(inp, EinarrayLike) else inp for inp in self.inputs), 
             **{k: v.tracer() if isinstance(v, EinarrayLike) else v for k, v in self.kwargs.items()}
@@ -123,7 +117,7 @@ class lazy_einarray(LazyArrayLike):
         return cls(*children, **aux_data)
 
     def __repr__(self) -> str:
-        return f"lazy_func({self.func}, {self.inputs}, {self.kwargs})"
+        return f"lazy_einarray({self.func}, {self.inputs}, {self.kwargs})"
 
     @property
     def dtype() -> Dtype:
@@ -262,11 +256,11 @@ class lazy_einarray(LazyArrayLike):
         """
         args = (self,)
         kwargs = {}
-        out_dims = SingleArgumentElementwise.calculate_output_dims(args, kwargs)
-        ambiguous_dims = SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
-        processed_args, processed_kwargs = SingleArgumentElementwise.process_args(args, kwargs)
-        result = einarray(
-            self.__array_namespace__().__abs__(*processed_args, **processed_kwargs), 
+        out_dims = einexpr.dimension_utils.SingleArgumentElementwise.calculate_output_dims(args, kwargs)
+        ambiguous_dims = einexpr.dimension_utils.SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+        processed_args, processed_kwargs = einexpr.dimension_utils.SingleArgumentElementwise.process_args(args, kwargs)
+        result = einexpr.einarray(
+            type(self.a).__abs__(*processed_args, **processed_kwargs), 
             dims=out_dims, 
             ambiguous_dims=ambiguous_dims)
         return result
@@ -318,11 +312,11 @@ class lazy_einarray(LazyArrayLike):
         """
         args = (self, other,)
         kwargs = {}
-        out_dims = MultiArgumentElementwise.calculate_output_dims(args, kwargs)
-        ambiguous_dims = MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
-        processed_args, processed_kwargs = MultiArgumentElementwise.process_args(args, kwargs)
-        result = einarray(
-            self.__array_namespace__().__add__(*processed_args, **processed_kwargs), 
+        out_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_dims(args, kwargs)
+        ambiguous_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+        processed_args, processed_kwargs = einexpr.dimension_utils.MultiArgumentElementwise.process_args(args, kwargs)
+        result = einexpr.einarray(
+            type(self.a).__add__(*processed_args, **processed_kwargs), 
             dims=out_dims, 
             ambiguous_dims=ambiguous_dims)
         return result
@@ -349,11 +343,11 @@ class lazy_einarray(LazyArrayLike):
         """
         args = (self, other,)
         kwargs = {}
-        out_dims = MultiArgumentElementwise.calculate_output_dims(args, kwargs)
-        ambiguous_dims = MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
-        processed_args, processed_kwargs = MultiArgumentElementwise.process_args(args, kwargs)
-        result = einarray(
-            self.__array_namespace__().__and__(*processed_args, **processed_kwargs), 
+        out_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_dims(args, kwargs)
+        ambiguous_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+        processed_args, processed_kwargs = einexpr.dimension_utils.MultiArgumentElementwise.process_args(args, kwargs)
+        result = einexpr.einarray(
+            type(self.a).__and__(*processed_args, **processed_kwargs), 
             dims=out_dims, 
             ambiguous_dims=ambiguous_dims)
         return result
@@ -497,11 +491,11 @@ class lazy_einarray(LazyArrayLike):
         """
         args = (self, other,)
         kwargs = {}
-        out_dims = MultiArgumentElementwise.calculate_output_dims(args, kwargs)
-        ambiguous_dims = MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
-        processed_args, processed_kwargs = MultiArgumentElementwise.process_args(args, kwargs)
-        result = einarray(
-            self.__array_namespace__().__eq__(*processed_args, **processed_kwargs), 
+        out_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_dims(args, kwargs)
+        ambiguous_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+        processed_args, processed_kwargs = einexpr.dimension_utils.MultiArgumentElementwise.process_args(args, kwargs)
+        result = einexpr.einarray(
+            type(self.a).__eq__(*processed_args, **processed_kwargs), 
             dims=out_dims, 
             ambiguous_dims=ambiguous_dims)
         return result
@@ -583,11 +577,11 @@ class lazy_einarray(LazyArrayLike):
         """
         args = (self, other,)
         kwargs = {}
-        out_dims = MultiArgumentElementwise.calculate_output_dims(args, kwargs)
-        ambiguous_dims = MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
-        processed_args, processed_kwargs = MultiArgumentElementwise.process_args(args, kwargs)
-        result = einarray(
-            self.__array_namespace__().__floordiv__(*processed_args, **processed_kwargs), 
+        out_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_dims(args, kwargs)
+        ambiguous_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+        processed_args, processed_kwargs = einexpr.dimension_utils.MultiArgumentElementwise.process_args(args, kwargs)
+        result = einexpr.einarray(
+            type(self.a).__floordiv__(*processed_args, **processed_kwargs), 
             dims=out_dims, 
             ambiguous_dims=ambiguous_dims)
         return result
@@ -614,11 +608,11 @@ class lazy_einarray(LazyArrayLike):
         """
         args = (self, other,)
         kwargs = {}
-        out_dims = MultiArgumentElementwise.calculate_output_dims(args, kwargs)
-        ambiguous_dims = MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
-        processed_args, processed_kwargs = MultiArgumentElementwise.process_args(args, kwargs)
-        result = einarray(
-            self.__array_namespace__().__ge__(*processed_args, **processed_kwargs), 
+        out_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_dims(args, kwargs)
+        ambiguous_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+        processed_args, processed_kwargs = einexpr.dimension_utils.MultiArgumentElementwise.process_args(args, kwargs)
+        result = einexpr.einarray(
+            type(self.a).__ge__(*processed_args, **processed_kwargs), 
             dims=out_dims, 
             ambiguous_dims=ambiguous_dims)
         return result
@@ -649,7 +643,7 @@ class lazy_einarray(LazyArrayLike):
                 raise NotImplementedError("Indexing with integers is not yet supported.")
             elif isinstance(k, ellipsis):
                 raise NotImplementedError("Ellipsis is not yet supported.")
-        return self.coerce(parse_dims_reshape(key))
+        return self.coerce(einexpr.dimension_utils.parse_dims_reshape(key))
 
     def __gt__(self: array, other: Union[int, float, array], /) -> array:
         """
@@ -673,11 +667,11 @@ class lazy_einarray(LazyArrayLike):
         """
         args = (self, other,)
         kwargs = {}
-        out_dims = MultiArgumentElementwise.calculate_output_dims(args, kwargs)
-        ambiguous_dims = MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
-        processed_args, processed_kwargs = MultiArgumentElementwise.process_args(args, kwargs)
-        result = einarray(
-            self.__array_namespace__().__gt__(*processed_args, **processed_kwargs), 
+        out_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_dims(args, kwargs)
+        ambiguous_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+        processed_args, processed_kwargs = einexpr.dimension_utils.MultiArgumentElementwise.process_args(args, kwargs)
+        result = einexpr.einarray(
+            type(self.a).__gt__(*processed_args, **processed_kwargs), 
             dims=out_dims, 
             ambiguous_dims=ambiguous_dims)
         return result
@@ -737,11 +731,11 @@ class lazy_einarray(LazyArrayLike):
         """
         args = (self,)
         kwargs = {}
-        out_dims = SingleArgumentElementwise.calculate_output_dims(args, kwargs)
-        ambiguous_dims = SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
-        processed_args, processed_kwargs = SingleArgumentElementwise.process_args(args, kwargs)
-        result = einarray(
-            self.__array_namespace__().__invert__(*processed_args, **processed_kwargs), 
+        out_dims = einexpr.dimension_utils.SingleArgumentElementwise.calculate_output_dims(args, kwargs)
+        ambiguous_dims = einexpr.dimension_utils.SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+        processed_args, processed_kwargs = einexpr.dimension_utils.SingleArgumentElementwise.process_args(args, kwargs)
+        result = einexpr.einarray(
+            type(self.a).__invert__(*processed_args, **processed_kwargs), 
             dims=out_dims, 
             ambiguous_dims=ambiguous_dims)
         return result
@@ -768,11 +762,11 @@ class lazy_einarray(LazyArrayLike):
         """
         args = (self, other,)
         kwargs = {}
-        out_dims = MultiArgumentElementwise.calculate_output_dims(args, kwargs)
-        ambiguous_dims = MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
-        processed_args, processed_kwargs = MultiArgumentElementwise.process_args(args, kwargs)
-        result = einarray(
-            self.__array_namespace__().__le__(*processed_args, **processed_kwargs), 
+        out_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_dims(args, kwargs)
+        ambiguous_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+        processed_args, processed_kwargs = einexpr.dimension_utils.MultiArgumentElementwise.process_args(args, kwargs)
+        result = einexpr.einarray(
+            type(self.a).__le__(*processed_args, **processed_kwargs), 
             dims=out_dims, 
             ambiguous_dims=ambiguous_dims)
         return result
@@ -799,11 +793,11 @@ class lazy_einarray(LazyArrayLike):
         """
         args = (self, other,)
         kwargs = {}
-        out_dims = MultiArgumentElementwise.calculate_output_dims(args, kwargs)
-        ambiguous_dims = MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
-        processed_args, processed_kwargs = MultiArgumentElementwise.process_args(args, kwargs)
-        result = einarray(
-            self.__array_namespace__().__lshift__(*processed_args, **processed_kwargs), 
+        out_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_dims(args, kwargs)
+        ambiguous_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+        processed_args, processed_kwargs = einexpr.dimension_utils.MultiArgumentElementwise.process_args(args, kwargs)
+        result = einexpr.einarray(
+            type(self.a).__lshift__(*processed_args, **processed_kwargs), 
             dims=out_dims, 
             ambiguous_dims=ambiguous_dims)
         return result
@@ -830,11 +824,11 @@ class lazy_einarray(LazyArrayLike):
         """
         args = (self, other,)
         kwargs = {}
-        out_dims = MultiArgumentElementwise.calculate_output_dims(args, kwargs)
-        ambiguous_dims = MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
-        processed_args, processed_kwargs = MultiArgumentElementwise.process_args(args, kwargs)
-        result = einarray(
-            self.__array_namespace__().__lt__(*processed_args, **processed_kwargs), 
+        out_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_dims(args, kwargs)
+        ambiguous_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+        processed_args, processed_kwargs = einexpr.dimension_utils.MultiArgumentElementwise.process_args(args, kwargs)
+        result = einexpr.einarray(
+            type(self.a).__lt__(*processed_args, **processed_kwargs), 
             dims=out_dims, 
             ambiguous_dims=ambiguous_dims)
         return result
@@ -932,11 +926,11 @@ class lazy_einarray(LazyArrayLike):
         """
         args = (self, other,)
         kwargs = {}
-        out_dims = MultiArgumentElementwise.calculate_output_dims(args, kwargs)
-        ambiguous_dims = MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
-        processed_args, processed_kwargs = MultiArgumentElementwise.process_args(args, kwargs)
-        result = einarray(
-            self.__array_namespace__().__mod__(*processed_args, **processed_kwargs), 
+        out_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_dims(args, kwargs)
+        ambiguous_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+        processed_args, processed_kwargs = einexpr.dimension_utils.MultiArgumentElementwise.process_args(args, kwargs)
+        result = einexpr.einarray(
+            type(self.a).__mod__(*processed_args, **processed_kwargs), 
             dims=out_dims, 
             ambiguous_dims=ambiguous_dims)
         return result
@@ -981,11 +975,11 @@ class lazy_einarray(LazyArrayLike):
         """
         args = (self, other,)
         kwargs = {}
-        out_dims = MultiArgumentElementwise.calculate_output_dims(args, kwargs)
-        ambiguous_dims = MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
-        processed_args, processed_kwargs = MultiArgumentElementwise.process_args(args, kwargs)
-        result = einarray(
-            self.__array_namespace__().__mul__(*processed_args, **processed_kwargs), 
+        out_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_dims(args, kwargs)
+        ambiguous_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+        processed_args, processed_kwargs = einexpr.dimension_utils.MultiArgumentElementwise.process_args(args, kwargs)
+        result = einexpr.einarray(
+            type(self.a).__mul__(*processed_args, **processed_kwargs), 
             dims=out_dims, 
             ambiguous_dims=ambiguous_dims)
         return result
@@ -1012,11 +1006,11 @@ class lazy_einarray(LazyArrayLike):
         """
         args = (self, other,)
         kwargs = {}
-        out_dims = MultiArgumentElementwise.calculate_output_dims(args, kwargs)
-        ambiguous_dims = MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
-        processed_args, processed_kwargs = MultiArgumentElementwise.process_args(args, kwargs)
-        result = einarray(
-            self.__array_namespace__().__ne__(*processed_args, **processed_kwargs), 
+        out_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_dims(args, kwargs)
+        ambiguous_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+        processed_args, processed_kwargs = einexpr.dimension_utils.MultiArgumentElementwise.process_args(args, kwargs)
+        result = einexpr.einarray(
+            type(self.a).__ne__(*processed_args, **processed_kwargs), 
             dims=out_dims, 
             ambiguous_dims=ambiguous_dims)
         return result
@@ -1047,11 +1041,11 @@ class lazy_einarray(LazyArrayLike):
         """
         args = (self,)
         kwargs = {}
-        out_dims = SingleArgumentElementwise.calculate_output_dims(args, kwargs)
-        ambiguous_dims = SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
-        processed_args, processed_kwargs = SingleArgumentElementwise.process_args(args, kwargs)
-        result = einarray(
-            self.__array_namespace__().__neg__(*processed_args, **processed_kwargs), 
+        out_dims = einexpr.dimension_utils.SingleArgumentElementwise.calculate_output_dims(args, kwargs)
+        ambiguous_dims = einexpr.dimension_utils.SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+        processed_args, processed_kwargs = einexpr.dimension_utils.SingleArgumentElementwise.process_args(args, kwargs)
+        result = einexpr.einarray(
+            type(self.a).__neg__(*processed_args, **processed_kwargs), 
             dims=out_dims, 
             ambiguous_dims=ambiguous_dims)
         return result
@@ -1078,11 +1072,11 @@ class lazy_einarray(LazyArrayLike):
         """
         args = (self, other,)
         kwargs = {}
-        out_dims = MultiArgumentElementwise.calculate_output_dims(args, kwargs)
-        ambiguous_dims = MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
-        processed_args, processed_kwargs = MultiArgumentElementwise.process_args(args, kwargs)
-        result = einarray(
-            self.__array_namespace__().__or__(*processed_args, **processed_kwargs), 
+        out_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_dims(args, kwargs)
+        ambiguous_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+        processed_args, processed_kwargs = einexpr.dimension_utils.MultiArgumentElementwise.process_args(args, kwargs)
+        result = einexpr.einarray(
+            type(self.a).__or__(*processed_args, **processed_kwargs), 
             dims=out_dims, 
             ambiguous_dims=ambiguous_dims)
         return result
@@ -1107,11 +1101,11 @@ class lazy_einarray(LazyArrayLike):
         """
         args = (self,)
         kwargs = {}
-        out_dims = SingleArgumentElementwise.calculate_output_dims(args, kwargs)
-        ambiguous_dims = SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
-        processed_args, processed_kwargs = SingleArgumentElementwise.process_args(args, kwargs)
-        result = einarray(
-            self.__array_namespace__().__pos__(*processed_args, **processed_kwargs), 
+        out_dims = einexpr.dimension_utils.SingleArgumentElementwise.calculate_output_dims(args, kwargs)
+        ambiguous_dims = einexpr.dimension_utils.SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+        processed_args, processed_kwargs = einexpr.dimension_utils.SingleArgumentElementwise.process_args(args, kwargs)
+        result = einexpr.einarray(
+            type(self.a).__pos__(*processed_args, **processed_kwargs), 
             dims=out_dims, 
             ambiguous_dims=ambiguous_dims)
         return result
@@ -1172,11 +1166,11 @@ class lazy_einarray(LazyArrayLike):
         """
         args = (self, other,)
         kwargs = {}
-        out_dims = MultiArgumentElementwise.calculate_output_dims(args, kwargs)
-        ambiguous_dims = MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
-        processed_args, processed_kwargs = MultiArgumentElementwise.process_args(args, kwargs)
-        result = einarray(
-            self.__array_namespace__().__pow__(*processed_args, **processed_kwargs), 
+        out_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_dims(args, kwargs)
+        ambiguous_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+        processed_args, processed_kwargs = einexpr.dimension_utils.MultiArgumentElementwise.process_args(args, kwargs)
+        result = einexpr.einarray(
+            type(self.a).__pow__(*processed_args, **processed_kwargs), 
             dims=out_dims, 
             ambiguous_dims=ambiguous_dims)
         return result
@@ -1203,11 +1197,11 @@ class lazy_einarray(LazyArrayLike):
         """
         args = (self, other,)
         kwargs = {}
-        out_dims = MultiArgumentElementwise.calculate_output_dims(args, kwargs)
-        ambiguous_dims = MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
-        processed_args, processed_kwargs = MultiArgumentElementwise.process_args(args, kwargs)
-        result = einarray(
-            self.__array_namespace__().__rshift__(*processed_args, **processed_kwargs), 
+        out_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_dims(args, kwargs)
+        ambiguous_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+        processed_args, processed_kwargs = einexpr.dimension_utils.MultiArgumentElementwise.process_args(args, kwargs)
+        result = einexpr.einarray(
+            type(self.a).__rshift__(*processed_args, **processed_kwargs), 
             dims=out_dims, 
             ambiguous_dims=ambiguous_dims)
         return result
@@ -1258,11 +1252,11 @@ class lazy_einarray(LazyArrayLike):
         """
         args = (self, other,)
         kwargs = {}
-        out_dims = MultiArgumentElementwise.calculate_output_dims(args, kwargs)
-        ambiguous_dims = MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
-        processed_args, processed_kwargs = MultiArgumentElementwise.process_args(args, kwargs)
-        result = einarray(
-            self.__array_namespace__().__sub__(*processed_args, **processed_kwargs), 
+        out_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_dims(args, kwargs)
+        ambiguous_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+        processed_args, processed_kwargs = einexpr.dimension_utils.MultiArgumentElementwise.process_args(args, kwargs)
+        result = einexpr.einarray(
+            type(self.a).__sub__(*processed_args, **processed_kwargs), 
             dims=out_dims, 
             ambiguous_dims=ambiguous_dims)
         return result
@@ -1321,11 +1315,11 @@ class lazy_einarray(LazyArrayLike):
         """
         args = (self, other,)
         kwargs = {}
-        out_dims = MultiArgumentElementwise.calculate_output_dims(args, kwargs)
-        ambiguous_dims = MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
-        processed_args, processed_kwargs = MultiArgumentElementwise.process_args(args, kwargs)
-        result = einarray(
-            self.__array_namespace__().__truediv__(*processed_args, **processed_kwargs), 
+        out_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_dims(args, kwargs)
+        ambiguous_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+        processed_args, processed_kwargs = einexpr.dimension_utils.MultiArgumentElementwise.process_args(args, kwargs)
+        result = einexpr.einarray(
+            type(self.a).__truediv__(*processed_args, **processed_kwargs), 
             dims=out_dims, 
             ambiguous_dims=ambiguous_dims)
         return result
@@ -1352,11 +1346,11 @@ class lazy_einarray(LazyArrayLike):
         """
         args = (self, other,)
         kwargs = {}
-        out_dims = MultiArgumentElementwise.calculate_output_dims(args, kwargs)
-        ambiguous_dims = MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
-        processed_args, processed_kwargs = MultiArgumentElementwise.process_args(args, kwargs)
-        result = einarray(
-            self.__array_namespace__().__xor__(*processed_args, **processed_kwargs), 
+        out_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_dims(args, kwargs)
+        ambiguous_dims = einexpr.dimension_utils.MultiArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+        processed_args, processed_kwargs = einexpr.dimension_utils.MultiArgumentElementwise.process_args(args, kwargs)
+        result = einexpr.einarray(
+            type(self.a).__xor__(*processed_args, **processed_kwargs), 
             dims=out_dims, 
             ambiguous_dims=ambiguous_dims)
         return result
@@ -1387,5 +1381,8 @@ class lazy_einarray(LazyArrayLike):
 
 
 from jax import tree_util
+from .. import einarray
 
-tree_util.register_pytree_node(lazy_func, lazy_func._tree_flatten, lazy_func._tree_unflatten)
+tree_util.register_pytree_node(lazy_einarray, lazy_einarray._tree_flatten, lazy_einarray._tree_unflatten)
+
+__all__ = ['array', 'lazy_einarray']

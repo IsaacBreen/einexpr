@@ -1,5 +1,6 @@
-__version__ = '0.1.0'
-from . import dimensions
+__version__ = '0.2.3'
+from .array_api import _types as types
+from . import dimension_utils
 from . import backends
-from .other import *
+from .utils import *
 from .array_api import *

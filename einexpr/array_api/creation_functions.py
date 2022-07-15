@@ -1,6 +1,7 @@
 from ._types import (List, NestedSequence, Optional, SupportsBufferProtocol, Tuple, Union, array,
                      device, dtype)
-from .. import SingleArgumentElementwise, einarray
+import einexpr
+from .. import einarray
 
 def arange(start: Union[int, float], /, stop: Optional[Union[int, float]] = None, step: Union[int, float] = 1, *, dtype: Optional[dtype] = None, device: Optional[device] = None) -> array:
     """
@@ -222,11 +223,11 @@ def full_like(x: array, /, fill_value: Union[bool, int, float, complex], *, dtyp
     """
     args = (x,)
     kwargs = {'dtype': dtype, 'device': device}
-    out_dims = SingleArgumentElementwise.calculate_output_dims(args, kwargs)
-    ambiguous_dims = SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
-    processed_args, processed_kwargs = SingleArgumentElementwise.process_args(args, kwargs)
-    result = einarray(
-        x.__array_namespace__().full_like(*processed_args, **processed_kwargs), 
+    out_dims = einexpr.dimension_utils.SingleArgumentElementwise.calculate_output_dims(args, kwargs)
+    ambiguous_dims = einexpr.dimension_utils.SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+    processed_args, processed_kwargs = einexpr.dimension_utils.SingleArgumentElementwise.process_args(args, kwargs)
+    result = einexpr.einarray(
+        x.a.__array_namespace__().full_like(*processed_args, **processed_kwargs), 
         dims=out_dims, 
         ambiguous_dims=ambiguous_dims)
     return result
@@ -341,11 +342,11 @@ def ones_like(x: array, /, *, dtype: Optional[dtype] = None, device: Optional[de
     """
     args = (x,)
     kwargs = {'dtype': dtype, 'device': device}
-    out_dims = SingleArgumentElementwise.calculate_output_dims(args, kwargs)
-    ambiguous_dims = SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
-    processed_args, processed_kwargs = SingleArgumentElementwise.process_args(args, kwargs)
-    result = einarray(
-        x.__array_namespace__().ones_like(*processed_args, **processed_kwargs), 
+    out_dims = einexpr.dimension_utils.SingleArgumentElementwise.calculate_output_dims(args, kwargs)
+    ambiguous_dims = einexpr.dimension_utils.SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+    processed_args, processed_kwargs = einexpr.dimension_utils.SingleArgumentElementwise.process_args(args, kwargs)
+    result = einexpr.einarray(
+        x.a.__array_namespace__().ones_like(*processed_args, **processed_kwargs), 
         dims=out_dims, 
         ambiguous_dims=ambiguous_dims)
     return result
@@ -438,11 +439,11 @@ def zeros_like(x: array, /, *, dtype: Optional[dtype] = None, device: Optional[d
     """
     args = (x,)
     kwargs = {'dtype': dtype, 'device': device}
-    out_dims = SingleArgumentElementwise.calculate_output_dims(args, kwargs)
-    ambiguous_dims = SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
-    processed_args, processed_kwargs = SingleArgumentElementwise.process_args(args, kwargs)
-    result = einarray(
-        x.__array_namespace__().zeros_like(*processed_args, **processed_kwargs), 
+    out_dims = einexpr.dimension_utils.SingleArgumentElementwise.calculate_output_dims(args, kwargs)
+    ambiguous_dims = einexpr.dimension_utils.SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
+    processed_args, processed_kwargs = einexpr.dimension_utils.SingleArgumentElementwise.process_args(args, kwargs)
+    result = einexpr.einarray(
+        x.a.__array_namespace__().zeros_like(*processed_args, **processed_kwargs), 
         dims=out_dims, 
         ambiguous_dims=ambiguous_dims)
     return result
