@@ -118,11 +118,21 @@ class ImplementFunctions(m.MatcherDecoratableTransformer):
 
 def add_reflected_operators(code):
     operators_to_reflect = 'add sub mul truediv floordiv pow mod matmul and or xor lshift rshift'.split()
-    
+    tree = cst.parse_module(code)
+    wrapper = cst.MetadataWrapper(tree)
+    qualified_names_by_node = wrapper.resolve(cst.metadata.QualifiedNameProvider)
+    all_qualified_names = {qualified_name.name for qualified_names in qualified_names_by_node.values() for qualified_name in qualified_names}
+
     class OperatorReflector(m.MatcherDecoratableTransformer):
         @m.leave(m.FunctionDef(name=m.OneOf(*(m.Name(value=f'__{op}__') for op in operators_to_reflect))))
         def reflect_operator(self, original_node: cst.FunctionDef, updated_node: cst.FunctionDef):
             op_name = original_node.name.value
+            reflected_op_name = f'__r{op_name[2:]}'
+            op_qname = list(qualified_names_by_node[original_node])[0].name
+            reflected_op_qname = '.'.join(op_qname.split('.')[:-1] + [reflected_op_name])
+            # If the reflected operator is already defined, do nothing.
+            if reflected_op_qname in all_qualified_names:
+                return updated_node
             original_comment_node = updated_node.body.body[0].body[0].value
             original_comment = original_comment_node.value
             assert original_comment.split()[0] in ['"""', "'''"], f"Expected comment to start with ''' or '\"\"', got {original_comment}"
@@ -137,13 +147,12 @@ def add_reflected_operators(code):
             class ReplaceOperator(m.MatcherDecoratableTransformer):
                 @m.leave(m.Name(value=op_name))
                 def replace_operator(self, original_node: cst.Name, updated_node: cst.Name):
-                    return updated_node.with_changes(value=f'__r{op_name[2:]}')
-                
+                    return updated_node.with_changes(value=reflected_op_name)
+            
             reflected_node = reflected_node.visit(ReplaceOperator())
             return cst.FlattenSentinel([original_node, cst.EmptyLine(), reflected_node])
 
-    tree = cst.parse_module(code)
-    tree = tree.visit(OperatorReflector())
+    tree = wrapper.module.visit(OperatorReflector())
     return tree.code
 
 
