@@ -41,7 +41,7 @@ concatenation_function_names = "concat concatenate".split()
 
 class ImplementFunctions(m.MatcherDecoratableTransformer):
     def __init__(self, *args, **kwargs):
-        self.implementation_helper_names_used = set()
+        # self.implementation_helper_names_used = set()
         super().__init__(*args, **kwargs)
 
     @m.leave(unimplemented_function_matcher)
@@ -69,7 +69,7 @@ class ImplementFunctions(m.MatcherDecoratableTransformer):
             print(f"    ⚠️  WARNING: Expected a return type of 'array' for function {func_name!r}; got {return_annotation}")
             return updated_node
         
-        self.implementation_helper_names_used.add(implementation_helper_name)
+        # self.implementation_helper_names_used.add(implementation_helper_name)
         
         params = updated_node.params
         posonly_args = [param.name.value for param in params.posonly_params]
@@ -95,9 +95,9 @@ class ImplementFunctions(m.MatcherDecoratableTransformer):
         implementation_lines = [
             f'args = {posonly_args_str}',
             f'kwargs = {kwonly_args_str}',
-            f'out_dims = {implementation_helper_name}.calculate_output_dims(args, kwargs)',
-            f'ambiguous_dims = {implementation_helper_name}.calculate_output_ambiguous_dims(args, kwargs)',
-            f'processed_args, processed_kwargs = {implementation_helper_name}.process_args(args, kwargs)',
+            f'out_dims = einexpr.dimension_utils.{implementation_helper_name}.calculate_output_dims(args, kwargs)',
+            f'ambiguous_dims = einexpr.dimension_utils.{implementation_helper_name}.calculate_output_ambiguous_dims(args, kwargs)',
+            f'processed_args, processed_kwargs = einexpr.dimension_utils.{implementation_helper_name}.process_args(args, kwargs)',
             f'result = einarray(\n    {array_param_name}.a.__array_namespace__().{func_name}(*processed_args, **processed_kwargs), \n    dims=out_dims, \n    ambiguous_dims=ambiguous_dims)',
             f'return result',
         ]
@@ -170,9 +170,7 @@ def process_file(file_path):
     # Import the necessary helpers
     codemod_context = CodemodContext()
     # AddImportsVisitor.add_needed_import(codemod_context, 'einexpr', 'einarray')
-    AddImportsVisitor.add_needed_import(codemod_context, '..', 'einarray')
-    for helper_name in implement_functions_transformer.implementation_helper_names_used:
-        AddImportsVisitor.add_needed_import(codemod_context, '..', helper_name)
+    AddImportsVisitor.add_needed_import(codemod_context, 'einexpr')
     tree = AddImportsVisitor(codemod_context).transform_module(tree)
     # Write the code back to the file
     with open(file_path, 'w') as f:
