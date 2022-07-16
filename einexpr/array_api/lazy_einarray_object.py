@@ -14,9 +14,10 @@ import numpy.typing as npt
 import torch as pt
 
 import einexpr
+from .einarray_object import einarray
 
 
-class lazy_einarray:
+class lazy_einarray(einarray):
     def __init__(self, func: Callable, *inputs, **kwargs):
         self.func = func
         self.inputs = inputs
@@ -1385,4 +1386,4 @@ from jax import tree_util
 
 tree_util.register_pytree_node(lazy_einarray, lazy_einarray._tree_flatten, lazy_einarray._tree_unflatten)
 
-__all__ = ['array', 'lazy_einarray']
+__all__ = ['lazy_einarray']
