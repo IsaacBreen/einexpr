@@ -63,20 +63,23 @@ class SingleArgumentElementwise:
     def validate_args(args, kwargs):
         assert isinstance(args, (list, tuple))
         assert isinstance(kwargs, dict)
-        assert isinstance(args[0], einexpr.EinarrayLike)
-        assert all(not isinstance(arg, einexpr.EinarrayLike) for arg in args[1:])
-        assert all(not isinstance(arg, einexpr.EinarrayLike) for arg in kwargs.values())
+        assert isinstance(args[0], einexpr.einarray)
+        assert len(args) == 1
+        assert all(not isinstance(arg, einexpr.einarray) for arg in kwargs.values())
     
     @staticmethod
     def process_args(args, kwargs):
+        args, kwargs = ArgumentHelper.preprocess_args(args, kwargs)
         return (get_raw(args[0]), *args[1:]), kwargs
     
     @staticmethod
     def calculate_output_dims(args, kwargs):
+        args, kwargs = ArgumentHelper.preprocess_args(args, kwargs)
         return get_dims(args[0])
     
     @staticmethod
     def calculate_output_ambiguous_dims(args, kwargs):
+        args, kwargs = ArgumentHelper.preprocess_args(args, kwargs)
         return {dim for ambiguous_dims in get_ambiguous_dims(args[0]) for dim in ambiguous_dims}
 
 
@@ -85,20 +88,23 @@ class MultiArgumentElementwise:
     def validate_args(args, kwargs):
         assert isinstance(args, (list, tuple))
         assert isinstance(kwargs, dict)
-        assert all(isinstance(arg, einexpr.EinarrayLike) for arg in args)
-        assert all(not isinstance(arg, einexpr.EinarrayLike) for arg in kwargs.values())
+        assert all(isinstance(arg, einexpr.einarray) for arg in args)
+        assert all(not isinstance(arg, einexpr.einarray) for arg in kwargs.values())
     
     @staticmethod
     def process_args(args, kwargs):
+        args, kwargs = ArgumentHelper.preprocess_args(args, kwargs)
         raw_aligned_arrays = einexpr.backends.align_arrays(*args)
         return raw_aligned_arrays, kwargs
 
     @staticmethod
     def calculate_output_dims(args, kwargs):
+        args, kwargs = ArgumentHelper.preprocess_args(args, kwargs)
         return einexpr.dimension_utils.get_final_aligned_dims(*(get_dims(arg) for arg in args))
     
     @staticmethod
     def calculate_output_ambiguous_dims(args, kwargs):
+        args, kwargs = ArgumentHelper.preprocess_args(args, kwargs)
         ambiguous_dims = einexpr.dimension_utils.calculate_ambiguous_final_aligned_dims(*(get_dims(arg) for arg in args))
         ambiguous_dims |= {dim for arg in args for dim in get_ambiguous_dims(arg)}
         return ambiguous_dims
@@ -112,9 +118,9 @@ class MultiDimensionReduction:
         # - raise error when there are duplicate axes, esp of different types (Dimension, int, and negative int)
         assert isinstance(args, (list, tuple))
         assert isinstance(kwargs, dict)
-        assert isinstance(args[0], einexpr.EinarrayLike)
-        assert all(not isinstance(arg, einexpr.EinarrayLike) for arg in args[1:]) # TODO: mapreduce over pytree
-        assert all(not isinstance(arg, einexpr.EinarrayLike) for arg in kwargs.values())
+        assert isinstance(args[0], einexpr.einarray)
+        assert all(not isinstance(arg, einexpr.einarray) for arg in args[1:]) # TODO: mapreduce over pytree
+        assert all(not isinstance(arg, einexpr.einarray) for arg in kwargs.values())
         assert 'axis' in args        
     
     @staticmethod
@@ -131,16 +137,19 @@ class MultiDimensionReduction:
     
     @staticmethod
     def process_args(args, kwargs):
+        args, kwargs = ArgumentHelper.preprocess_args(args, kwargs)
         axis = MultiDimensionReduction._calculate_axis(args, kwargs)
         return (get_raw(args[0]), *args[1:]), {**kwargs, 'axis': axis}
 
     @staticmethod
     def calculate_output_dims(args, kwargs):
+        args, kwargs = ArgumentHelper.preprocess_args(args, kwargs)
         axis = MultiDimensionReduction._calculate_axis(args, kwargs)
         return [dim for i, dim in enumerate(get_dims(args[0])) if i not in axis]
     
     @staticmethod
     def calculate_output_ambiguous_dims(args, kwargs):
+        args, kwargs = ArgumentHelper.preprocess_args(args, kwargs)
         axis = MultiDimensionReduction._calculate_axis(args, kwargs)
         ambiguous_out_dims = get_ambiguous_dims(args[0]) - {dim for i, dim in enumerate(get_dims(args[0])) if i in axis}
         return ambiguous_out_dims
@@ -149,6 +158,7 @@ class MultiDimensionReduction:
 class SingleDimensionReduction(MultiDimensionReduction):
     @staticmethod
     def validate_args(args, kwargs):
+        args, kwargs = ArgumentHelper.preprocess_args(args, kwargs)
         if 'axis' in kwargs and isinstance(kwargs['axis'], (tuple, list)):
             raise ValueError("Multiple axes not supported")
         elif 'dims' in kwargs and isinstance(kwargs['dims'], (tuple, list)):
@@ -161,13 +171,14 @@ class Concatenation:
     def validate_args(args, kwargs):
         assert isinstance(args, (list, tuple))
         assert isinstance(kwargs, dict)
-        assert isinstance(args[0], (list, tuple)) and all(isinstance(arg, einexpr.EinarrayLike) for arg in args[0])
-        assert all(not isinstance(arg, einexpr.EinarrayLike) for arg in args[1:])
+        assert isinstance(args[0], (list, tuple)) and all(isinstance(arg, einexpr.einarray) for arg in args[0])
+        assert all(not isinstance(arg, einexpr.einarray) for arg in args[1:])
         if kwargs['axis'] is None:
             raise ValueError("Using ``axis=None`` (flattening concatenation) is not yet supported")
     
     @staticmethod
     def _calculate_axes(args, kwargs):
+        args, kwargs = ArgumentHelper.preprocess_args(args, kwargs)
         axes = kwargs['axis']
         if isinstance(axes, (Dimension, int)):
             axes = [axes] * len(args[0])
@@ -186,6 +197,7 @@ class Concatenation:
 
     @staticmethod
     def process_args(args, kwargs):
+        args, kwargs = ArgumentHelper.preprocess_args(args, kwargs)
         axes = Concatenation._calculate_axes(args, kwargs)
         axis_num = get_dims(args[0][0]).index(axes[0])
         # Align the arrays. Use the shape of the first array as the template.
@@ -209,6 +221,7 @@ class Concatenation:
         
     @staticmethod
     def calculate_output_ambiguous_dims(args, kwargs):
+        args, kwargs = ArgumentHelper.preprocess_args(args, kwargs)
         axes = Concatenation._calculate_axes(args, kwargs)
         ambiguous_dims = {dim for arg in args[0] for dim in get_ambiguous_dims(arg) if dim not in axes}
         for axis, arg in zip(axes[1:], args[0][1:]):
