@@ -56,4 +56,4 @@ DimensionlessLike = Union[int, float]
 EinarrayLike = TypeVar('EinarrayLike')
 
 
-__all__ += [EinarrayLike, Dimension, DimensionlessLike]
+__all__ += ['EinarrayLike', 'Dimension', 'DimensionlessLike']
