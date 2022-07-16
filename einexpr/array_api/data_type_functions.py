@@ -30,7 +30,7 @@ def astype(x: array, dtype: dtype, /, *, copy: bool = True) -> array:
     """
     args = (x, dtype,)
     kwargs = {'copy': copy}
-    helper = einexpr.dimension_utils.SingleArgumentElementwise
+    helper = einexpr.dimension_utils.MultiArgumentElementwise
     helper.validate_args(args, kwargs)
     out_dims = helper.calculate_output_dims(args, kwargs)
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)

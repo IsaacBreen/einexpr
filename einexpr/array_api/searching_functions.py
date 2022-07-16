@@ -111,7 +111,7 @@ def where(condition: array, x1: array, x2: array, /) -> array:
     """
     args = (condition, x1, x2,)
     kwargs = {}
-    helper = einexpr.dimension_utils.SingleArgumentElementwise
+    helper = einexpr.dimension_utils.MultiArgumentElementwise
     helper.validate_args(args, kwargs)
     out_dims = helper.calculate_output_dims(args, kwargs)
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)

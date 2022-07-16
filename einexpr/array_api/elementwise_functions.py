@@ -29,7 +29,7 @@ def abs(x: array, /) -> array:
     """
     args = (x,)
     kwargs = {}
-    helper = einexpr.dimension_utils.SingleArgumentElementwise
+    helper = einexpr.dimension_utils.MultiArgumentElementwise
     helper.validate_args(args, kwargs)
     out_dims = helper.calculate_output_dims(args, kwargs)
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -65,7 +65,7 @@ def acos(x: array, /) -> array:
     """
     args = (x,)
     kwargs = {}
-    helper = einexpr.dimension_utils.SingleArgumentElementwise
+    helper = einexpr.dimension_utils.MultiArgumentElementwise
     helper.validate_args(args, kwargs)
     out_dims = helper.calculate_output_dims(args, kwargs)
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -101,7 +101,7 @@ def acosh(x: array, /) -> array:
     """
     args = (x,)
     kwargs = {}
-    helper = einexpr.dimension_utils.SingleArgumentElementwise
+    helper = einexpr.dimension_utils.MultiArgumentElementwise
     helper.validate_args(args, kwargs)
     out_dims = helper.calculate_output_dims(args, kwargs)
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -155,7 +155,7 @@ def add(x1: array, x2: array, /) -> array:
     """
     args = (x1, x2,)
     kwargs = {}
-    helper = einexpr.dimension_utils.SingleArgumentElementwise
+    helper = einexpr.dimension_utils.MultiArgumentElementwise
     helper.validate_args(args, kwargs)
     out_dims = helper.calculate_output_dims(args, kwargs)
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -192,7 +192,7 @@ def asin(x: array, /) -> array:
     """
     args = (x,)
     kwargs = {}
-    helper = einexpr.dimension_utils.SingleArgumentElementwise
+    helper = einexpr.dimension_utils.MultiArgumentElementwise
     helper.validate_args(args, kwargs)
     out_dims = helper.calculate_output_dims(args, kwargs)
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -229,7 +229,7 @@ def asinh(x: array, /) -> array:
     """
     args = (x,)
     kwargs = {}
-    helper = einexpr.dimension_utils.SingleArgumentElementwise
+    helper = einexpr.dimension_utils.MultiArgumentElementwise
     helper.validate_args(args, kwargs)
     out_dims = helper.calculate_output_dims(args, kwargs)
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -266,7 +266,7 @@ def atan(x: array, /) -> array:
     """
     args = (x,)
     kwargs = {}
-    helper = einexpr.dimension_utils.SingleArgumentElementwise
+    helper = einexpr.dimension_utils.MultiArgumentElementwise
     helper.validate_args(args, kwargs)
     out_dims = helper.calculate_output_dims(args, kwargs)
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -331,7 +331,7 @@ def atan2(x1: array, x2: array, /) -> array:
     """
     args = (x1, x2,)
     kwargs = {}
-    helper = einexpr.dimension_utils.SingleArgumentElementwise
+    helper = einexpr.dimension_utils.MultiArgumentElementwise
     helper.validate_args(args, kwargs)
     out_dims = helper.calculate_output_dims(args, kwargs)
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -370,7 +370,7 @@ def atanh(x: array, /) -> array:
     """
     args = (x,)
     kwargs = {}
-    helper = einexpr.dimension_utils.SingleArgumentElementwise
+    helper = einexpr.dimension_utils.MultiArgumentElementwise
     helper.validate_args(args, kwargs)
     out_dims = helper.calculate_output_dims(args, kwargs)
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -399,7 +399,7 @@ def bitwise_and(x1: array, x2: array, /) -> array:
     """
     args = (x1, x2,)
     kwargs = {}
-    helper = einexpr.dimension_utils.SingleArgumentElementwise
+    helper = einexpr.dimension_utils.MultiArgumentElementwise
     helper.validate_args(args, kwargs)
     out_dims = helper.calculate_output_dims(args, kwargs)
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -428,7 +428,7 @@ def bitwise_left_shift(x1: array, x2: array, /) -> array:
     """
     args = (x1, x2,)
     kwargs = {}
-    helper = einexpr.dimension_utils.SingleArgumentElementwise
+    helper = einexpr.dimension_utils.MultiArgumentElementwise
     helper.validate_args(args, kwargs)
     out_dims = helper.calculate_output_dims(args, kwargs)
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -455,7 +455,7 @@ def bitwise_invert(x: array, /) -> array:
     """
     args = (x,)
     kwargs = {}
-    helper = einexpr.dimension_utils.SingleArgumentElementwise
+    helper = einexpr.dimension_utils.MultiArgumentElementwise
     helper.validate_args(args, kwargs)
     out_dims = helper.calculate_output_dims(args, kwargs)
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -484,7 +484,7 @@ def bitwise_or(x1: array, x2: array, /) -> array:
     """
     args = (x1, x2,)
     kwargs = {}
-    helper = einexpr.dimension_utils.SingleArgumentElementwise
+    helper = einexpr.dimension_utils.MultiArgumentElementwise
     helper.validate_args(args, kwargs)
     out_dims = helper.calculate_output_dims(args, kwargs)
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -516,7 +516,7 @@ def bitwise_right_shift(x1: array, x2: array, /) -> array:
     """
     args = (x1, x2,)
     kwargs = {}
-    helper = einexpr.dimension_utils.SingleArgumentElementwise
+    helper = einexpr.dimension_utils.MultiArgumentElementwise
     helper.validate_args(args, kwargs)
     out_dims = helper.calculate_output_dims(args, kwargs)
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -545,7 +545,7 @@ def bitwise_xor(x1: array, x2: array, /) -> array:
     """
     args = (x1, x2,)
     kwargs = {}
-    helper = einexpr.dimension_utils.SingleArgumentElementwise
+    helper = einexpr.dimension_utils.MultiArgumentElementwise
     helper.validate_args(args, kwargs)
     out_dims = helper.calculate_output_dims(args, kwargs)
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -584,7 +584,7 @@ def ceil(x: array, /) -> array:
     """
     args = (x,)
     kwargs = {}
-    helper = einexpr.dimension_utils.SingleArgumentElementwise
+    helper = einexpr.dimension_utils.MultiArgumentElementwise
     helper.validate_args(args, kwargs)
     out_dims = helper.calculate_output_dims(args, kwargs)
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -636,7 +636,7 @@ def cos(x: array, /) -> array:
     """
     args = (x,)
     kwargs = {}
-    helper = einexpr.dimension_utils.SingleArgumentElementwise
+    helper = einexpr.dimension_utils.MultiArgumentElementwise
     helper.validate_args(args, kwargs)
     out_dims = helper.calculate_output_dims(args, kwargs)
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -704,7 +704,7 @@ def cosh(x: array, /) -> array:
     """
     args = (x,)
     kwargs = {}
-    helper = einexpr.dimension_utils.SingleArgumentElementwise
+    helper = einexpr.dimension_utils.MultiArgumentElementwise
     helper.validate_args(args, kwargs)
     out_dims = helper.calculate_output_dims(args, kwargs)
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -765,7 +765,7 @@ def divide(x1: array, x2: array, /) -> array:
     """
     args = (x1, x2,)
     kwargs = {}
-    helper = einexpr.dimension_utils.SingleArgumentElementwise
+    helper = einexpr.dimension_utils.MultiArgumentElementwise
     helper.validate_args(args, kwargs)
     out_dims = helper.calculate_output_dims(args, kwargs)
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -794,7 +794,7 @@ def equal(x1: array, x2: array, /) -> array:
     """
     args = (x1, x2,)
     kwargs = {}
-    helper = einexpr.dimension_utils.SingleArgumentElementwise
+    helper = einexpr.dimension_utils.MultiArgumentElementwise
     helper.validate_args(args, kwargs)
     out_dims = helper.calculate_output_dims(args, kwargs)
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -855,7 +855,7 @@ def exp(x: array, /) -> array:
     """
     args = (x,)
     kwargs = {}
-    helper = einexpr.dimension_utils.SingleArgumentElementwise
+    helper = einexpr.dimension_utils.MultiArgumentElementwise
     helper.validate_args(args, kwargs)
     out_dims = helper.calculate_output_dims(args, kwargs)
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -895,7 +895,7 @@ def expm1(x: array, /) -> array:
     """
     args = (x,)
     kwargs = {}
-    helper = einexpr.dimension_utils.SingleArgumentElementwise
+    helper = einexpr.dimension_utils.MultiArgumentElementwise
     helper.validate_args(args, kwargs)
     out_dims = helper.calculate_output_dims(args, kwargs)
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -934,7 +934,7 @@ def floor(x: array, /) -> array:
     """
     args = (x,)
     kwargs = {}
-    helper = einexpr.dimension_utils.SingleArgumentElementwise
+    helper = einexpr.dimension_utils.MultiArgumentElementwise
     helper.validate_args(args, kwargs)
     out_dims = helper.calculate_output_dims(args, kwargs)
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -1002,7 +1002,7 @@ def floor_divide(x1: array, x2: array, /) -> array:
     """
     args = (x1, x2,)
     kwargs = {}
-    helper = einexpr.dimension_utils.SingleArgumentElementwise
+    helper = einexpr.dimension_utils.MultiArgumentElementwise
     helper.validate_args(args, kwargs)
     out_dims = helper.calculate_output_dims(args, kwargs)
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -1031,7 +1031,7 @@ def greater(x1: array, x2: array, /) -> array:
     """
     args = (x1, x2,)
     kwargs = {}
-    helper = einexpr.dimension_utils.SingleArgumentElementwise
+    helper = einexpr.dimension_utils.MultiArgumentElementwise
     helper.validate_args(args, kwargs)
     out_dims = helper.calculate_output_dims(args, kwargs)
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -1060,7 +1060,7 @@ def greater_equal(x1: array, x2: array, /) -> array:
     """
     args = (x1, x2,)
     kwargs = {}
-    helper = einexpr.dimension_utils.SingleArgumentElementwise
+    helper = einexpr.dimension_utils.MultiArgumentElementwise
     helper.validate_args(args, kwargs)
     out_dims = helper.calculate_output_dims(args, kwargs)
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -1087,7 +1087,7 @@ def isfinite(x: array, /) -> array:
     """
     args = (x,)
     kwargs = {}
-    helper = einexpr.dimension_utils.SingleArgumentElementwise
+    helper = einexpr.dimension_utils.MultiArgumentElementwise
     helper.validate_args(args, kwargs)
     out_dims = helper.calculate_output_dims(args, kwargs)
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -1114,7 +1114,7 @@ def isinf(x: array, /) -> array:
     """
     args = (x,)
     kwargs = {}
-    helper = einexpr.dimension_utils.SingleArgumentElementwise
+    helper = einexpr.dimension_utils.MultiArgumentElementwise
     helper.validate_args(args, kwargs)
     out_dims = helper.calculate_output_dims(args, kwargs)
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -1141,7 +1141,7 @@ def isnan(x: array, /) -> array:
     """
     args = (x,)
     kwargs = {}
-    helper = einexpr.dimension_utils.SingleArgumentElementwise
+    helper = einexpr.dimension_utils.MultiArgumentElementwise
     helper.validate_args(args, kwargs)
     out_dims = helper.calculate_output_dims(args, kwargs)
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -1170,7 +1170,7 @@ def less(x1: array, x2: array, /) -> array:
     """
     args = (x1, x2,)
     kwargs = {}
-    helper = einexpr.dimension_utils.SingleArgumentElementwise
+    helper = einexpr.dimension_utils.MultiArgumentElementwise
     helper.validate_args(args, kwargs)
     out_dims = helper.calculate_output_dims(args, kwargs)
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -1199,7 +1199,7 @@ def less_equal(x1: array, x2: array, /) -> array:
     """
     args = (x1, x2,)
     kwargs = {}
-    helper = einexpr.dimension_utils.SingleArgumentElementwise
+    helper = einexpr.dimension_utils.MultiArgumentElementwise
     helper.validate_args(args, kwargs)
     out_dims = helper.calculate_output_dims(args, kwargs)
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -1236,7 +1236,7 @@ def log(x: array, /) -> array:
     """
     args = (x,)
     kwargs = {}
-    helper = einexpr.dimension_utils.SingleArgumentElementwise
+    helper = einexpr.dimension_utils.MultiArgumentElementwise
     helper.validate_args(args, kwargs)
     out_dims = helper.calculate_output_dims(args, kwargs)
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -1277,7 +1277,7 @@ def log1p(x: array, /) -> array:
     """
     args = (x,)
     kwargs = {}
-    helper = einexpr.dimension_utils.SingleArgumentElementwise
+    helper = einexpr.dimension_utils.MultiArgumentElementwise
     helper.validate_args(args, kwargs)
     out_dims = helper.calculate_output_dims(args, kwargs)
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -1314,7 +1314,7 @@ def log2(x: array, /) -> array:
     """
     args = (x,)
     kwargs = {}
-    helper = einexpr.dimension_utils.SingleArgumentElementwise
+    helper = einexpr.dimension_utils.MultiArgumentElementwise
     helper.validate_args(args, kwargs)
     out_dims = helper.calculate_output_dims(args, kwargs)
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -1351,7 +1351,7 @@ def log10(x: array, /) -> array:
     """
     args = (x,)
     kwargs = {}
-    helper = einexpr.dimension_utils.SingleArgumentElementwise
+    helper = einexpr.dimension_utils.MultiArgumentElementwise
     helper.validate_args(args, kwargs)
     out_dims = helper.calculate_output_dims(args, kwargs)
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -1388,7 +1388,7 @@ def logaddexp(x1: array, x2: array, /) -> array:
     """
     args = (x1, x2,)
     kwargs = {}
-    helper = einexpr.dimension_utils.SingleArgumentElementwise
+    helper = einexpr.dimension_utils.MultiArgumentElementwise
     helper.validate_args(args, kwargs)
     out_dims = helper.calculate_output_dims(args, kwargs)
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -1420,7 +1420,7 @@ def logical_and(x1: array, x2: array, /) -> array:
     """
     args = (x1, x2,)
     kwargs = {}
-    helper = einexpr.dimension_utils.SingleArgumentElementwise
+    helper = einexpr.dimension_utils.MultiArgumentElementwise
     helper.validate_args(args, kwargs)
     out_dims = helper.calculate_output_dims(args, kwargs)
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -1450,7 +1450,7 @@ def logical_not(x: array, /) -> array:
     """
     args = (x,)
     kwargs = {}
-    helper = einexpr.dimension_utils.SingleArgumentElementwise
+    helper = einexpr.dimension_utils.MultiArgumentElementwise
     helper.validate_args(args, kwargs)
     out_dims = helper.calculate_output_dims(args, kwargs)
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -1482,7 +1482,7 @@ def logical_or(x1: array, x2: array, /) -> array:
     """
     args = (x1, x2,)
     kwargs = {}
-    helper = einexpr.dimension_utils.SingleArgumentElementwise
+    helper = einexpr.dimension_utils.MultiArgumentElementwise
     helper.validate_args(args, kwargs)
     out_dims = helper.calculate_output_dims(args, kwargs)
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -1514,7 +1514,7 @@ def logical_xor(x1: array, x2: array, /) -> array:
     """
     args = (x1, x2,)
     kwargs = {}
-    helper = einexpr.dimension_utils.SingleArgumentElementwise
+    helper = einexpr.dimension_utils.MultiArgumentElementwise
     helper.validate_args(args, kwargs)
     out_dims = helper.calculate_output_dims(args, kwargs)
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -1560,7 +1560,7 @@ def multiply(x1: array, x2: array, /) -> array:
     """
     args = (x1, x2,)
     kwargs = {}
-    helper = einexpr.dimension_utils.SingleArgumentElementwise
+    helper = einexpr.dimension_utils.MultiArgumentElementwise
     helper.validate_args(args, kwargs)
     out_dims = helper.calculate_output_dims(args, kwargs)
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -1593,7 +1593,7 @@ def negative(x: array, /) -> array:
     """
     args = (x,)
     kwargs = {}
-    helper = einexpr.dimension_utils.SingleArgumentElementwise
+    helper = einexpr.dimension_utils.MultiArgumentElementwise
     helper.validate_args(args, kwargs)
     out_dims = helper.calculate_output_dims(args, kwargs)
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -1622,7 +1622,7 @@ def not_equal(x1: array, x2: array, /) -> array:
     """
     args = (x1, x2,)
     kwargs = {}
-    helper = einexpr.dimension_utils.SingleArgumentElementwise
+    helper = einexpr.dimension_utils.MultiArgumentElementwise
     helper.validate_args(args, kwargs)
     out_dims = helper.calculate_output_dims(args, kwargs)
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -1649,7 +1649,7 @@ def positive(x: array, /) -> array:
     """
     args = (x,)
     kwargs = {}
-    helper = einexpr.dimension_utils.SingleArgumentElementwise
+    helper = einexpr.dimension_utils.MultiArgumentElementwise
     helper.validate_args(args, kwargs)
     out_dims = helper.calculate_output_dims(args, kwargs)
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -1712,7 +1712,7 @@ def pow(x1: array, x2: array, /) -> array:
     """
     args = (x1, x2,)
     kwargs = {}
-    helper = einexpr.dimension_utils.SingleArgumentElementwise
+    helper = einexpr.dimension_utils.MultiArgumentElementwise
     helper.validate_args(args, kwargs)
     out_dims = helper.calculate_output_dims(args, kwargs)
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -1775,7 +1775,7 @@ def remainder(x1: array, x2: array, /) -> array:
     """
     args = (x1, x2,)
     kwargs = {}
-    helper = einexpr.dimension_utils.SingleArgumentElementwise
+    helper = einexpr.dimension_utils.MultiArgumentElementwise
     helper.validate_args(args, kwargs)
     out_dims = helper.calculate_output_dims(args, kwargs)
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -1823,7 +1823,7 @@ def round(x: array, /) -> array:
     """
     args = (x,)
     kwargs = {}
-    helper = einexpr.dimension_utils.SingleArgumentElementwise
+    helper = einexpr.dimension_utils.MultiArgumentElementwise
     helper.validate_args(args, kwargs)
     out_dims = helper.calculate_output_dims(args, kwargs)
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -1856,7 +1856,7 @@ def sign(x: array, /) -> array:
     """
     args = (x,)
     kwargs = {}
-    helper = einexpr.dimension_utils.SingleArgumentElementwise
+    helper = einexpr.dimension_utils.MultiArgumentElementwise
     helper.validate_args(args, kwargs)
     out_dims = helper.calculate_output_dims(args, kwargs)
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -1907,7 +1907,7 @@ def sin(x: array, /) -> array:
     """
     args = (x,)
     kwargs = {}
-    helper = einexpr.dimension_utils.SingleArgumentElementwise
+    helper = einexpr.dimension_utils.MultiArgumentElementwise
     helper.validate_args(args, kwargs)
     out_dims = helper.calculate_output_dims(args, kwargs)
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -1975,7 +1975,7 @@ def sinh(x: array, /) -> array:
     """
     args = (x,)
     kwargs = {}
-    helper = einexpr.dimension_utils.SingleArgumentElementwise
+    helper = einexpr.dimension_utils.MultiArgumentElementwise
     helper.validate_args(args, kwargs)
     out_dims = helper.calculate_output_dims(args, kwargs)
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -2002,7 +2002,7 @@ def square(x: array, /) -> array:
     """
     args = (x,)
     kwargs = {}
-    helper = einexpr.dimension_utils.SingleArgumentElementwise
+    helper = einexpr.dimension_utils.MultiArgumentElementwise
     helper.validate_args(args, kwargs)
     out_dims = helper.calculate_output_dims(args, kwargs)
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -2039,7 +2039,7 @@ def sqrt(x: array, /) -> array:
     """
     args = (x,)
     kwargs = {}
-    helper = einexpr.dimension_utils.SingleArgumentElementwise
+    helper = einexpr.dimension_utils.MultiArgumentElementwise
     helper.validate_args(args, kwargs)
     out_dims = helper.calculate_output_dims(args, kwargs)
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -2068,7 +2068,7 @@ def subtract(x1: array, x2: array, /) -> array:
     """
     args = (x1, x2,)
     kwargs = {}
-    helper = einexpr.dimension_utils.SingleArgumentElementwise
+    helper = einexpr.dimension_utils.MultiArgumentElementwise
     helper.validate_args(args, kwargs)
     out_dims = helper.calculate_output_dims(args, kwargs)
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -2104,7 +2104,7 @@ def tan(x: array, /) -> array:
     """
     args = (x,)
     kwargs = {}
-    helper = einexpr.dimension_utils.SingleArgumentElementwise
+    helper = einexpr.dimension_utils.MultiArgumentElementwise
     helper.validate_args(args, kwargs)
     out_dims = helper.calculate_output_dims(args, kwargs)
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -2141,7 +2141,7 @@ def tanh(x: array, /) -> array:
     """
     args = (x,)
     kwargs = {}
-    helper = einexpr.dimension_utils.SingleArgumentElementwise
+    helper = einexpr.dimension_utils.MultiArgumentElementwise
     helper.validate_args(args, kwargs)
     out_dims = helper.calculate_output_dims(args, kwargs)
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -2180,7 +2180,7 @@ def trunc(x: array, /) -> array:
     """
     args = (x,)
     kwargs = {}
-    helper = einexpr.dimension_utils.SingleArgumentElementwise
+    helper = einexpr.dimension_utils.MultiArgumentElementwise
     helper.validate_args(args, kwargs)
     out_dims = helper.calculate_output_dims(args, kwargs)
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)

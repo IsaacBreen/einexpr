@@ -24,7 +24,7 @@ def argsort(x: array, /, *, axis: int = -1, descending: bool = False, stable: bo
     """
     args = (x,)
     kwargs = {'axis': axis, 'descending': descending, 'stable': stable}
-    helper = einexpr.dimension_utils.SingleArgumentElementwise
+    helper = einexpr.dimension_utils.MultiArgumentElementwise
     helper.validate_args(args, kwargs)
     out_dims = helper.calculate_output_dims(args, kwargs)
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -57,7 +57,7 @@ def sort(x: array, /, *, axis: int = -1, descending: bool = False, stable: bool 
     """
     args = (x,)
     kwargs = {'axis': axis, 'descending': descending, 'stable': stable}
-    helper = einexpr.dimension_utils.SingleArgumentElementwise
+    helper = einexpr.dimension_utils.MultiArgumentElementwise
     helper.validate_args(args, kwargs)
     out_dims = helper.calculate_output_dims(args, kwargs)
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)

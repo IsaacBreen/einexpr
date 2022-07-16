@@ -223,7 +223,7 @@ def full_like(x: array, /, fill_value: Union[bool, int, float, complex], *, dtyp
     """
     args = (x,)
     kwargs = {'dtype': dtype, 'device': device}
-    helper = einexpr.dimension_utils.SingleArgumentElementwise
+    helper = einexpr.dimension_utils.MultiArgumentElementwise
     helper.validate_args(args, kwargs)
     out_dims = helper.calculate_output_dims(args, kwargs)
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -344,7 +344,7 @@ def ones_like(x: array, /, *, dtype: Optional[dtype] = None, device: Optional[de
     """
     args = (x,)
     kwargs = {'dtype': dtype, 'device': device}
-    helper = einexpr.dimension_utils.SingleArgumentElementwise
+    helper = einexpr.dimension_utils.MultiArgumentElementwise
     helper.validate_args(args, kwargs)
     out_dims = helper.calculate_output_dims(args, kwargs)
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -443,7 +443,7 @@ def zeros_like(x: array, /, *, dtype: Optional[dtype] = None, device: Optional[d
     """
     args = (x,)
     kwargs = {'dtype': dtype, 'device': device}
-    helper = einexpr.dimension_utils.SingleArgumentElementwise
+    helper = einexpr.dimension_utils.MultiArgumentElementwise
     helper.validate_args(args, kwargs)
     out_dims = helper.calculate_output_dims(args, kwargs)
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)

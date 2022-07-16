@@ -142,17 +142,8 @@ if importlib.util.find_spec('jax'):
 
 # Pseudo-backend for dimension inference
 class PseudoRawArray:
-    def __array__(self):
-        raise NotImplementedError("Attempted to use a PseudoRawArray as an array")
-    
-    def __array_function__(self, func, types, args, kwargs):
-        return self
-    
-    def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
-        raise self
-    
-    def __torch_function__(self, func, types, args, kwargs):
-        raise self
+    def __getattr__(self, name):
+        return PseudoRawArray()
     
     def __repr__(self):
         return "PseudoRawArray()"

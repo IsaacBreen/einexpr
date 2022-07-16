@@ -58,38 +58,12 @@ class ArgumentHelper:
         self.args, self.kwargs = ArgumentHelper.preprocess_args(args, kwargs)
 
 
-class SingleArgumentElementwise:
-    @staticmethod
-    def validate_args(args, kwargs):
-        assert isinstance(args, (list, tuple))
-        assert isinstance(kwargs, dict)
-        assert isinstance(args[0], einexpr.einarray)
-        assert len(args) == 1
-        assert all(not isinstance(arg, einexpr.einarray) for arg in kwargs.values())
-    
-    @staticmethod
-    def process_args(args, kwargs):
-        args, kwargs = ArgumentHelper.preprocess_args(args, kwargs)
-        return (get_raw(args[0]), *args[1:]), kwargs
-    
-    @staticmethod
-    def calculate_output_dims(args, kwargs):
-        args, kwargs = ArgumentHelper.preprocess_args(args, kwargs)
-        return get_dims(args[0])
-    
-    @staticmethod
-    def calculate_output_ambiguous_dims(args, kwargs):
-        args, kwargs = ArgumentHelper.preprocess_args(args, kwargs)
-        return {dim for ambiguous_dims in get_ambiguous_dims(args[0]) for dim in ambiguous_dims}
-
-
 class MultiArgumentElementwise:
     @staticmethod
     def validate_args(args, kwargs):
         assert isinstance(args, (list, tuple))
         assert isinstance(kwargs, dict)
-        assert all(isinstance(arg, einexpr.einarray) for arg in args)
-        assert all(not isinstance(arg, einexpr.einarray) for arg in kwargs.values())
+        assert all(isinstance(arg, (einexpr.einarray, int, float)) for arg in args)
     
     @staticmethod
     def process_args(args, kwargs):
@@ -110,6 +84,8 @@ class MultiArgumentElementwise:
         return ambiguous_dims
 
 
+SingleArgumentElementwise = MultiArgumentElementwise
+
 class MultiDimensionReduction:
     @staticmethod
     def validate_args(args, kwargs):
@@ -118,10 +94,8 @@ class MultiDimensionReduction:
         # - raise error when there are duplicate axes, esp of different types (Dimension, int, and negative int)
         assert isinstance(args, (list, tuple))
         assert isinstance(kwargs, dict)
-        assert isinstance(args[0], einexpr.einarray)
-        assert all(not isinstance(arg, einexpr.einarray) for arg in args[1:]) # TODO: mapreduce over pytree
-        assert all(not isinstance(arg, einexpr.einarray) for arg in kwargs.values())
-        assert 'axis' in args        
+        assert all(isinstance(arg, (einexpr.einarray, int, float)) for arg in args)
+        assert 'axis' in args
     
     @staticmethod
     def _calculate_axis(args, kwargs):
@@ -158,11 +132,8 @@ class MultiDimensionReduction:
 class SingleDimensionReduction(MultiDimensionReduction):
     @staticmethod
     def validate_args(args, kwargs):
-        args, kwargs = ArgumentHelper.preprocess_args(args, kwargs)
-        if 'axis' in kwargs and isinstance(kwargs['axis'], (tuple, list)):
-            raise ValueError("Multiple axes not supported")
-        elif 'dims' in kwargs and isinstance(kwargs['dims'], (tuple, list)):
-            raise ValueError("Multiple axes not supported")
+        assert 'axis' in kwargs
+        assert kwargs['axis'] is None or isinstance(kwargs['axis'], (Dimension, int))
         MultiDimensionReduction.validate_args(args, kwargs)
 
 
@@ -172,7 +143,6 @@ class Concatenation:
         assert isinstance(args, (list, tuple))
         assert isinstance(kwargs, dict)
         assert isinstance(args[0], (list, tuple)) and all(isinstance(arg, einexpr.einarray) for arg in args[0])
-        assert all(not isinstance(arg, einexpr.einarray) for arg in args[1:])
         if kwargs['axis'] is None:
             raise ValueError("Using ``axis=None`` (flattening concatenation) is not yet supported")
     
@@ -229,3 +199,12 @@ class Concatenation:
                 if axes[0] != dim0 and dim != axis and dim0 != dim:
                     ambiguous_dims.add(dim)
         return ambiguous_dims
+
+
+__all__ = [
+    'SingleArgumentElementwise', 
+    'MultiArgumentElementwise', 
+    'SingleDimensionReduction', 
+    'MultiDimensionReduction',
+    'Concatenation'
+    ]
