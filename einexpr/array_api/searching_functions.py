@@ -22,9 +22,10 @@ def argmax(x: array, /, *, axis: Optional[int] = None, keepdims: bool = False) -
     """
     args = (x,)
     kwargs = {'axis': axis, 'keepdims': keepdims}
-    out_dims = einexpr.dimension_utils.MultiDimensionReduction.calculate_output_dims(args, kwargs)
-    ambiguous_dims = einexpr.dimension_utils.MultiDimensionReduction.calculate_output_ambiguous_dims(args, kwargs)
-    processed_args, processed_kwargs = einexpr.dimension_utils.MultiDimensionReduction.process_args(args, kwargs)
+    helper = einexpr.dimension_utils.MultiDimensionReduction
+    out_dims = helper.calculate_output_dims(args, kwargs)
+    ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
+    processed_args, processed_kwargs = helper.process_args(args, kwargs)
     result = einexpr.einarray(
         x.a.__array_namespace__().argmax(*processed_args, **processed_kwargs), 
         dims=out_dims, 
@@ -51,9 +52,10 @@ def argmin(x: array, /, *, axis: Optional[int] = None, keepdims: bool = False) -
     """
     args = (x,)
     kwargs = {'axis': axis, 'keepdims': keepdims}
-    out_dims = einexpr.dimension_utils.MultiDimensionReduction.calculate_output_dims(args, kwargs)
-    ambiguous_dims = einexpr.dimension_utils.MultiDimensionReduction.calculate_output_ambiguous_dims(args, kwargs)
-    processed_args, processed_kwargs = einexpr.dimension_utils.MultiDimensionReduction.process_args(args, kwargs)
+    helper = einexpr.dimension_utils.MultiDimensionReduction
+    out_dims = helper.calculate_output_dims(args, kwargs)
+    ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
+    processed_args, processed_kwargs = helper.process_args(args, kwargs)
     result = einexpr.einarray(
         x.a.__array_namespace__().argmin(*processed_args, **processed_kwargs), 
         dims=out_dims, 
@@ -107,9 +109,10 @@ def where(condition: array, x1: array, x2: array, /) -> array:
     """
     args = (condition, x1, x2,)
     kwargs = {}
-    out_dims = einexpr.dimension_utils.SingleArgumentElementwise.calculate_output_dims(args, kwargs)
-    ambiguous_dims = einexpr.dimension_utils.SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
-    processed_args, processed_kwargs = einexpr.dimension_utils.SingleArgumentElementwise.process_args(args, kwargs)
+    helper = einexpr.dimension_utils.SingleArgumentElementwise
+    out_dims = helper.calculate_output_dims(args, kwargs)
+    ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
+    processed_args, processed_kwargs = helper.process_args(args, kwargs)
     result = einexpr.einarray(
         x2.a.__array_namespace__().where(*processed_args, **processed_kwargs), 
         dims=out_dims, 

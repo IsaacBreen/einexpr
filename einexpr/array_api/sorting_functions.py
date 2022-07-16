@@ -24,9 +24,10 @@ def argsort(x: array, /, *, axis: int = -1, descending: bool = False, stable: bo
     """
     args = (x,)
     kwargs = {'axis': axis, 'descending': descending, 'stable': stable}
-    out_dims = einexpr.dimension_utils.SingleArgumentElementwise.calculate_output_dims(args, kwargs)
-    ambiguous_dims = einexpr.dimension_utils.SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
-    processed_args, processed_kwargs = einexpr.dimension_utils.SingleArgumentElementwise.process_args(args, kwargs)
+    helper = einexpr.dimension_utils.SingleArgumentElementwise
+    out_dims = helper.calculate_output_dims(args, kwargs)
+    ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
+    processed_args, processed_kwargs = helper.process_args(args, kwargs)
     result = einexpr.einarray(
         x.a.__array_namespace__().argsort(*processed_args, **processed_kwargs), 
         dims=out_dims, 
@@ -55,9 +56,10 @@ def sort(x: array, /, *, axis: int = -1, descending: bool = False, stable: bool 
     """
     args = (x,)
     kwargs = {'axis': axis, 'descending': descending, 'stable': stable}
-    out_dims = einexpr.dimension_utils.SingleArgumentElementwise.calculate_output_dims(args, kwargs)
-    ambiguous_dims = einexpr.dimension_utils.SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
-    processed_args, processed_kwargs = einexpr.dimension_utils.SingleArgumentElementwise.process_args(args, kwargs)
+    helper = einexpr.dimension_utils.SingleArgumentElementwise
+    out_dims = helper.calculate_output_dims(args, kwargs)
+    ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
+    processed_args, processed_kwargs = helper.process_args(args, kwargs)
     result = einexpr.einarray(
         x.a.__array_namespace__().sort(*processed_args, **processed_kwargs), 
         dims=out_dims, 

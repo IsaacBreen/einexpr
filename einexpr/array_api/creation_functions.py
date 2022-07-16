@@ -223,9 +223,10 @@ def full_like(x: array, /, fill_value: Union[bool, int, float, complex], *, dtyp
     """
     args = (x,)
     kwargs = {'dtype': dtype, 'device': device}
-    out_dims = einexpr.dimension_utils.SingleArgumentElementwise.calculate_output_dims(args, kwargs)
-    ambiguous_dims = einexpr.dimension_utils.SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
-    processed_args, processed_kwargs = einexpr.dimension_utils.SingleArgumentElementwise.process_args(args, kwargs)
+    helper = einexpr.dimension_utils.SingleArgumentElementwise
+    out_dims = helper.calculate_output_dims(args, kwargs)
+    ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
+    processed_args, processed_kwargs = helper.process_args(args, kwargs)
     result = einexpr.einarray(
         x.a.__array_namespace__().full_like(*processed_args, **processed_kwargs), 
         dims=out_dims, 
@@ -342,9 +343,10 @@ def ones_like(x: array, /, *, dtype: Optional[dtype] = None, device: Optional[de
     """
     args = (x,)
     kwargs = {'dtype': dtype, 'device': device}
-    out_dims = einexpr.dimension_utils.SingleArgumentElementwise.calculate_output_dims(args, kwargs)
-    ambiguous_dims = einexpr.dimension_utils.SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
-    processed_args, processed_kwargs = einexpr.dimension_utils.SingleArgumentElementwise.process_args(args, kwargs)
+    helper = einexpr.dimension_utils.SingleArgumentElementwise
+    out_dims = helper.calculate_output_dims(args, kwargs)
+    ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
+    processed_args, processed_kwargs = helper.process_args(args, kwargs)
     result = einexpr.einarray(
         x.a.__array_namespace__().ones_like(*processed_args, **processed_kwargs), 
         dims=out_dims, 
@@ -439,9 +441,10 @@ def zeros_like(x: array, /, *, dtype: Optional[dtype] = None, device: Optional[d
     """
     args = (x,)
     kwargs = {'dtype': dtype, 'device': device}
-    out_dims = einexpr.dimension_utils.SingleArgumentElementwise.calculate_output_dims(args, kwargs)
-    ambiguous_dims = einexpr.dimension_utils.SingleArgumentElementwise.calculate_output_ambiguous_dims(args, kwargs)
-    processed_args, processed_kwargs = einexpr.dimension_utils.SingleArgumentElementwise.process_args(args, kwargs)
+    helper = einexpr.dimension_utils.SingleArgumentElementwise
+    out_dims = helper.calculate_output_dims(args, kwargs)
+    ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
+    processed_args, processed_kwargs = helper.process_args(args, kwargs)
     result = einexpr.einarray(
         x.a.__array_namespace__().zeros_like(*processed_args, **processed_kwargs), 
         dims=out_dims, 

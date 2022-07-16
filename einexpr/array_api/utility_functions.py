@@ -31,9 +31,10 @@ def all(x: array, /, *, axis: Optional[Union[int, Tuple[int, ...]]] = None, keep
     """
     args = (x,)
     kwargs = {'axis': axis, 'keepdims': keepdims}
-    out_dims = einexpr.dimension_utils.MultiDimensionReduction.calculate_output_dims(args, kwargs)
-    ambiguous_dims = einexpr.dimension_utils.MultiDimensionReduction.calculate_output_ambiguous_dims(args, kwargs)
-    processed_args, processed_kwargs = einexpr.dimension_utils.MultiDimensionReduction.process_args(args, kwargs)
+    helper = einexpr.dimension_utils.MultiDimensionReduction
+    out_dims = helper.calculate_output_dims(args, kwargs)
+    ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
+    processed_args, processed_kwargs = helper.process_args(args, kwargs)
     result = einexpr.einarray(
         x.a.__array_namespace__().all(*processed_args, **processed_kwargs), 
         dims=out_dims, 
@@ -69,9 +70,10 @@ def any(x: array, /, *, axis: Optional[Union[int, Tuple[int, ...]]] = None, keep
     """
     args = (x,)
     kwargs = {'axis': axis, 'keepdims': keepdims}
-    out_dims = einexpr.dimension_utils.MultiDimensionReduction.calculate_output_dims(args, kwargs)
-    ambiguous_dims = einexpr.dimension_utils.MultiDimensionReduction.calculate_output_ambiguous_dims(args, kwargs)
-    processed_args, processed_kwargs = einexpr.dimension_utils.MultiDimensionReduction.process_args(args, kwargs)
+    helper = einexpr.dimension_utils.MultiDimensionReduction
+    out_dims = helper.calculate_output_dims(args, kwargs)
+    ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
+    processed_args, processed_kwargs = helper.process_args(args, kwargs)
     result = einexpr.einarray(
         x.a.__array_namespace__().any(*processed_args, **processed_kwargs), 
         dims=out_dims, 
