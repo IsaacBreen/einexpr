@@ -1,3 +1,4 @@
+from click import Argument
 import einexpr
 from regex import R
 
@@ -9,8 +10,52 @@ backend_dim_kwargs_to_resolve = ['dim', 'axis']
 function_registry = []
 
 
-class DimensionCalculator:
-    pass
+# TODO: can safely remove the following three methods now that proprocessing is done in the einarray magic calls
+def get_dims(array):
+    if isinstance(array, (int, float)):
+        return ()
+    elif isinstance(array, einexpr.array):
+        return array.dims
+    else:
+        raise TypeError(f'{array} is not a recognized einexpr array')
+
+
+def get_ambiguous_dims(array):
+    if isinstance(array, (int, float)):
+        return ()
+    elif isinstance(array, einexpr.array):
+        return array.ambiguous_dims
+    else:
+        raise TypeError(f'{array} is not a recognized einexpr array')
+
+
+def get_raw(array):
+    if isinstance(array, (int, float)):
+        return array
+    elif isinstance(array, einexpr.array):
+        return array.a
+    else:
+        raise TypeError(f'{array} is not a recognized einexpr array')
+
+
+class ArgumentHelper:    
+    @staticmethod
+    def preprocess_arg(arg):
+            if isinstance(arg, einexpr.array):
+                return arg
+            elif isinstance(arg, (int, float)):
+                return einexpr.array(arg, ())
+            else:
+                raise TypeError(f'{arg} is not a recognized einexpr array')
+
+    @staticmethod
+    def preprocess_args(args, kwargs):
+        args = [ArgumentHelper.preprocess_arg(arg) for arg in args]
+        kwargs = {key: ArgumentHelper.preprocess_arg(arg) for key, arg in kwargs.items()}
+        return args, kwargs
+
+    def __init__(self, args, kwargs):
+        self.args, self.kwargs = ArgumentHelper.preprocess_args(args, kwargs)
 
 
 class SingleArgumentElementwise:
@@ -24,15 +69,15 @@ class SingleArgumentElementwise:
     
     @staticmethod
     def process_args(args, kwargs):
-        return (args[0].a, *args[1:]), kwargs
+        return (get_raw(args[0]), *args[1:]), kwargs
     
     @staticmethod
     def calculate_output_dims(args, kwargs):
-        return args[0].dims
+        return get_dims(args[0])
     
     @staticmethod
     def calculate_output_ambiguous_dims(args, kwargs):
-        return {dim for ambiguous_dims in args[0].ambiguous_dims for dim in ambiguous_dims}
+        return {dim for ambiguous_dims in get_ambiguous_dims(args[0]) for dim in ambiguous_dims}
 
 
 class MultiArgumentElementwise:
@@ -50,12 +95,12 @@ class MultiArgumentElementwise:
 
     @staticmethod
     def calculate_output_dims(args, kwargs):
-        return einexpr.dimension_utils.get_final_aligned_dims(*(arg.dims for arg in args))
+        return einexpr.dimension_utils.get_final_aligned_dims(*(get_dims(arg) for arg in args))
     
     @staticmethod
     def calculate_output_ambiguous_dims(args, kwargs):
-        ambiguous_dims = einexpr.dimension_utils.calculate_ambiguous_final_aligned_dims(*(arg.dims for arg in args))
-        ambiguous_dims |= {dim for arg in args for dim in arg.ambiguous_dims}
+        ambiguous_dims = einexpr.dimension_utils.calculate_ambiguous_final_aligned_dims(*(get_dims(arg) for arg in args))
+        ambiguous_dims |= {dim for arg in args for dim in get_ambiguous_dims(arg)}
         return ambiguous_dims
 
 
@@ -76,28 +121,28 @@ class MultiDimensionReduction:
     def _calculate_axis(args, kwargs):
         axis = kwargs.get('axis')
         if axis is None:
-            axis = list(range(len(args[0].dims)))
+            axis = list(range(len(get_dims(args[0]))))
         elif isinstance(axis, (Dimension, int)):
             axis = [axis]
-        axis = [args[0].dims.index(dim) if isinstance(dim, Dimension) else dim for dim in axis]
+        axis = [get_dims(args[0]).index(dim) if isinstance(dim, Dimension) else dim for dim in axis]
         assert all(isinstance(dim, int) for dim in axis)
-        axis = [i if i >= 0 else i + len(args[0].dims) for i in axis]
+        axis = [i if i >= 0 else i + len(get_dims(args[0])) for i in axis]
         return tuple(axis)
     
     @staticmethod
     def process_args(args, kwargs):
         axis = MultiDimensionReduction._calculate_axis(args, kwargs)
-        return (args[0].a, *args[1:]), {**kwargs, 'axis': axis}
+        return (get_raw(args[0]), *args[1:]), {**kwargs, 'axis': axis}
 
     @staticmethod
     def calculate_output_dims(args, kwargs):
         axis = MultiDimensionReduction._calculate_axis(args, kwargs)
-        return [dim for i, dim in enumerate(args[0].dims) if i not in axis]
+        return [dim for i, dim in enumerate(get_dims(args[0])) if i not in axis]
     
     @staticmethod
     def calculate_output_ambiguous_dims(args, kwargs):
         axis = MultiDimensionReduction._calculate_axis(args, kwargs)
-        ambiguous_out_dims = args[0].ambiguous_dims - {dim for i, dim in enumerate(args[0].dims) if i in axis}
+        ambiguous_out_dims = get_ambiguous_dims(args[0]) - {dim for i, dim in enumerate(get_dims(args[0])) if i in axis}
         return ambiguous_out_dims
 
 
@@ -132,42 +177,42 @@ class Concatenation:
         for i, (axis, arg) in enumerate(zip(axes, args[0])):
             # If the axis is an integer, convert it to a Dimension
             if isinstance(axis, int):
-                axis = arg.dims[axis]
+                axis = get_dims(arg)[axis]
                 axes[i] = axis
             elif not isinstance(axis, Dimension):
                 raise ValueError(f"Invalid axis {axis}")
-            assert axis not in arg.ambiguous_dims
+            assert axis not in get_ambiguous_dims(arg)
         return axes
 
     @staticmethod
     def process_args(args, kwargs):
         axes = Concatenation._calculate_axes(args, kwargs)
-        axis_num = args[0][0].dims.index(axes[0])
+        axis_num = get_dims(args[0][0]).index(axes[0])
         # Align the arrays. Use the shape of the first array as the template.
         aligned_args = [args[0][0]]
         for axis, arg in zip(axes[1:], args[0][1:]):
-            aligned_args.append(arg[tuple(dim if dim != axes[0] else axis for dim in args[0][0].dims)])
-        raw_aligned_args = [arg.a for arg in aligned_args]
+            aligned_args.append(arg[tuple(dim if dim != axes[0] else axis for dim in get_dims(args[0][0]))])
+        raw_aligned_args = [get_raw(arg) for arg in aligned_args]
         return (raw_aligned_args, *args[1:]), {**kwargs, 'axis': axis_num}
 
     @staticmethod
     def calculate_output_dims(args, kwargs):
         axes = Concatenation._calculate_axes(args, kwargs)
         # Check that arrays share all dimensions except the concatenated ones
-        out_dims_set = set(args[0][0].dims) - {axes[0]}
+        out_dims_set = set(get_dims(args[0][0])) - {axes[0]}
         for axis, arg in zip(axes[1:], args[0][1:]):
-            arg_dims_set = set(arg.dims) - {axis}
+            arg_dims_set = set(get_dims(arg)) - {axis}
             if arg_dims_set != out_dims_set:
                 raise ValueError(f"Arrays must have all the same dimensions except those concatentated over. The first input array {args[0][0]} has non-concatenated dimensions {out_dims_set}, while the input array {arg} has non-concatenated dimensions {arg_dims_set}.")
-        out_dims = [dim if dim != axes[0] else tuple(axes) for dim in args[0][0].dims]
+        out_dims = [dim if dim != axes[0] else tuple(axes) for dim in get_dims(args[0][0])]
         return out_dims
         
     @staticmethod
     def calculate_output_ambiguous_dims(args, kwargs):
         axes = Concatenation._calculate_axes(args, kwargs)
-        ambiguous_dims = {dim for arg in args[0] for dim in arg.ambiguous_dims if dim not in axes}
+        ambiguous_dims = {dim for arg in args[0] for dim in get_ambiguous_dims(arg) if dim not in axes}
         for axis, arg in zip(axes[1:], args[0][1:]):
-            for dim0, dim in zip(args[0][0].dims, arg.dims):
+            for dim0, dim in zip(get_dims(args[0][0]), get_dims(arg)):
                 if axes[0] != dim0 and dim != axis and dim0 != dim:
                     ambiguous_dims.add(dim)
         return ambiguous_dims
