@@ -1,4 +1,5 @@
 import warnings
+from argparse import ArgumentError
 
 warnings.filterwarnings("ignore", category=UserWarning, message="JAX on Mac ARM machines is experimental and minimally tested.*")
 warnings.filterwarnings("ignore", category=DeprecationWarning, message="the imp module is deprecated in favour of importlib and slated for removal in .*")
@@ -7,61 +8,122 @@ warnings.filterwarnings("ignore", category=RuntimeWarning, message="overflow enc
 import pprint
 import string
 from collections import namedtuple
-from ssl import OP_NO_SSLv3
 from typing import List
 
-# import jax
-# import jax.numpy as jnp
+import einexpr
 import numpy as np
 import numpy.array_api as npa
 import pytest
-import einexpr
 
 pp = pprint.PrettyPrinter(indent=4)
 
-tolerance = 1e-12
-default_dtype = npa.float64
-
-unary_arithmetic_magics_str = {"__neg__", "__pos__", "__invert__"}
-
-binary_arithmetic_magics_str = dict(
-    multiply = {"__mul__", "__truediv__"},
-    add = {"__add__", "__sub__"},
-    power = {"__pow__"},
-    )
+N_TRIALS_MULTIPLIER=100
+TOLERANCE = 1e-12
+DEFAULT_DTYPE = npa.float64
 
 
-class NamedLambda:
-    def __init__(self, func, name):
-        self.func = func
+class WrappedFunction:
+    def __init__(self, name, func, nparams: int = None):
         self.name = name
+        self.func = func
         self.__name__ = name
+        self.nparams = nparams
         
     def __call__(self, *args, **kwargs):
+        if self.nparams is not None and len(args) != self.nparams:
+            raise ArgumentError(None, f"{self} requires {self.nparams} arguments but got {len(args)}")
         return self.func(*args, **kwargs)
     
     def __repr__(self):
-        return self.name
+        return f"WrappedFunction({self.name})"
     
     def __str__(self):
-        return self.name
-    
+        return WrappedFunction.__repr__(self)
 
-binary_arithmetic_magics = {key: {NamedLambda(lambda x, y: getattr(x, op)(y), op) for op in ops} for key, ops in binary_arithmetic_magics_str.items()}
-# Soft clip any exponents between 1/3 and 3 + 1/3
-binary_arithmetic_magics['power'] = {
-    NamedLambda(lambda x, y: getattr(x.__array_namespace__().abs(x), '__pow__')( 3/(1+npa.e**-y) + 3/10 ), "__pow__"), 
+
+class MagicCaller:
+    """
+    Represents a call to a magic method of the first argument.
+    """
+    def __init__(self, name: str, nparams: int = None):
+        self.name = name
+        self.__name__ = name
+        self.nparams = nparams
+    
+    def __call__(self, *args, **kwargs):
+        if self.nparams is not None and len(args) != self.nparams:
+            raise ArgumentError(None, f"{self} requires {self.nparams} arguments but got {len(args)}")
+        return getattr(args[0], self.name)(*args[1:], **kwargs)
+    
+    def __repr__(self):
+        return f"MagicCaller({self.name})"
+    
+    def __str__(self):
+        return f"MagicCaller({self.name})"
+
+
+class ArrayNamespaceCaller:
+    """
+    Represents a call to a method in the array namespace of the first argument.
+    """
+    def __init__(self, name: str, nparams: int = None):
+        self.name = name
+        self.__name__ = name
+        self.nparams = nparams
+    
+    def __call__(self, *args, **kwargs):
+        if self.nparams is not None and len(args) != self.nparams:
+            raise ArgumentError(None, "{self} requires {self.nparams} arguments but got {len(args)}")
+        return getattr(args[0].__array_namespace__(), self.name)(*args, **kwargs)
+    
+    def __repr__(self):
+        return f"ArrayNamespaceCaller({self.name})"
+    
+    def __str__(self):
+        return f"ArrayNamespaceCaller({self.name})"
+
+
+unary_arithmetic_magics_str = {
+    "__neg__",
+    "__pos__",
+    "__invert__"
 }
 
-default_binary_ops = {op for ops in binary_arithmetic_magics.values() for op in ops}
-default_unary_ops = [getattr(np, op) for op in 
-                     "sign sqrt inv argsort ones_like zeros_like softmax log_softmax abs absolute sin cos tan exp log exp2 log2 log10 sqrt pow reciprocal floor ceil round".split()
-                     if hasattr(np, op)]
+binary_magic_strs = dict(
+    multiply = {"__mul__", "__truediv__"},
+    add = {"__add__", "__sub__"},
+    power = {"__pow__"},
+)
+
+binary_magics = {key: {MagicCaller(op) for op in ops} for key, ops in binary_magic_strs.items()}
+# Soft clip exponents between 1/3 and 3 + 1/3
+binary_magics['__pow__'] = {
+    WrappedFunction("Soft clip", lambda x, y: MagicCaller('__pow__')(x, ArrayNamespaceCaller('abs')(3/(1+npa.e**-y) + 3/10)))
+}
+
+unary_elementwise_array_namespace_op_strs = """
+    abs acos acosh asin asinh atan atanh ceil cos cosh exp expm1 floor log log1p
+    log2 log10 negative positive round sign sin sinh square sqrt tan tanh trunc
+    """.split()
+
+binary_elementwise_array_namespace_op_strs = """
+    add atan2 divide floor_divide  logaddexp multiply pow remainder subtract
+    """.split()
+
+# Arguments with non-float argument dtype reqiurements that we've ignored for now:
+# isfinite isinf isnan
+# bitwise_and bitwise_left_shift bitwise_invert bitwise_or bitwise_right_shift bitwise_xor 
+# logical_not logical_and logical_or logical_xor
+# greater greater_equal less less_equal equal not_equal
+
+default_unary_ops = set()
+default_unary_ops |= {ArrayNamespaceCaller(op) for op in unary_elementwise_array_namespace_op_strs}
+
+default_binary_ops = set()
+default_binary_ops |= {op for ops in binary_magics.values() for op in ops}
+default_binary_ops |= {ArrayNamespaceCaller(op) for op in binary_elementwise_array_namespace_op_strs}
 
 RandomExpressionData = namedtuple("RandomExpressionData", ["expr", "expr_json", "var"])
-
-N_TRIALS_MULTIPLIER=100
-# N_TRIALS_MULTIPLIER=0
 
 @pytest.fixture
 def X():
@@ -87,7 +149,7 @@ def test_pow():
     expr = w['b,i'] * x['i']
     expr = expr['']
     print(expr)
-    assert np.allclose(expr.__array__(), np.einsum('bi,i->', w.__array__(), x.__array__()), tolerance)
+    assert np.allclose(expr.__array__(), np.einsum('bi,i->', w.__array__(), x.__array__()), TOLERANCE)
 
 def test_simple_expr1(X, Y, x, y):
     Xe = einexpr.einarray(X, dims='i j')
@@ -98,10 +160,10 @@ def test_simple_expr1(X, Y, x, y):
     Ye['j']
 
     # MULTIPLICATION
-    assert np.allclose(np.einsum('ij,jk->ik', X, Y), (Xe['i j'] * Ye['j k'])['i k'].a, tolerance)
+    assert np.allclose(np.einsum('ij,jk->ik', X, Y), (Xe['i j'] * Ye['j k'])['i k'].a, TOLERANCE)
 
     # ADDITION
-    assert np.allclose(npa.sum(X[:, :, npa.newaxis] + Y[npa.newaxis, :, :], axis=1), (Xe['i j'] + Ye['j k'])['i k'].a, tolerance)
+    assert np.allclose(npa.sum(X[:, :, npa.newaxis] + Y[npa.newaxis, :, :], axis=1), (Xe['i j'] + Ye['j k'])['i k'].a, TOLERANCE)
 
     # LINEAR TRANSFORMATION
     def linear(x, W, b):
@@ -110,7 +172,7 @@ def test_simple_expr1(X, Y, x, y):
     # def linear_ein(x, W, b):
     #     return x['i'] * W['i j'] + b['j']
 
-    # assert np.allclose(linear(x, Y, y), linear_ein(x, Y, y)['j'], tolerance)
+    # assert np.allclose(linear(x, Y, y), linear_ein(x, Y, y)['j'], TOLERANCE)
 
 
 @pytest.mark.skip
@@ -120,12 +182,12 @@ def test_commonly_failed1(X, Y, x, y):
     ye = einexpr.einarray(x, dims='j')
     
     ze = xe['i'] ** (Xe['j i'] ** xe['i'])
-    assert np.allclose(ze['j i'].__array__(), x ** (X ** x), tolerance)
+    assert np.allclose(ze['j i'].__array__(), x ** (X ** x), TOLERANCE)
     
     z = xe['i'] ** (xe['j'] + xe['j'])
-    assert np.allclose(z['i j'].__array__(), x[:, None] ** (x[None, :] + x[None, :]), tolerance)
+    assert np.allclose(z['i j'].__array__(), x[:, None] ** (x[None, :] + x[None, :]), TOLERANCE)
     print(z.coerce_into_shape('i'))
-    assert np.allclose(z['i'].a, npa.sum(x[:, None] ** (x[None, :] + x[None, :]), axis=1), tolerance)
+    assert np.allclose(z['i'].a, npa.sum(x[:, None] ** (x[None, :] + x[None, :]), axis=1), TOLERANCE)
 
 def test_numpy_ufunc_override1(X, Y, x, y):
     Xe = einexpr.einarray(X, dims='i j')
@@ -133,15 +195,30 @@ def test_numpy_ufunc_override1(X, Y, x, y):
 
     Z = X ** npa.abs(-x)
     Ze = Xe['i j'] ** npa.abs(-xe['j'])
-    assert np.allclose(Z, Ze['i j'].__array__(), tolerance)
+    assert np.allclose(Z, Ze['i j'].__array__(), TOLERANCE)
 
     Z = X ** npa.abs(-x)
     Ze = Xe['i j'] ** npa.abs(-xe['j'])
-    assert np.allclose(Z, Ze['i j'].__array__(), tolerance)
+    assert np.allclose(Z, Ze['i j'].__array__(), TOLERANCE)
 
 
 @pytest.fixture
-def random_expr_json(seed, unary_ops=default_unary_ops, binary_ops=default_binary_ops, max_indices=8, max_indices_per_var=4, max_index_size=7, max_vars=8, E_num_nodes=2, max_nodes=10, p_binary_op_given_nonleaf=0.9, low=1, high=100, max_exponent=3, softmax=10):
+def random_expr_json(
+    seed,
+    unary_ops=default_unary_ops,
+    binary_ops=default_binary_ops,
+    max_indices=8,
+    max_indices_per_var=4,
+    max_index_size=7,
+    max_vars=8,
+    E_num_nodes=2,
+    max_nodes=10,
+    p_binary_op_given_nonleaf=0.9,
+    low=1,
+    high=100,
+    max_exponent=3,
+    softmax=10
+):
     assert E_num_nodes >= 1, f"E_num_nodes must not be less than one; got {E_num_nodes}"
     p_leaf_given_not_unary = E_num_nodes / (2*E_num_nodes - 1)
     x = p_binary_op_given_nonleaf
@@ -161,7 +238,7 @@ def random_expr_json(seed, unary_ops=default_unary_ops, binary_ops=default_binar
     per_var_indices = [list(rng.choice(index_names, size=rng.integers(1, max_indices_per_var), replace=False)) for _ in range(n_vars)]
     vars = [rng.integers(low, high, size=[index_sizes[i] for i in var_indices]) for var_indices in per_var_indices]
     # vars = [rng.uniform(low, high, [index_sizes[i] for i in var_indices]) for var_indices in per_var_indices]
-    vars = [npa.asarray(v, dtype=default_dtype) for v in vars]
+    vars = [npa.asarray(v, dtype=DEFAULT_DTYPE) for v in vars]
     
     def _make_random_expr_json(max_nodes):
         if max_nodes >= 2:
@@ -183,8 +260,14 @@ def random_expr_json(seed, unary_ops=default_unary_ops, binary_ops=default_binar
             expr_json_lhs = _make_random_expr_json(max_nodes)
             expr_json_rhs = _make_random_expr_json(max_nodes - expr_json_lhs["num_nodes"])
             indices = expr_json_lhs["indices"] | expr_json_rhs["indices"]
-            expr_json = {"type": "binary_op", "op": op, "lhs": expr_json_lhs, "rhs": expr_json_rhs, "indices": indices, "num_nodes": 1 + expr_json_lhs["num_nodes"] + expr_json_rhs["num_nodes"]}
-            # expr_json = {"type": "unary_op", "op": lambda x: 1/(1+npa.e**-x), "op_name": "softmax", "indices": indices, "operand": expr_json, "num_nodes": expr_json["num_nodes"]}
+            expr_json = {
+                "type": "binary_op",
+                "op": op,
+                "lhs": expr_json_lhs,
+                "rhs": expr_json_rhs,
+                "indices": indices,
+                "num_nodes": 1 + expr_json_lhs["num_nodes"] + expr_json_rhs["num_nodes"]
+            }
             return expr_json
 
     expr_json = _make_random_expr_json(max_nodes)
@@ -218,15 +301,8 @@ def json_eval(expr_json, non_collapsable_indices, index_names: List[str], index_
         return npa.asarray(val)
     elif expr_json["type"] == "binary_op":
         child_non_collapsable_indices = non_collapsable_indices.copy()
-        if expr_json["op"] in binary_arithmetic_magics["add"]:
-            child_non_collapsable_indices |= expr_json["lhs"]["indices"] | expr_json["rhs"]["indices"]
         lhs = json_eval(expr_json["lhs"], child_non_collapsable_indices, index_names, index_sizes)
         rhs = json_eval(expr_json["rhs"], child_non_collapsable_indices, index_names, index_sizes)
-        # if expr_json["op"] in binary_arithmetic_magics["add"]:
-        #     collapsable_broadcast_indices_lhs = expr_json["rhs"]["indices"] - expr_json["lhs"]["indices"] - non_collapsable_indices
-        #     collapsable_broadcast_indices_rhs = expr_json["lhs"]["indices"] - expr_json["rhs"]["indices"] - non_collapsable_indices
-        #     lhs = lhs / npa.prod([index_sizes[i] for i in collapsable_broadcast_indices_lhs])
-        #     rhs = rhs / npa.prod([index_sizes[i] for i in collapsable_broadcast_indices_rhs])
         val = expr_json["op"](lhs, rhs)
         expr_json['value'] = val
         return npa.asarray(val)
@@ -252,11 +328,12 @@ def json_to_einexpr(expr_maker, expr_json):
     if expr_json["type"] == "leaf":
         return expr_maker(expr_json["value"], expr_json["shape"])
     elif expr_json["type"] == "unary_op":
-        return expr_json["op"](json_to_einexpr(expr_maker, expr_json["operand"]))
+        operand = json_to_einexpr(expr_maker, expr_json["operand"])
+        return expr_json['op'](operand)
     elif expr_json["type"] == "binary_op":
         lhs = json_to_einexpr(expr_maker, expr_json["lhs"])
         rhs = json_to_einexpr(expr_maker, expr_json["rhs"])
-        return expr_json["op"](lhs, rhs)
+        return expr_json['op'](lhs, rhs)
     else:
         raise ValueError(f"Unknown expression type: {expr_json['type']}")
 
@@ -320,7 +397,7 @@ def test_random_expr(seed, random_expr_json, random_expr_value, random_einexpr):
     with np.errstate(divide='ignore', invalid='ignore', over='ignore'):
         if expr.__array__().shape != val.shape:
             raise ValueError(f"Shape mismatch: {expr.__array__().shape} != {val.shape}")
-        if not np.allclose(expr.__array__(), val, tolerance) and npa.all(~npa.isnan(expr.__array__())) and npa.all(~npa.isnan(val)):
+        if not np.allclose(expr.__array__(), val, TOLERANCE) and npa.all(~npa.isnan(expr.__array__())) and npa.all(~npa.isnan(val)):
             print(f"val: {val}")
             print(f"expr: {expr}")
             # print(f"expr_json: {pp.pformat(random_expr_json)}")
@@ -346,7 +423,7 @@ def test_random_expr(seed, random_expr_json, random_expr_value, random_einexpr):
     
 #     with np.errstate(divide='ignore', invalid='ignore', over='ignore'):
 #         assert eval_expr(expr) is not None
-#         if not np.allclose(eval_expr(expr), var, tolerance) and npa.all([~npa.isnan(eval_expr(expr)), ~npa.isnan(var)]):
+#         if not np.allclose(eval_expr(expr), var, TOLERANCE) and npa.all([~npa.isnan(eval_expr(expr)), ~npa.isnan(var)]):
 #             print(expr)
 #             pp.pprint(expr_json)
 #             print(expr.get_shape())
