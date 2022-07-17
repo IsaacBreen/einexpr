@@ -46,7 +46,7 @@ def align_arrays(*arrays: 'einexpr.einarray', return_output_dims: bool = False) 
         raw_aligned_arrays = []
         for array in arrays:
             if isinstance(array.a, (int, float)):
-                raw_aligned_arrays.append(array)
+                raw_aligned_arrays.append(array.a)
             else:
                 raw_aligned_arrays.append(apply_transexpand(array.a, einexpr.dimension_utils.calculate_transexpand(array.dims, out_dims)))
         if return_output_dims:
