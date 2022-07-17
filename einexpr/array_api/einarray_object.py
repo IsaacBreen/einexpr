@@ -22,7 +22,7 @@ class einarray():
         self.a = a
         self.dims = einexpr.dimension_utils.parse_dims_declaration(dims)
         self.ambiguous_dims = ambiguous_dims or set()
-        if isinstance(self.a, (int, float)):
+        if einexpr.dimension_utils.is_dimensionless(self.a):
             if len(self.dims) != 0:
                 raise ValueError(dims, "If the input is a scalar, the dimensions must be empty.")
         else:

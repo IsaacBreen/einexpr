@@ -2,6 +2,7 @@ from click import Argument
 import einexpr
 from regex import R
 
+
 Dimension = str
 
 backend_array_types = dict()
@@ -10,40 +11,44 @@ backend_dim_kwargs_to_resolve = ['dim', 'axis']
 function_registry = []
 
 
+def is_dimensionless(array):
+    return isinstance(array, (int, float)) or einexpr.backends.conforms_to_array_api(array) and len(array.shape) == 0
+
+
 # TODO: can safely remove the following three methods now that proprocessing is done in the einarray magic calls
 def get_dims(array):
-    if isinstance(array, (int, float)):
-        return ()
-    elif isinstance(array, einexpr.array):
+    if isinstance(array, einexpr.array):
         return array.dims
+    elif is_dimensionless(array):
+        return ()
     else:
         raise TypeError(f'{array} is not a recognized einexpr array')
 
 
 def get_ambiguous_dims(array):
-    if isinstance(array, (int, float)):
-        return ()
-    elif isinstance(array, einexpr.array):
+    if isinstance(array, einexpr.array):
         return array.ambiguous_dims
+    elif is_dimensionless(array):
+        return ()
     else:
         raise TypeError(f'{array} is not a recognized einexpr array')
 
 
 def get_raw(array):
-    if isinstance(array, (int, float)):
+    if isinstance(array, einexpr.array):
+        return array.raw
+    elif is_dimensionless(array):
         return array
-    elif isinstance(array, einexpr.array):
-        return array.a
     else:
-        raise TypeError(f'{array} is not a recognized einexpr array')
+        raise TypeError(f'{array} is not a einexpr.backends.conforms_to_array_api einexpr array')
 
 
-class ArgumentHelper:    
+class ArgumentHelper:
     @staticmethod
     def preprocess_arg(arg):
             if isinstance(arg, einexpr.array):
                 return arg
-            elif isinstance(arg, (int, float)):
+            elif is_dimensionless(arg):
                 return einexpr.array(arg, ())
             else:
                 raise TypeError(f'{arg} is not a recognized einexpr array')
@@ -63,7 +68,7 @@ class MultiArgumentElementwise:
     def validate_args(args, kwargs):
         assert isinstance(args, (list, tuple))
         assert isinstance(kwargs, dict)
-        assert all(isinstance(arg, (einexpr.einarray, int, float)) for arg in args)
+        # assert all(isinstance(arg, (einexpr.einarray, int, float)) for arg in args)
     
     @staticmethod
     def process_args(args, kwargs):
@@ -202,6 +207,7 @@ class Concatenation:
 
 
 __all__ = [
+    'is_dimensionless',
     'SingleArgumentElementwise', 
     'MultiArgumentElementwise', 
     'SingleDimensionReduction', 
