@@ -98,7 +98,7 @@ binary_magic_strs = dict(
 binary_magics = {key: {MagicCaller(op) for op in ops} for key, ops in binary_magic_strs.items()}
 # Soft clip exponents between 1/3 and 3 + 1/3
 binary_magics['__pow__'] = {
-    WrappedFunction("Soft clip", lambda x, y: MagicCaller('__pow__')(x, ArrayNamespaceCaller('abs')(3/(1+npa.e**-y) + 3/10)))
+    WrappedFunction("Soft clip", lambda x, y: MagicCaller('__pow__')(x, ArrayNamespaceCaller('abs')(3/(1+npa.asarray(npa.e)**-y) + 3/10)))
 }
 
 unary_elementwise_array_namespace_op_strs = """
