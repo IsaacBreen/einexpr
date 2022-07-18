@@ -53,7 +53,7 @@ class lazy_einarray(einarray):
                 inputs = [reduce_sum(inp, set(inp.dims) & dims_to_collapse) for inp in inputs]
             # Return the result.
             raw_input_arrays, output_dims = align_arrays(*inputs, return_output_dims=True)
-            out = einarray(self.func(*raw_input_arrays, **self.kwargs), output_dims, ambiguous_dims=ambiguous_dims)
+            out = einarray(self.func(*raw_input_arrays, **self.kwargs), dims=output_dims, ambiguous_dims=ambiguous_dims)
             if force_align and not dims_are_aligned(dims, output_dims):
                 # Align the output to the given dimensions.
                 return out[[dim for dim in dims if dim in out.dims]]
@@ -86,7 +86,7 @@ class lazy_einarray(einarray):
                 assert len(inputs) == 2
                 inputs[1] = np.reciprocal(inputs[1])
             # Return the result
-            return einarray(np.einsum(signature, *(inp.a for inp in inputs), **self.kwargs), [dim for dim in out_dims], ambiguous_dims=ambiguous_dims)
+            return einarray(np.einsum(signature, *(inp.a for inp in inputs), **self.kwargs), dims=[dim for dim in out_dims], ambiguous_dims=ambiguous_dims)
         else:
             raise NotImplementedError(f"Lazy evaluation for {self.func} is not yet implemented.")
     
@@ -94,7 +94,7 @@ class lazy_einarray(einarray):
         return self.coerce(self.dims, ambiguous_dims=self.ambiguous_dims)
         
     @property
-    def a(self) -> RawArrayLike:
+    def a(self) -> NonEinArray:
         return self.concretize().a
     
     def __array__(self, dtype: Optional[npt.DTypeLike] = None) -> einarray:

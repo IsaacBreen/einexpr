@@ -28,18 +28,10 @@ def astype(x: array, dtype: dtype, /, *, copy: bool = True) -> array:
     out: array
         an array having the specified data type. The returned array must have the same shape as ``x``.
     """
-    args = (x, dtype,)
-    kwargs = {'copy': copy}
-    helper = einexpr.dimension_utils.MultiArgumentElementwise
-    helper.validate_args(args, kwargs)
-    out_dims = helper.calculate_output_dims(args, kwargs)
-    ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
-    processed_args, processed_kwargs = helper.process_args(args, kwargs)
-    result = einexpr.einarray(
-        x.a.__array_namespace__().astype(*processed_args, **processed_kwargs), 
-        dims=out_dims, 
-        ambiguous_dims=ambiguous_dims)
-    return result
+    return einexpr.einarray(
+        x.a.__array_namespace__().astype(x.a, dtype, copy=copy),
+        dims=x.dims,
+        ambiguous_dims=x.ambiguous_dims)
 
 def can_cast(from_: Union[dtype, array], to: dtype, /) -> bool:
     """
@@ -57,7 +49,10 @@ def can_cast(from_: Union[dtype, array], to: dtype, /) -> bool:
     out: bool
         ``True`` if the cast can occur according to :ref:`type-promotion` rules; otherwise, ``False``.
     """
-    raise NotImplementedError
+    if isinstance(from_, einexpr.einarray):
+        return from_.a.__array_namespace__().can_cast(from_.a, to)
+    else:
+        raise TypeError("can_cast() only accepts einarray objects. Use your backend's can_cast() function instead.")
 
 def finfo(type: Union[dtype, array], /) -> finfo_object:
     """
@@ -93,7 +88,7 @@ def finfo(type: Union[dtype, array], /) -> finfo_object:
 
           smallest positive floating-point number with full precision.
     """
-    raise NotImplementedError
+    raise NotImplementedError("Use your backend's finfo() function instead.")
 
 def iinfo(type: Union[dtype, array], /) -> iinfo_object:
     """
@@ -121,7 +116,7 @@ def iinfo(type: Union[dtype, array], /) -> iinfo_object:
 
           smallest representable number.
     """
-    raise NotImplementedError
+    raise NotImplementedError("Use your backend's iinfo() function instead.")
 
 def result_type(*arrays_and_dtypes: Union[array, dtype]) -> dtype:
     """
@@ -140,6 +135,11 @@ def result_type(*arrays_and_dtypes: Union[array, dtype]) -> dtype:
     out: dtype
         the dtype resulting from an operation involving the input arrays and dtypes.
     """
-    raise NotImplementedError
+    # Use the array namspace first array API-conformant array.
+    for x in arrays_and_dtypes:
+        if einexpr.backends.conforms_to_array_api(x):
+            return x.__array_namespace__().result_type(*arrays_and_dtypes)
+    # If all arrays are dtypes, raise an error.
+    raise TypeError("result_type() only accepts einarray objects. Use your backend's result_type() function instead.")
 
 __all__ = ['astype', 'can_cast', 'finfo', 'iinfo', 'result_type']

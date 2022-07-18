@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from ._types import (array, dtype as Dtype, device as Device, Optional, Tuple,
                      Union, Any, PyCapsule, Enum, ellipsis,
-                     Dimension, DimensionlessLike)
+                     Dimension, DimensionlessLike, NonEinArray)
 import einexpr
 
 
@@ -18,10 +18,22 @@ import einexpr
 
 
 class einarray():
-    def __init__(self, a: Union[einexpr.backends.RawArrayLike, einexpr.einarray], dims: Tuple[Optional[Dimension], ...], ambiguous_dims: Set[Dimension] = None, copy: bool=True, backend: Literal["numpy", "torch"] = None) -> None:
+    def __init__(
+        self,
+        a: Union[NonEinArray, einexpr.einarray],
+        /, *,
+        dims: Union[einexpr.types.Dimensions, None] = (),
+        ambiguous_dims: Set[Dimension] = None,
+        copy: bool=True,
+        backend: Optional[str] = None
+    ) -> None:
         self.a = a
         self.dims = einexpr.dimension_utils.parse_dims_declaration(dims)
         self.ambiguous_dims = ambiguous_dims or set()
+        if backend is not None or not einexpr.backends.conforms_to_array_api(self.a):
+            # Convert the array to the backend specified by the backend argument.
+            backend_module = einexpr.backends.get_array_api_backend(backend)
+            self.a = backend_module.asarray(self.a)
         if einexpr.dimension_utils.is_dimensionless(self.a):
             if len(self.dims) != 0:
                 raise ValueError(dims, "If the input is a scalar, the dimensions must be empty.")
@@ -34,13 +46,13 @@ class einarray():
             raise ValueError(f"The ambiguous dimensions {self.ambiguous_dims} must be a subset of the dimensions {self.dims} passed to the constructor.")
 
     @property
-    def backend(self) -> str:
+    def backend(self: array) -> str:
         einexpr.backends.detect_backend(self.a)
-        
-    def get_dims_unordered(self) -> Set[Dimension]:
+    
+    def get_dims_unordered(self: array) -> Set[Dimension]:
         return set(self.dims)
     
-    def coerce(self, dims: List[Dimension], do_not_collapse: Set[Dimension] = None, force_align: bool = True, ambiguous_dims: Set[Dimension] = None) -> einexpr.einarray:
+    def coerce(self: array, dims: List[Dimension], do_not_collapse: Set[Dimension] = None, force_align: bool = True, ambiguous_dims: Set[Dimension] = None) -> einexpr.einarray:
         do_not_collapse = do_not_collapse or set()
         ambiguous_dims = ambiguous_dims or set()
         # Collapse all dimensions except those in contained in dims or do_not_collapse.
@@ -50,16 +62,16 @@ class einarray():
             return out
         else:
             out_dims = [dim for dim in dims if dim in out.dims] + [dim for dim in out.dims if dim not in dims and dim in do_not_collapse]
-            return einarray(einexpr.backends.align_to_dims(out, out_dims), out_dims, ambiguous_dims=ambiguous_dims)
+            return einarray(einexpr.backends.align_to_dims(out, out_dims), dims=out_dims, ambiguous_dims=ambiguous_dims)
     
-    def __array__(self, dtype: Optional[npt.DTypeLike] = None) -> einexpr.einarray:
+    def __array__(self: array, dtype: Optional[npt.DTypeLike] = None) -> einexpr.einarray:
         return self.a
 
-    def tracer(self) -> 'einarray':
-        return einarray(einexpr.backends.PseudoRawArray(), self.dims, self.ambiguous_dims)
+    def tracer(self: array) -> 'einarray':
+        return einarray(einexpr.backends.PseudoRawArray(), dims=self.dims, ambiguous_dims=self.ambiguous_dims)
 
     # JAX support
-    def _tree_flatten(self):
+    def _tree_flatten(self: array):
         children = (self.a,)
         aux_data = {'dims': self.dims, 'ambiguous_dims': self.ambiguous_dims}
         return (children, aux_data)
@@ -68,11 +80,11 @@ class einarray():
     def _tree_unflatten(cls, aux_data, children):
         return cls(*children, **aux_data)
 
-    def __repr__(self) -> str:
+    def __repr__(self: array) -> str:
         return f"einarray({self.a}, {self.dims})"
 
     @property
-    def dtype() -> Dtype:
+    def dtype(self: array) -> Dtype:
         """
         Data type of the array elements.
 
@@ -81,10 +93,10 @@ class einarray():
         out: dtype
             array data type.
         """
-        raise NotImplementedError
+        return self.a.dtype
 
     @property
-    def device() -> Device:
+    def device(self: array) -> Device:
         """
         Hardware device the array data resides on.
 
@@ -93,10 +105,10 @@ class einarray():
         out: device
             a ``device`` object (see :ref:`device-support`).
         """
-        raise NotImplementedError
+        return self.a.device
 
     @property
-    def mT() -> array:
+    def mT(self: array) -> array:
         """
         Transpose of a matrix (or a stack of matrices).
 
@@ -110,7 +122,7 @@ class einarray():
         raise NotImplementedError
 
     @property
-    def ndim() -> int:
+    def ndim(self: array) -> int:
         """
         Number of array dimensions (axes).
 
@@ -119,10 +131,10 @@ class einarray():
         out: int
             number of array dimensions (axes).
         """
-        raise NotImplementedError
+        return self.a.ndim
 
     @property
-    def shape() -> Tuple[Optional[int], ...]:
+    def shape(self: array) -> Tuple[Optional[int], ...]:
         """
         Array dimensions.
 
@@ -138,10 +150,10 @@ class einarray():
         .. note::
            The returned value should be a tuple; however, where warranted, an array library may choose to return a custom shape object. If an array library returns a custom shape object, the object must be immutable, must support indexing for dimension retrieval, and must behave similarly to a tuple.
         """
-        raise NotImplementedError
+        return self.a.shape
 
     @property
-    def size() -> Optional[int]:
+    def size(self: array) -> Optional[int]:
         """
         Number of elements in an array.
 
@@ -157,10 +169,10 @@ class einarray():
         .. note::
            For array libraries having graph-based computational models, an array may have unknown dimensions due to data-dependent operations.
         """
-        raise NotImplementedError
+        return self.a.size
 
     @property
-    def T() -> array:
+    def T(self: array) -> array:
         """
         Transpose of the array.
 
@@ -175,7 +187,13 @@ class einarray():
         .. note::
            Limiting the transpose to two-dimensional arrays (matrices) deviates from the NumPy et al practice of reversing all axes for arrays having more than two-dimensions. This is intentional, as reversing all axes was found to be problematic (e.g., conflicting with the mathematical definition of a transpose which is limited to matrices; not operating on batches of matrices; et cetera). In order to reverse all axes, one is recommended to use the functional ``permute_dims`` interface found in this specification.
         """
-        raise NotImplementedError
+        if self.ndim != 2:
+            raise NotImplementedError
+        dims = (self.dims[1], self.dims[0])
+        return einarray(
+            self.a.__array_namespace__().T,
+            dims=dims,
+            ambiguous_dims=self.ambiguous_dims)
 
     def __abs__(self: array, /) -> array:
         """
@@ -436,7 +454,7 @@ class einarray():
         out: bool
             a Python ``bool`` object representing the single element of the array.
         """
-        raise NotImplementedError
+        return self.a.__bool__()
 
     def __dlpack__(self: array, /, *, stream: Optional[Union[int, Any]] = None) -> PyCapsule:
         """
@@ -492,7 +510,7 @@ class einarray():
         capsule: PyCapsule
             a DLPack capsule for the array. See :ref:`data-interchange` for details.
         """
-        raise NotImplementedError
+        return self.a.__dlpack__(stream=stream)
 
     def __dlpack_device__(self: array, /) -> Tuple[Enum, int]:
         """
@@ -519,7 +537,7 @@ class einarray():
               VPI = 9
               ROCM = 10
         """
-        raise NotImplementedError
+        return self.a.__dlpack_device__()
 
     def __eq__(self: array, other: Union[int, float, bool, array], /) -> array:
         """
@@ -641,7 +659,6 @@ class einarray():
             dims=out_dims, 
             ambiguous_dims=ambiguous_dims)
         return result
-    
 
     def __rfloordiv__(self: array, other: Union[int, float, array], /) -> array:
         """
@@ -943,7 +960,6 @@ class einarray():
             ambiguous_dims=ambiguous_dims)
         return result
     
-
     def __rlshift__(self: array, other: Union[int, array], /) -> array:
         """
         Reflection of __lshift__. Original comments:
@@ -1050,9 +1066,13 @@ class einarray():
         - if ``self`` is an array having shape ``(..., M, K)``, ``other`` is a one-dimensional array having shape ``(L,)``, and ``K != L``.
         - if ``self`` is an array having shape ``(..., M, K)``, ``other`` is an array having shape ``(..., L, N)``, and ``K != L``.
         """
-        raise NotImplementedError
+        # if self.ndim == 0 or other.ndim == 0:
+        #     raise ValueError("matmul() cannot be applied to zero-dimensional arrays.")
+        # if self.ndim == 1 and other.ndim == 1:
+        #     if self.shape[0] != other.shape[0] or self.dims != other.dims:
+        #         raise ValueError("matmul() cannot be applied to arrays with different shapes.")
+        raise NotImplementedError()
     
-
     def __rmatmul__(self: array, other: array, /) -> array:
         """
         Reflection of __matmul__. Original comments:
@@ -1434,7 +1454,6 @@ class einarray():
             ambiguous_dims=ambiguous_dims)
         return result
     
-
     def __ror__(self: array, other: Union[int, bool, array], /) -> array:
         """
         Reflection of __or__. Original comments:
@@ -1568,7 +1587,6 @@ class einarray():
             ambiguous_dims=ambiguous_dims)
         return result
     
-
     def __rpow__(self: array, other: Union[int, float, array], /) -> array:
         """
         Reflection of __pow__. Original comments:
@@ -1670,7 +1688,6 @@ class einarray():
             dims=out_dims, 
             ambiguous_dims=ambiguous_dims)
         return result
-    
 
     def __rrshift__(self: array, other: Union[int, array], /) -> array:
         """
@@ -1796,139 +1813,6 @@ class einarray():
             dims=out_dims, 
             ambiguous_dims=ambiguous_dims)
         return result
-    
-    def __truediv__(self: array, other: Union[int, float, array], /) -> array:
-        """
-        Evaluates ``self_i / other_i`` for each element of an array instance with the respective element of the array ``other``.
-
-        .. note::
-           If one or both of ``self`` and ``other`` have integer data types, the result is implementation-dependent, as type promotion between data type "kinds" (e.g., integer versus floating-point) is unspecified.
-
-           Specification-compliant libraries may choose to raise an error or return an array containing the element-wise results. If an array is returned, the array must have a real-valued floating-point data type.
-
-        **Special cases**
-
-        For floating-point operands, let ``self`` equal ``x1`` and ``other`` equal ``x2``.
-
-        -   If either ``x1_i`` or ``x2_i`` is ``NaN``, the result is ``NaN``.
-        -   If ``x1_i`` is either ``+infinity`` or ``-infinity`` and ``x2_i`` is either ``+infinity`` or ``-infinity``, the result is `NaN`.
-        -   If ``x1_i`` is either ``+0`` or ``-0`` and ``x2_i`` is either ``+0`` or ``-0``, the result is ``NaN``.
-        -   If ``x1_i`` is ``+0`` and ``x2_i`` is greater than ``0``, the result is ``+0``.
-        -   If ``x1_i`` is ``-0`` and ``x2_i`` is greater than ``0``, the result is ``-0``.
-        -   If ``x1_i`` is ``+0`` and ``x2_i`` is less than ``0``, the result is ``-0``.
-        -   If ``x1_i`` is ``-0`` and ``x2_i`` is less than ``0``, the result is ``+0``.
-        -   If ``x1_i`` is greater than ``0`` and ``x2_i`` is ``+0``, the result is ``+infinity``.
-        -   If ``x1_i`` is greater than ``0`` and ``x2_i`` is ``-0``, the result is ``-infinity``.
-        -   If ``x1_i`` is less than ``0`` and ``x2_i`` is ``+0``, the result is ``-infinity``.
-        -   If ``x1_i`` is less than ``0`` and ``x2_i`` is ``-0``, the result is ``+infinity``.
-        -   If ``x1_i`` is ``+infinity`` and ``x2_i`` is a positive (i.e., greater than ``0``) finite number, the result is ``+infinity``.
-        -   If ``x1_i`` is ``+infinity`` and ``x2_i`` is a negative (i.e., less than ``0``) finite number, the result is ``-infinity``.
-        -   If ``x1_i`` is ``-infinity`` and ``x2_i`` is a positive (i.e., greater than ``0``) finite number, the result is ``-infinity``.
-        -   If ``x1_i`` is ``-infinity`` and ``x2_i`` is a negative (i.e., less than ``0``) finite number, the result is ``+infinity``.
-        -   If ``x1_i`` is a positive (i.e., greater than ``0``) finite number and ``x2_i`` is ``+infinity``, the result is ``+0``.
-        -   If ``x1_i`` is a positive (i.e., greater than ``0``) finite number and ``x2_i`` is ``-infinity``, the result is ``-0``.
-        -   If ``x1_i`` is a negative (i.e., less than ``0``) finite number and ``x2_i`` is ``+infinity``, the result is ``-0``.
-        -   If ``x1_i`` is a negative (i.e., less than ``0``) finite number and ``x2_i`` is ``-infinity``, the result is ``+0``.
-        -   If ``x1_i`` and ``x2_i`` have the same mathematical sign and are both nonzero finite numbers, the result has a positive mathematical sign.
-        -   If ``x1_i`` and ``x2_i`` have different mathematical signs and are both nonzero finite numbers, the result has a negative mathematical sign.
-        -   In the remaining cases, where neither ``-infinity``, ``+0``, ``-0``, nor ``NaN`` is involved, the quotient must be computed and rounded to the nearest representable value according to IEEE 754-2019 and a supported rounding mode. If the magnitude is too large to represent, the operation overflows and the result is an ``infinity`` of appropriate mathematical sign. If the magnitude is too small to represent, the operation underflows and the result is a zero of appropriate mathematical sign.
-
-        Parameters
-        ----------
-        self: array
-            array instance. Should have a real-valued data type.
-        other: Union[int, float, array]
-            other array. Must be compatible with ``self`` (see :ref:`broadcasting`). Should have a real-valued data type.
-
-        Returns
-        -------
-        out: array
-            an array containing the element-wise results. The returned array should have a real-valued floating-point data type determined by :ref:`type-promotion`.
-
-
-        .. note::
-           Element-wise results must equal the results returned by the equivalent element-wise function :func:`~array_api.divide`.
-        """
-        args = (self, other,)
-        kwargs = {}
-        helper = einexpr.dimension_utils.MultiArgumentElementwise
-        helper.validate_args(args, kwargs)
-        out_dims = helper.calculate_output_dims(args, kwargs)
-        ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
-        processed_args, processed_kwargs = helper.process_args(args, kwargs)
-        result = einexpr.einarray(
-            type(self.a).__truediv__(*processed_args, **processed_kwargs), 
-            dims=out_dims, 
-            ambiguous_dims=ambiguous_dims)
-        return result
-    
-    
-    def __rtruediv__(self: array, other: Union[int, float, array], /) -> array:
-        """
-        Reflection of __truediv__. Original comments:
-
-        Evaluates ``self_i / other_i`` for each element of an array instance with the respective element of the array ``other``.
-
-        .. note::
-           If one or both of ``self`` and ``other`` have integer data types, the result is implementation-dependent, as type promotion between data type "kinds" (e.g., integer versus floating-point) is unspecified.
-
-           Specification-compliant libraries may choose to raise an error or return an array containing the element-wise results. If an array is returned, the array must have a real-valued floating-point data type.
-
-        **Special cases**
-
-        For floating-point operands, let ``self`` equal ``x1`` and ``other`` equal ``x2``.
-
-        -   If either ``x1_i`` or ``x2_i`` is ``NaN``, the result is ``NaN``.
-        -   If ``x1_i`` is either ``+infinity`` or ``-infinity`` and ``x2_i`` is either ``+infinity`` or ``-infinity``, the result is `NaN`.
-        -   If ``x1_i`` is either ``+0`` or ``-0`` and ``x2_i`` is either ``+0`` or ``-0``, the result is ``NaN``.
-        -   If ``x1_i`` is ``+0`` and ``x2_i`` is greater than ``0``, the result is ``+0``.
-        -   If ``x1_i`` is ``-0`` and ``x2_i`` is greater than ``0``, the result is ``-0``.
-        -   If ``x1_i`` is ``+0`` and ``x2_i`` is less than ``0``, the result is ``-0``.
-        -   If ``x1_i`` is ``-0`` and ``x2_i`` is less than ``0``, the result is ``+0``.
-        -   If ``x1_i`` is greater than ``0`` and ``x2_i`` is ``+0``, the result is ``+infinity``.
-        -   If ``x1_i`` is greater than ``0`` and ``x2_i`` is ``-0``, the result is ``-infinity``.
-        -   If ``x1_i`` is less than ``0`` and ``x2_i`` is ``+0``, the result is ``-infinity``.
-        -   If ``x1_i`` is less than ``0`` and ``x2_i`` is ``-0``, the result is ``+infinity``.
-        -   If ``x1_i`` is ``+infinity`` and ``x2_i`` is a positive (i.e., greater than ``0``) finite number, the result is ``+infinity``.
-        -   If ``x1_i`` is ``+infinity`` and ``x2_i`` is a negative (i.e., less than ``0``) finite number, the result is ``-infinity``.
-        -   If ``x1_i`` is ``-infinity`` and ``x2_i`` is a positive (i.e., greater than ``0``) finite number, the result is ``-infinity``.
-        -   If ``x1_i`` is ``-infinity`` and ``x2_i`` is a negative (i.e., less than ``0``) finite number, the result is ``+infinity``.
-        -   If ``x1_i`` is a positive (i.e., greater than ``0``) finite number and ``x2_i`` is ``+infinity``, the result is ``+0``.
-        -   If ``x1_i`` is a positive (i.e., greater than ``0``) finite number and ``x2_i`` is ``-infinity``, the result is ``-0``.
-        -   If ``x1_i`` is a negative (i.e., less than ``0``) finite number and ``x2_i`` is ``+infinity``, the result is ``-0``.
-        -   If ``x1_i`` is a negative (i.e., less than ``0``) finite number and ``x2_i`` is ``-infinity``, the result is ``+0``.
-        -   If ``x1_i`` and ``x2_i`` have the same mathematical sign and are both nonzero finite numbers, the result has a positive mathematical sign.
-        -   If ``x1_i`` and ``x2_i`` have different mathematical signs and are both nonzero finite numbers, the result has a negative mathematical sign.
-        -   In the remaining cases, where neither ``-infinity``, ``+0``, ``-0``, nor ``NaN`` is involved, the quotient must be computed and rounded to the nearest representable value according to IEEE 754-2019 and a supported rounding mode. If the magnitude is too large to represent, the operation overflows and the result is an ``infinity`` of appropriate mathematical sign. If the magnitude is too small to represent, the operation underflows and the result is a zero of appropriate mathematical sign.
-
-        Parameters
-        ----------
-        self: array
-            array instance. Should have a real-valued data type.
-        other: Union[int, float, array]
-            other array. Must be compatible with ``self`` (see :ref:`broadcasting`). Should have a real-valued data type.
-
-        Returns
-        -------
-        out: array
-            an array containing the element-wise results. The returned array should have a real-valued floating-point data type determined by :ref:`type-promotion`.
-
-
-        .. note::
-           Element-wise results must equal the results returned by the equivalent element-wise function :func:`~array_api.divide`.
-        """
-        args = (self, other,)
-        kwargs = {}
-        helper = einexpr.dimension_utils.MultiArgumentElementwise
-        helper.validate_args(args, kwargs)
-        out_dims = helper.calculate_output_dims(args, kwargs)
-        ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
-        processed_args, processed_kwargs = helper.process_args(args, kwargs)
-        result = einexpr.einarray(
-            type(self.a).__rtruediv__(*processed_args, **processed_kwargs), 
-            dims=out_dims, 
-            ambiguous_dims=ambiguous_dims)
-        return result
 
     def __truediv__(self: array, other: Union[int, float, array], /) -> array:
         """
@@ -1994,7 +1878,6 @@ class einarray():
             dims=out_dims, 
             ambiguous_dims=ambiguous_dims)
         return result
-    
 
     def __rtruediv__(self: array, other: Union[int, float, array], /) -> array:
         """
@@ -2095,7 +1978,6 @@ class einarray():
             dims=out_dims, 
             ambiguous_dims=ambiguous_dims)
         return result
-    
 
     def __rxor__(self: array, other: Union[int, bool, array], /) -> array:
         """
@@ -2154,7 +2036,10 @@ class einarray():
         .. note::
            If ``stream`` is given, the copy operation should be enqueued on the provided ``stream``; otherwise, the copy operation should be enqueued on the default stream/queue. Whether the copy is performed synchronously or asynchronously is implementation-dependent. Accordingly, if synchronization is required to guarantee data safety, this must be clearly explained in a conforming library's documentation.
         """
-        raise NotImplementedError
+        return einexpr.einarray(
+            self.a.to_device(device, stream=stream),
+            dims=self.dims,
+            ambiguous_dims=self.ambiguous_dims)
 
 
 from jax import tree_util

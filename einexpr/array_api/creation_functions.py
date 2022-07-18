@@ -1,5 +1,8 @@
+from typing import Sequence
+
 from ._types import (List, NestedSequence, Optional, SupportsBufferProtocol, Tuple, Union, array,
-                     device, dtype)
+                     device, dtype, Dimensions)
+
 import einexpr
 
 
@@ -31,7 +34,7 @@ def arange(start: Union[int, float], /, stop: Optional[Union[int, float]] = None
     """
     raise NotImplementedError
 
-def asarray(obj: Union[array, bool, int, float, complex, NestedSequence, SupportsBufferProtocol], /, *, dtype: Optional[dtype] = None, device: Optional[device] = None, copy: Optional[bool] = None) -> array:
+def asarray(obj: Union[array, bool, int, float, complex, NestedSequence, SupportsBufferProtocol], /, *, dims: Dimensions = (), dtype: Optional[dtype] = None, device: Optional[device] = None, copy: Optional[bool] = None) -> array:
     r"""
     Convert the input to an array.
 
@@ -73,7 +76,7 @@ def asarray(obj: Union[array, bool, int, float, complex, NestedSequence, Support
     out: array
         an array containing the data from ``obj``.
     """
-    raise NotImplementedError
+    return einexpr.einarray(obj, dims=dims)
 
 def empty(shape: Union[int, Tuple[int, ...]], *, dtype: Optional[dtype] = None, device: Optional[device] = None) -> array:
     """
