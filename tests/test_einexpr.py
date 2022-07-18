@@ -98,7 +98,7 @@ binary_magic_strs = dict(
 binary_magics = {key: {MagicCaller(op) for op in ops} for key, ops in binary_magic_strs.items()}
 # Soft clip exponents between 1/3 and 3 + 1/3
 binary_magics['__pow__'] = {
-    WrappedFunction("Soft clip", lambda x, y: MagicCaller('__pow__')(x, ArrayNamespaceCaller('abs')(3/(1+npa.asarray(npa.e)**-y) + 3/10)))
+    WrappedFunction("Soft clip", lambda x, y: MagicCaller('__pow__')(x, ArrayNamespaceCaller('abs')(3/(1+npa.e**-y) + 3/10)))
 }
 
 unary_elementwise_array_namespace_op_strs = """
@@ -305,6 +305,7 @@ def json_eval(expr_json, non_collapsable_indices, index_names: List[str], index_
         child_non_collapsable_indices = non_collapsable_indices.copy()
         lhs = json_eval(expr_json["lhs"], child_non_collapsable_indices, index_names, index_sizes)
         rhs = json_eval(expr_json["rhs"], child_non_collapsable_indices, index_names, index_sizes)
+        rhs = rhs.__array_namespace__().astype(rhs, lhs.dtype)
         val = expr_json["op"](lhs, rhs)
         expr_json['value'] = val
         return npa.asarray(val)
@@ -328,13 +329,14 @@ def random_expr_value(random_expr_json):
 
 def json_to_einexpr(expr_maker, expr_json):
     if expr_json["type"] == "leaf":
-        return expr_maker(expr_json["value"], expr_json["shape"])
+        return expr_maker(expr_json["value"], dims=expr_json["shape"])
     elif expr_json["type"] == "unary_op":
         operand = json_to_einexpr(expr_maker, expr_json["operand"])
         return expr_json['op'](operand)
     elif expr_json["type"] == "binary_op":
         lhs = json_to_einexpr(expr_maker, expr_json["lhs"])
         rhs = json_to_einexpr(expr_maker, expr_json["rhs"])
+        rhs = rhs.__array_namespace__().astype(rhs, lhs.dtype)
         return expr_json['op'](lhs, rhs)
     else:
         raise ValueError(f"Unknown expression type: {expr_json['type']}")
@@ -352,18 +354,19 @@ def random_einexpr(expr_maker, random_expr_json):
         raise ValueError("dims and out_dims are not compatible")
     return out
 
+
 @pytest.mark.skip
 @pytest.mark.parametrize("seed", [0, 1])
 def test_myexpr(random_expr_value):
     print(random_expr_json)
-    
-    
+
+
 @pytest.mark.skip
 def test_expr2():
-    x = einexpr.einarray(npa.asarray([1, 2, 3]), ['i'])
-    y = einexpr.einarray(npa.asarray([4, 5, 6]), ['i'])
-    x = einexpr.einarray(npa.asarray([[1, 2, 3]]), ['j', 'i'])
-    y = einexpr.einarray(npa.asarray([[4], [5], [6]]), ['i', 'k'])
+    x = einexpr.einarray(npa.asarray([1, 2, 3]), dims=['i'])
+    y = einexpr.einarray(npa.asarray([4, 5, 6]), dims=['i'])
+    x = einexpr.einarray(npa.asarray([[1, 2, 3]]), dims=['j', 'i'])
+    y = einexpr.einarray(npa.asarray([[4], [5], [6]]), dims=['i', 'k'])
 
     print(x+y)
     print(x*y)
@@ -408,7 +411,6 @@ def test_random_expr(seed, random_expr_json, random_expr_value, random_einexpr):
                 raise ValueError(f"Values do not match: {expr.__array__()} != {val}")
 
 
-@pytest.mark.skip
 def test_list_to_einarray():
     x = einexpr.einarray([1,2,3], dims='i')
     y = x+x
@@ -417,9 +419,9 @@ def test_list_to_einarray():
 
 @pytest.mark.skip
 def test_ambiguous_matmul():
-    a = einexpr.einarray([1,2,3], ['i'])
-    b = einexpr.einarray([4,5,6,7], ['j'])
-    c = einexpr.einarray([8,9,10,11], ['j'])
+    a = einexpr.einarray([1,2,3], dims=['i'])
+    b = einexpr.einarray([4,5,6,7], dims=['j'])
+    c = einexpr.einarray([8,9,10,11], dims=['j'])
     X = a*b
     try:
         Y = npa.matmul(X, a)
@@ -462,7 +464,7 @@ def test_concatenate(X, Y, x, y):
 
 @pytest.mark.skip
 def test_commonly_failed_2():
-    y = einexpr.einarray([29., 38.], 'i')
+    y = einexpr.einarray([29., 38.], dims='i')
     
     def f(y):
         return 1/(1+npa.e**-(getattr(y, '__truediv__')(y)))
@@ -472,7 +474,7 @@ def test_commonly_failed_2():
 
 @pytest.mark.skip
 def test_commonly_failed_3():
-    y = einexpr.einarray([[190.,156.],[58.,64.]], 'i j')
+    y = einexpr.einarray([[190.,156.],[58.,64.]], dims='i j')
     
     def f(y):
         return 1/(1+npa.e**-y)
