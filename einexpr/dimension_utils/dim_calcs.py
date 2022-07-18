@@ -74,12 +74,6 @@ def get_each_aligned_dims(*ein_dims: List[einexpr.types.Dimension]) -> List[List
     aligned_final = get_final_aligned_dims(*ein_dims)
     return [[dim for dim in aligned_final if dim in dims] for dims in ein_dims]
 
-def dims_are_aligned(dims1: List[einexpr.types.Dimension], dims2: List[einexpr.types.Dimension]) -> bool:
-    """
-    Returns True if the given dimensions are aligned.
-    """
-    return [dim for dim in dims1 if dim in dims2] == [dim for dim in dims2 if dim in dims1]
-
 
 def calculate_transexpand(dims_from: List[einexpr.types.Dimension], dims_to: List[einexpr.types.Dimension]) -> List[einexpr.types.Dimension]:
     """
@@ -159,6 +153,7 @@ dims_reshape_grammar = Lark(r'''
                     parser='lalr',
                     transformer=TreeToReshape(),
                     maybe_placeholders=False)
+
 
 dims_reshape_grammar.parse('j i j,f,(fdsf,) x->j (k)->f q->(i f2 (x y( z)))')
 

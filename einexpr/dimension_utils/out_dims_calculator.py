@@ -3,8 +3,6 @@ import einexpr
 from regex import R
 
 
-Dimension = str
-
 backend_array_types = dict()
 backend_dim_kwargs_to_resolve = ['dim', 'axis']
 
@@ -36,7 +34,7 @@ def get_ambiguous_dims(array):
 
 def get_raw(array):
     if isinstance(array, einexpr.array):
-        return array.raw
+        return array.a
     elif is_dimensionless(array):
         return array
     else:
@@ -49,14 +47,14 @@ class ArgumentHelper:
             if isinstance(arg, einexpr.array):
                 return arg
             elif is_dimensionless(arg):
-                return einexpr.array(arg, ())
+                return einexpr.array(arg, dims=())
             else:
-                raise TypeError(f'{arg} is not a recognized einexpr array')
-
+                return arg
+                
     @staticmethod
     def preprocess_args(args, kwargs):
         args = [ArgumentHelper.preprocess_arg(arg) for arg in args]
-        kwargs = {key: ArgumentHelper.preprocess_arg(arg) for key, arg in kwargs.items()}
+        # kwargs = {key: ArgumentHelper.preprocess_arg(arg) for key, arg in kwargs.items()}
         return args, kwargs
 
     def __init__(self, args, kwargs):
@@ -72,7 +70,7 @@ class MultiArgumentElementwise:
     
     @staticmethod
     def process_args(args, kwargs):
-        args, kwargs = ArgumentHelper.preprocess_args(args, kwargs)
+        # args, kwargs = ArgumentHelper.preprocess_args(args, kwargs)
         raw_aligned_arrays = einexpr.backends.align_arrays(*args)
         return raw_aligned_arrays, kwargs
 
@@ -96,7 +94,7 @@ class MultiDimensionReduction:
     def validate_args(args, kwargs):
         # TODO:
         # - Check that axes are in the array
-        # - raise error when there are duplicate axes, esp of different types (Dimension, int, and negative int)
+        # - raise error when there are duplicate axes, esp of different types (einexpr.types.Dimension, int, and negative int)
         assert isinstance(args, (list, tuple))
         assert isinstance(kwargs, dict)
         assert all(isinstance(arg, (einexpr.einarray, int, float)) for arg in args)
@@ -107,16 +105,16 @@ class MultiDimensionReduction:
         axis = kwargs.get('axis')
         if axis is None:
             axis = list(range(len(get_dims(args[0]))))
-        elif isinstance(axis, (Dimension, int)):
+        elif isinstance(axis, (einexpr.types.Dimension, int)):
             axis = [axis]
-        axis = [get_dims(args[0]).index(dim) if isinstance(dim, Dimension) else dim for dim in axis]
+        axis = [get_dims(args[0]).index(dim) if isinstance(dim, einexpr.types.Dimension) else dim for dim in axis]
         assert all(isinstance(dim, int) for dim in axis)
         axis = [i if i >= 0 else i + len(get_dims(args[0])) for i in axis]
         return tuple(axis)
     
     @staticmethod
     def process_args(args, kwargs):
-        args, kwargs = ArgumentHelper.preprocess_args(args, kwargs)
+        # args, kwargs = ArgumentHelper.preprocess_args(args, kwargs)
         axis = MultiDimensionReduction._calculate_axis(args, kwargs)
         return (get_raw(args[0]), *args[1:]), {**kwargs, 'axis': axis}
 
@@ -138,7 +136,7 @@ class SingleDimensionReduction(MultiDimensionReduction):
     @staticmethod
     def validate_args(args, kwargs):
         assert 'axis' in kwargs
-        assert kwargs['axis'] is None or isinstance(kwargs['axis'], (Dimension, int))
+        assert kwargs['axis'] is None or isinstance(kwargs['axis'], (einexpr.types.Dimension, int))
         MultiDimensionReduction.validate_args(args, kwargs)
 
 
@@ -155,24 +153,24 @@ class Concatenation:
     def _calculate_axes(args, kwargs):
         args, kwargs = ArgumentHelper.preprocess_args(args, kwargs)
         axes = kwargs['axis']
-        if isinstance(axes, (Dimension, int)):
+        if isinstance(axes, (einexpr.types.Dimension, int)):
             axes = [axes] * len(args[0])
         if not isinstance(axes, (list, tuple)):
             raise ValueError("Axes must be a list or tuple")
         axes = list(axes)
         for i, (axis, arg) in enumerate(zip(axes, args[0])):
-            # If the axis is an integer, convert it to a Dimension
+            # If the axis is an integer, convert it to a einexpr.types.Dimension
             if isinstance(axis, int):
                 axis = get_dims(arg)[axis]
                 axes[i] = axis
-            elif not isinstance(axis, Dimension):
+            elif not isinstance(axis, einexpr.types.Dimension):
                 raise ValueError(f"Invalid axis {axis}")
             assert axis not in get_ambiguous_dims(arg)
         return axes
 
     @staticmethod
     def process_args(args, kwargs):
-        args, kwargs = ArgumentHelper.preprocess_args(args, kwargs)
+        # args, kwargs = ArgumentHelper.preprocess_args(args, kwargs)
         axes = Concatenation._calculate_axes(args, kwargs)
         axis_num = get_dims(args[0][0]).index(axes[0])
         # Align the arrays. Use the shape of the first array as the template.
@@ -207,6 +205,9 @@ class Concatenation:
 
 
 __all__ = [
+    'get_dims',
+    'get_ambiguous_dims',
+    'get_raw',
     'is_dimensionless',
     'SingleArgumentElementwise', 
     'MultiArgumentElementwise', 
