@@ -32,14 +32,17 @@ def _discover_default_array_api() -> ModuleType:
     """
     Returns the default array API for the current environment.
     """
+    global _BACKENDS, _DEFAULT_BACKEND
     if _BACKENDS is None:
-        raise einexpr.exceptions.InternalError("Backends have not been discovered yet.")
+        _BACKENDS = _discover_array_api_entry_points()
     preferences = ['numpy', 'torch', 'cupy', 'jax', 'tensorflow', 'mxnet']
     for preference in preferences:
         if preference in _BACKENDS:
-            return _BACKENDS[preference].load()
-    # If no preference is found, return the first entry point.
-    return list(_BACKENDS.values()).pop().load()
+            _DEFAULT_BACKEND = _BACKENDS[preference].load()
+            break
+    else:
+        # If no preference is found, return the first entry point.
+        _DEFAULT_BACKEND = list(_BACKENDS.values()).pop().load()
 
 
 def get_array_api_backend(name: Union[str, None]) -> ModuleType:
@@ -47,15 +50,13 @@ def get_array_api_backend(name: Union[str, None]) -> ModuleType:
     Returns the array API backend with the given name.
     """
     if _BACKENDS is None:
-        raise einexpr.exceptions.InternalError("Backends have not been discovered yet.")
+        _discover_array_api_entry_points()
     if name is None:
         if _DEFAULT_BACKEND is None:
-            raise einexpr.exceptions.InternalError("No default backend has been set.")
+            _discover_default_array_api()
         return _DEFAULT_BACKEND
     if name not in _BACKENDS:
         raise Exception(f"No array API backend with the name '{name}' found.")
     return _BACKENDS[name].load()
 
 
-_BACKENDS = _discover_array_api_entry_points()
-_DEFAULT_BACKEND = _discover_default_array_api()
