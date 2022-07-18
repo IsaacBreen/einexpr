@@ -17,7 +17,7 @@ import pytest
 
 pp = pprint.PrettyPrinter(indent=4)
 
-N_TRIALS_MULTIPLIER=100
+N_TRIALS_MULTIPLIER=1000
 TOLERANCE = 1e-12
 DEFAULT_DTYPE = npa.float64
 
@@ -141,7 +141,7 @@ def x():
 def y():
     return npa.asarray([3,4,5])
 
-
+@pytest.mark.skip
 def test_pow():
     rng = np.random.default_rng(2022)
     w = einexpr.einarray(rng.uniform(size=(4,2)), dims='b,i')
@@ -151,6 +151,7 @@ def test_pow():
     print(expr)
     assert np.allclose(expr.__array__(), np.einsum('bi,i->', w.__array__(), x.__array__()), TOLERANCE)
 
+@pytest.mark.skip
 def test_simple_expr1(X, Y, x, y):
     Xe = einexpr.einarray(X, dims='i j')
     Ye = einexpr.einarray(Y, dims='j k')
@@ -189,6 +190,7 @@ def test_commonly_failed1(X, Y, x, y):
     print(z.coerce_into_shape('i'))
     assert np.allclose(z['i'].a, npa.sum(x[:, None] ** (x[None, :] + x[None, :]), axis=1), TOLERANCE)
 
+@pytest.mark.skip
 def test_numpy_ufunc_override1(X, Y, x, y):
     Xe = einexpr.einarray(X, dims='i j')
     xe = einexpr.einarray(x, dims='j')
@@ -350,7 +352,7 @@ def random_einexpr(expr_maker, random_expr_json):
         raise ValueError("dims and out_dims are not compatible")
     return out
 
-
+@pytest.mark.skip
 @pytest.mark.parametrize("seed", [0, 1])
 def test_myexpr(random_expr_value):
     print(random_expr_json)
@@ -405,58 +407,13 @@ def test_random_expr(seed, random_expr_json, random_expr_value, random_einexpr):
             if val.shape == ():
                 raise ValueError(f"Values do not match: {expr.__array__()} != {val}")
 
-# @pytest.mark.parametrize("seed", range(1*N_TRIALS_MULTIPLIER))
-# @pytest.mark.parametrize("np_like", [np])
-# @pytest.mark.parametrize("expr_builder", [
 
-
-# @pytest.mark.skip
-# @pytest.mark.parametrize("seed", range(1*N_TRIALS_MULTIPLIER))
-# @pytest.mark.parametrize("np_like", [jnp])
-# def test_random_expr_jax_jit(seed, make_random_expr_json):
-#     expr, expr_json, var = make_random_expr_json
-#     assert not any(x is None for x in make_random_expr_json), f"One of the expressions from {make_random_expr_json} is None"
-    
-#     # @jax.jit
-#     def eval_expr(expr):
-#         return expr.__array__()
-    
-#     with np.errstate(divide='ignore', invalid='ignore', over='ignore'):
-#         assert eval_expr(expr) is not None
-#         if not np.allclose(eval_expr(expr), var, TOLERANCE) and npa.all([~npa.isnan(eval_expr(expr)), ~npa.isnan(var)]):
-#             print(expr)
-#             pp.pprint(expr_json)
-#             print(expr.get_shape())
-#             print(var.shape)
-#             raise ValueError(f"Values do not match: {eval_expr(expr)} != {var}")
-
-
-# @pytest.mark.skip
-def test_simple_expr_jax_jit():
-    rng = np.random.default_rng(seed=0)
-    @jax.jit
-    def add(x, y):
-        x = einexpr.einarray(x, dims='i')
-        y = einexpr.einarray(y,  dims='j')
-        z = x['i'] + y['i']
-        return z[''].a
-    x = rng.uniform(size=2)
-    y = rng.uniform(size=2)
-    add(x,y)
-
-    @jax.jit
-    def add_and_reduce(x,y):
-        z = x['i'] + y['i']
-        return z['']
-    x = einexpr.einarray(rng.uniform(size=2), dims='i')
-    y = einexpr.einarray(rng.uniform(size=2), dims='i')
-    add_and_reduce(x,y)
-
+@pytest.mark.skip
 def test_list_to_einarray():
     x = einexpr.einarray([1,2,3], dims='i')
     y = x+x
     y.dims
-    
+
 
 @pytest.mark.skip
 def test_ambiguous_matmul():
@@ -478,6 +435,7 @@ def test_ambiguous_matmul():
         raise Exception("Expected ValueError for ambiguous dims")
 
 
+@pytest.mark.skip
 def test_concatenate(X, Y, x, y):
     X = einexpr.einarray(X, dims='i j')
     Y = einexpr.einarray(Y, dims='i k')
@@ -500,48 +458,9 @@ def test_concatenate(X, Y, x, y):
     z2 = npa.mean(X, axis=['i'])
     assert npa.all(z0 == z1)
     assert npa.all(z0 == z2)
-    
-    # clip
-    
-    # cumsum
-    
-    # all
-    
-    # any
-    
-    # min
-    
-    # max
-    
-    # argmin
-    
-    # argmax
-    
-    # isnan
-    
-    # where
-    
-    # transpose
-    
-    # onehot_like
-    
-    # flatten
-    
-    # pad
-    
-    # ones_like
-    
-    # expand_dims
-    
-    # squeeze
-    
-    # tile
-    
-    # reshape
-    
-    # meshgrid
-    
-    
+
+
+@pytest.mark.skip
 def test_commonly_failed_2():
     y = einexpr.einarray([29., 38.], 'i')
     
@@ -550,6 +469,8 @@ def test_commonly_failed_2():
     z = f(y)
     assert all(z['i'].a == f(y.a))
 
+
+@pytest.mark.skip
 def test_commonly_failed_3():
     y = einexpr.einarray([[190.,156.],[58.,64.]], 'i j')
     
@@ -557,16 +478,3 @@ def test_commonly_failed_3():
         return 1/(1+npa.e**-y)
     z = f(y)
     assert z[''].a == npa.sum(f(y.a))
-    
-    # multiply = {"__mul__", "__rmul__", "__truediv__", "__rtruediv__"},
-    # add = {"__add__", "__radd__", "__sub__", "__rsub__"},
-    # power = {"__pow__", "__rpow__"},
-
-
-def test_concat_dispatch():
-    x = einexpr.einarray(einexpr.backends.PseudoRawArray(), dims='i j')
-    y = einexpr.einarray(einexpr.backends.PseudoRawArray(), dims='i j')
-    c1 = einexpr.backends.concatenation_dispatch(npa.concatenate, ((x, y),), dict(axis=0))
-    c2 = einexpr.backends.concatenation_dispatch(npa.concatenate, ((x, y),), dict(axis='i'))
-    c3 = einexpr.backends.concatenation_dispatch(npa.concatenate, ((x, y),), dict(axis=['i']))
-    
