@@ -70,16 +70,6 @@ class einarray():
     def tracer(self: array) -> 'einarray':
         return einarray(einexpr.backends.PseudoRawArray(), dims=self.dims, ambiguous_dims=self.ambiguous_dims)
 
-    # JAX support
-    def _tree_flatten(self: array):
-        children = (self.a,)
-        aux_data = {'dims': self.dims, 'ambiguous_dims': self.ambiguous_dims}
-        return (children, aux_data)
-
-    @classmethod
-    def _tree_unflatten(cls, aux_data, children):
-        return cls(*children, **aux_data)
-
     def __repr__(self: array) -> str:
         return f"einarray({self.a}, {self.dims})"
 
@@ -2041,11 +2031,6 @@ class einarray():
             dims=self.dims,
             ambiguous_dims=self.ambiguous_dims)
 
-
-from jax import tree_util
-
-
-tree_util.register_pytree_node(einarray, einarray._tree_flatten, einarray._tree_unflatten)
 
 array = einarray
 

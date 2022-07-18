@@ -106,16 +106,6 @@ class lazy_einarray(einarray):
             *(inp.tracer() if isinstance(inp, EinarrayLike) else inp for inp in self.inputs), 
             **{k: v.tracer() if isinstance(v, EinarrayLike) else v for k, v in self.kwargs.items()}
         )
-    
-    # JAX support
-    def _tree_flatten(self):
-        children = (self.inputs,)
-        aux_data = {'func': self.func, 'kwargs': self.kwargs}
-        return (children, aux_data)
-    
-    @classmethod
-    def _tree_unflatten(cls, aux_data, children):
-        return cls(*children, **aux_data)
 
     def __repr__(self) -> str:
         return f"lazy_einarray({self.func}, {self.inputs}, {self.kwargs})"
@@ -1424,10 +1414,5 @@ class lazy_einarray(einarray):
         """
         raise NotImplementedError
 
-
-from jax import tree_util
-
-
-tree_util.register_pytree_node(lazy_einarray, lazy_einarray._tree_flatten, lazy_einarray._tree_unflatten)
 
 __all__ = ['lazy_einarray']
