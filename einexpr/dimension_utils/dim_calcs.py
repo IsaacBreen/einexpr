@@ -89,7 +89,6 @@ class TreeToDimsDeclaration(Transformer):
         return tuple(dim for dim in dims if dim is not None)
     
     def dim(self, value, *x) -> Union[einexpr.types.Dimension, Tuple]:
-        print(x)
         return value
     
     def tuple(self, *dims) -> Tuple[einexpr.types.Dimension]:
@@ -125,7 +124,6 @@ class TreeToReshape(Transformer):
         return tuple(dim for dim in dims if dim is not None)
     
     def dim(self, value, *x) -> Union[einexpr.types.Dimension, Tuple]:
-        print(x)
         return value
     
     def tuple(self, *dims) -> Tuple[einexpr.types.Dimension]:
