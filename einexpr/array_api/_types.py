@@ -44,11 +44,6 @@ class NestedSequence(Protocol[_T_co]):
     def __len__(self, /) -> int: ...
 
 
-
-
-Dimension = str
-Dimensions = str
-
 DimensionlessLike = Union[int, float]
     
 EinarrayLike = TypeVar('EinarrayLike')
@@ -59,5 +54,5 @@ __all__ = [
     'Any', 'List', 'Literal', 'NestedSequence', 'Optional',
     'PyCapsule', 'SupportsBufferProtocol', 'SupportsDLPack', 'Tuple', 'Union', 'Sequence',
     'array', 'device', 'dtype', 'ellipsis', 'finfo_object', 'iinfo_object', 'Enum',
-    'Dimension', 'Dimensions', 'DimensionlessLike', 'EinarrayLike', 'NonEinArray'
+    'DimensionlessLike', 'EinarrayLike', 'NonEinArray'
 ]

@@ -1,7 +1,7 @@
 from typing import Sequence
 
-from ._types import (List, NestedSequence, Optional, SupportsBufferProtocol, Tuple, Union, array,
-                     device, dtype, Dimensions)
+from ._types import (List, NestedSequence, Optional, SupportsBufferProtocol, Tuple, Union, array, device, dtype)
+from .dimension import Dimensions
 
 import einexpr
 

@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 from ._types import (array, dtype as Dtype, device as Device, Optional, Tuple,
-                     Union, Any, PyCapsule, Enum, ellipsis,
-                     Dimension, DimensionlessLike, NonEinArray)
+                     Union, Any, PyCapsule, Enum, ellipsis, NonEinArray)
+from .dimension import Dimension
+
 import einexpr
 
 
@@ -22,18 +23,27 @@ class einarray():
         self,
         a: Union[NonEinArray, einexpr.einarray],
         /, *,
-        dims: Union[einexpr.types.Dimensions, None] = (),
+        dims: Union[einexpr.array_api.dimension.Dimensions, None] = None,
         ambiguous_dims: Set[Dimension] = None,
         copy: bool=True,
         backend: Optional[str] = None
     ) -> None:
-        self.a = a
-        self.dims = einexpr.dimension_utils.parse_dims_declaration(dims)
-        self.ambiguous_dims = ambiguous_dims or set()
+        if isinstance(a, einarray):
+            self.a = a.a
+            self.dims = dims or a.dims
+            self.ambiguous_dims = a.ambiguous_dims & set(dims or [])
+        else:
+            self.a = a
+            self.dims = dims
+            self.ambiguous_dims = ambiguous_dims or set()
         if backend is not None or not einexpr.backends.conforms_to_array_api(self.a):
             # Convert the array to the backend specified by the backend argument.
             backend_module = einexpr.backends.get_array_api_backend(backend)
             self.a = backend_module.asarray(self.a)
+        if self.dims is None:
+            self.dims = tuple(range(self.a.ndim))
+        elif isinstance(self.dims, str):
+            self.dims = einexpr.dimension_utils.parse_dims_declaration(self.dims)
         if einexpr.dimension_utils.is_dimensionless(self.a):
             if len(self.dims) != 0:
                 raise ValueError(dims, "If the input is a scalar, the dimensions must be empty.")
@@ -45,10 +55,6 @@ class einarray():
         if not self.ambiguous_dims.issubset(self.dims):
             raise ValueError(f"The ambiguous dimensions {self.ambiguous_dims} must be a subset of the dimensions {self.dims} passed to the constructor.")
 
-    @property
-    def backend(self: array) -> str:
-        einexpr.backends.detect_backend(self.a)
-    
     def get_dims_unordered(self: array) -> Set[Dimension]:
         return set(self.dims)
     
@@ -109,7 +115,12 @@ class einarray():
         out: array
             array whose last two dimensions (axes) are permuted in reverse order relative to original array (i.e., for an array instance having shape ``(..., M, N)``, the returned array must have shape ``(..., N, M)``). The returned array must have the same data type as the original array.
         """
-        raise NotImplementedError
+        if self.ndim < 2:
+            raise ValueError("The array must have at least two dimensions.")
+        return einarray(
+            self.a.__array_namespace__().mT,
+            dims=(*self.dims[:-2], self.dims[-1], self.dims[-2]),
+            ambiguous_dims=self.ambiguous_dims)
 
     @property
     def ndim(self: array) -> int:
@@ -178,11 +189,10 @@ class einarray():
            Limiting the transpose to two-dimensional arrays (matrices) deviates from the NumPy et al practice of reversing all axes for arrays having more than two-dimensions. This is intentional, as reversing all axes was found to be problematic (e.g., conflicting with the mathematical definition of a transpose which is limited to matrices; not operating on batches of matrices; et cetera). In order to reverse all axes, one is recommended to use the functional ``permute_dims`` interface found in this specification.
         """
         if self.ndim != 2:
-            raise NotImplementedError
-        dims = (self.dims[1], self.dims[0])
+            raise ValueError(f"The array must be two-dimensional.")
         return einarray(
             self.a.__array_namespace__().T,
-            dims=dims,
+            dims=(self.dims[1], self.dims[0]),
             ambiguous_dims=self.ambiguous_dims)
 
     def __abs__(self: array, /) -> array:

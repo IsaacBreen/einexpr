@@ -18,7 +18,7 @@ def apply_transexpand(array: einexpr.types.NonEinArray, transexpansion: List[int
         return array.__array_namespace__().permute_dims(array, transposition)[expansion]
 
 
-def align_to_dims(a: 'einexpr.einarray', dims: List['einexpr.Dimension'], expand: bool = False) -> einexpr.types.NonEinArray:
+def align_to_dims(a: 'einexpr.einarray', dims: List['einexpr.array_api.dimension.Dimension'], expand: bool = False) -> einexpr.types.NonEinArray:
     """
     Aligns the given arrays to the given dimensions and expands along dimensions that each input array does not have.
     """
@@ -32,7 +32,7 @@ def align_to_dims(a: 'einexpr.einarray', dims: List['einexpr.Dimension'], expand
         return apply_transexpand(a.__array__(), einexpr.dimension_utils.calculate_transexpand([dim for dim in einexpr.dimension_utils.get_dims(a) if dim in dims], dims))
     
     
-def align_arrays(*arrays: 'einexpr.einarray', return_output_dims: bool = False) -> Union[List[einexpr.types.NonEinArray], Tuple[List[einexpr.types.NonEinArray], List['einexpr.Dimension']]]:
+def align_arrays(*arrays: 'einexpr.einarray', return_output_dims: bool = False) -> Union[List[einexpr.types.NonEinArray], Tuple[List[einexpr.types.NonEinArray], List['einexpr.array_api.dimension.Dimension']]]:
     """
     Aligns the given arrays to common dimensions.
     """
@@ -54,7 +54,7 @@ def align_arrays(*arrays: 'einexpr.einarray', return_output_dims: bool = False) 
             return raw_aligned_arrays
 
 
-def reduce_sum(array: 'einexpr.einarray', dims: Union[Container['einexpr.Dimension'], Iterator['einexpr.Dimension']]) -> 'einexpr.einarray':
+def reduce_sum(array: 'einexpr.einarray', dims: Union[Container['einexpr.array_api.dimension.Dimension'], Iterator['einexpr.array_api.dimension.Dimension']]) -> 'einexpr.einarray':
     """
     Collapse the given array along the given dimensions.
     """
