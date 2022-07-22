@@ -1,5 +1,4 @@
 from .einarray_object import *
-from .lazy_einarray_object import *
 from .constants import *
 from .creation_functions import *
 from .data_type_functions import *

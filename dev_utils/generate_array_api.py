@@ -170,16 +170,3 @@ if __name__ == "__main__":
         template_array_api_path,
         temp_dir="tmp_array_api"
     )
-    
-    # Process the array API specification
-    for template_file in glob.glob(f"{template_array_api_path}/**/*.py", recursive=True):
-        if os.path.basename(template_file) == 'array_object.py':
-            einexpr_einarray_file = f"{einexpr_array_api_path}/einarray_object.py"
-            einexpr_lazy_einarray_file = f"{einexpr_array_api_path}/lazy_einarray_object.py"
-            process_to = [einexpr_einarray_file, einexpr_lazy_einarray_file]
-        else:
-            einexpr_file = template_file.replace(template_array_api_path, einexpr_array_api_path)
-            process_to = [einexpr_file]
-        for einexpr_file in process_to:
-            print(f"Processing {template_file} -> {einexpr_file}")
-            process_file(einexpr_file, template_file)

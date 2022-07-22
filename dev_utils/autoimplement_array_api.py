@@ -215,18 +215,3 @@ if __name__ == '__main__':
     # Write the code back to the file
     with open(einexpr_array_api_path / "einarray_object.py", 'w') as f:
         f.write(code)
-
-    # lazy_einarray_object.py
-    print("Processing lazy_einarray_object.py")
-    with open(einexpr_array_api_path / "lazy_einarray_object.py", 'r') as f:
-        code = f.read()
-    # Remove thes lines ``array = _array`` and ``__all__ = ['array']``
-    print("    Removing lines `array = _array` and `__all__ = ['array']`")
-    code = code.replace("\narray = _array\n", "\n")
-    code = code.replace("\n__all__ = ['array']\n", "\n")
-    # Change the name of the _array class to lazy_einarray
-    print("    Changing the name of the _array class to lazy_einarray")
-    code = re.sub(r'class _array(?P<args>.*?):', r'class lazy_einarray\g<args>:', code)
-    # Write the code back to the file
-    with open(einexpr_array_api_path / "lazy_einarray_object.py", 'w') as f:
-        f.write(code)
