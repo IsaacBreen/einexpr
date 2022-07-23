@@ -6,6 +6,7 @@ import warnings
 from collections import Counter
 from itertools import chain, combinations
 from typing import *
+import warnings
 
 import numpy as np
 
@@ -219,3 +220,47 @@ def pytree_mapreduce(tree, map_func, reduce_func=lambda x: x):
         return reduce_func({pytree_mapreduce(item, map_func, reduce_func) for item in tree})
     else:
         return map_func(tree)
+    
+    
+def deep_str(tree):
+    """
+    Convert a tree of Python objects to a string.
+    """
+    return pytree_mapreduce(tree, lambda x: str(x))
+
+
+def minimalistic_str(sequence, outer_brackets: bool = True):
+    """
+    Convert a tree of Python objects to a string where, for example, lists and tuples are formatted without commas and strings are formatted with quotes. Items with spaces are still wrapped in quotes.
+    """
+    if isinstance(sequence, (list, tuple, set)):
+        inner_str = ' '.join(minimalistic_str(item, True) for item in sequence)
+    elif isinstance(sequence, dict):
+        inner_str = ' '.join(f'{minimalistic_str(key, True)}: {minimalistic_str(value, True)}' for key, value in sequence.items())
+    else:
+        item = str(sequence)
+        if ' ' in item:
+            # Add quotes around the item and escape quotes inside it
+            item = item.replace('"', '\\"')
+            item = f'"{item}"'
+        return item
+    bracket_strs = {
+        list: '[{}]',
+        tuple: '({})',
+        set: '{}',
+        dict: '{}',
+    }
+    return bracket_strs[type(sequence)].format(inner_str) if outer_brackets else inner_str
+
+
+def pedantic_dict_merge(*dicts: Dict) -> Dict:
+    """
+    Merge multiple dictionaries into a single dictionary, raising an error if any duplicate keys have different values.
+    """
+    result = {}
+    for d in dicts:
+        for key, value in d.items():
+            if key in result and result[key] != value:
+                raise ValueError(f'Duplicate key {key} with different values: {result[key]} and {value}')
+            result[key] = value
+    return result
