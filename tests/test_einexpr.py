@@ -285,7 +285,7 @@ def random_expr_json(
             return get_leaves(x["lhs"]) + get_leaves(x["rhs"])
         else:
             raise ValueError(f"Unknown node type: {x['type']}")
-    return {"expr_json": expr_json, "dims": index_names_used, "out_dims": index_names_out, "dim_sizes": index_sizes, 'leaves': get_leaves(expr_json)}
+    return {"expr_json": expr_json, "dims": index_names_used, "out_dims": tuple(index_names_out), "dim_sizes": index_sizes, 'leaves': get_leaves(expr_json)}
 
 
 def json_eval(expr_json, non_collapsable_indices, index_names: List[str], index_sizes):

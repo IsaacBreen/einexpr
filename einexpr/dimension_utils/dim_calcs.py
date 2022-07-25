@@ -1,17 +1,23 @@
 import functools
 import operator
+from os import PRIO_PGRP
 import re
 from itertools import chain, zip_longest
-from typing import Any, Dict, Iterator, List, Optional, Sequence, Set, Tuple, Union
+from typing import Any, Callable, Dict, Iterator, List, Optional, Sequence, Set, Tuple, TypeVar, Union
 
 import numpy as np
 from pydantic import PositiveInt
-from einexpr.array_api.dimension import NamedBindingDimension
+from einexpr.array_api.dimension import NamedDimension
 
 from einexpr.utils.utils import pedantic_dict_merge
 from .exceptions import AmbiguousDimensionException
 import einexpr
 from lark import Lark, Transformer, v_args
+
+from dataclasses import replace
+
+
+D = TypeVar("D", bound=einexpr.array_api.dimension.DimensionObject)
 
 
 def get_unambiguous_broadcast_dims(
@@ -113,45 +119,6 @@ def calculate_transexpand(
 
 
 @v_args(inline=True)
-class TreeToDimsDeclaration(Transformer):
-    def start(self, x) -> Any:
-        return x
-
-    def dims(self, *dims) -> einexpr.array_api.dimension.DimensionTuple:
-        return einexpr.array_api.dimension.DimensionTuple(dim for dim in dims if dim is not None)
-
-    def dim(self, value, *x) -> Union[einexpr.array_api.dimension.Dimension, Tuple]:
-        return value
-
-    def tuple(self, *dims) -> einexpr.array_api.dimension.DimensionTuple:
-        return einexpr.array_api.dimension.DimensionTuple(dim for dim in dims if dim is not None)
-
-    def sep(self) -> None:
-        return None
-
-    def NAME(self, tree) -> einexpr.array_api.dimension.Dimension:
-        return tree.value
-
-
-
-dims_declaration_grammar = Lark(
-    r"""
-        %import common.WS
-
-        %ignore WS
-
-        start: dims
-        ?dims: (dim [sep])*
-        ?dim: NAME | "(" dim ")" | tuple{dim}
-        tuple{x}: "(" x (sep | ([sep] x)+ [sep]) ")"
-        ?sep: ","
-        NAME: /[^\W\d]\w*/
-    """,
-    parser="earley",
-    maybe_placeholders=False,
-)
-
-@v_args(inline=True)
 class TreeToReshapeDimension(Transformer):
     def start(self, root_dims) -> Any:
         return root_dims
@@ -182,8 +149,8 @@ class TreeToReshapeDimension(Transformer):
     def sep(self) -> None:
         return None
     
-    def dim(self, value) -> einexpr.array_api.dimension.NamedBindingDimension:
-        return einexpr.array_api.dimension.NamedBindingDimension(value)
+    def dim(self, value) -> einexpr.array_api.dimension.NamedDimension:
+        return einexpr.array_api.dimension.NamedDimension(value)
 
     def NAME(self, tree) -> einexpr.array_api.dimension.Dimension:
         return tree.value
@@ -211,7 +178,7 @@ dims_reshape_grammar = Lark(
 )
 
 
-def parse_dims_declaration(dims_raw: Union[str, Tuple]) -> Tuple:
+def parse_dims(dims_raw: Union[str, Tuple]) -> Tuple:
     """
     Parses a dimensions declaration string into a tree.
 
@@ -221,51 +188,27 @@ def parse_dims_declaration(dims_raw: Union[str, Tuple]) -> Tuple:
         return ()
 
     def helper(dims_raw):
-        if isinstance(dims_raw, (tuple, list)):
+        if isinstance(dims_raw, (tuple, list, einexpr.array_api.dimension.DimensionTuple)):
             return einexpr.array_api.dimension.DimensionTuple((helper(dim) for dim in dims_raw), size=compute_total_size(dims_raw))
+        elif isinstance(dims_raw, str):
+            tree = dims_reshape_grammar.parse(dims_raw)
+            return TreeToReshapeDimension().transform(tree)
         else:
-            tree = dims_declaration_grammar.parse(dims_raw)
-            return TreeToDimsDeclaration().transform(tree)
+            raise ValueError(f"Unexpected value {dims_raw}.")
     dims = helper(dims_raw)
+    dims = propogate_sizes(dims)
     if isinstance(dims, einexpr.array_api.dimension.Dimension):
         return (dims,)
     else:
         return dims
+
 
 
 def parse_dims_reshape(dims_raw: Union[str, Tuple]) -> Tuple:
     """
     Parses a dimensions reshape string into a tree.
     """
-    if not dims_raw:
-        return ()
-
-    def helper(dims_raw):
-        if isinstance(dims_raw, (tuple, list)):
-            return einexpr.array_api.dimension.DimensionTuple((helper(dim) for dim in dims_raw), size=compute_total_size(dims_raw))
-        else:
-            tree = dims_reshape_grammar.parse(dims_raw)
-            return TreeToReshapeDimension().transform(tree)
-
-    dims = helper(dims_raw)
-    if isinstance(dims, einexpr.array_api.dimension.Dimension):
-        return (dims,)
-    else:
-        return dims
-
-
-def gather_dims(dims: einexpr.array_api.dimension.Dimensions) -> Set[einexpr.array_api.dimension.Dimension]:
-    """
-    Returns all individual dimensions in the object, including nested ones.
-    """
-    if isinstance(dims, einexpr.array_api.dimension.Dimension):
-        return {dims}
-    elif isinstance(dims, einexpr.array_api.dimension.DimensionReplacement):
-        return gather_dims(dims.original) | gather_dims(dims.replacement)
-    elif isinstance(dims, tuple):
-        return set(chain.from_iterable(gather_dims(dim) for dim in dims))
-    else:
-        raise ValueError(f"Unexpected value {dims}.")
+    return parse_dims(dims_raw)
 
 
 def compute_total_size(dims: einexpr.array_api.dimension.Dimensions) -> Optional[int]:
@@ -276,7 +219,7 @@ def compute_total_size(dims: einexpr.array_api.dimension.Dimensions) -> Optional
         return dims.size
     elif isinstance(dims, einexpr.array_api.dimension.DimensionReplacement):
         return compute_total_size(dims.replacement)
-    elif isinstance(dims, (tuple, einexpr.array_api.dimension.DimensionTuple)):
+    elif isinstance(dims, (tuple, list, einexpr.array_api.dimension.DimensionTuple)):
         size = 1
         for dim in dims:
             if dim.size is None:
@@ -287,90 +230,172 @@ def compute_total_size(dims: einexpr.array_api.dimension.Dimensions) -> Optional
         raise ValueError(f"Unexpected value {dims}.")
 
 
-def infer_sizes(dims: einexpr.array_api.dimension.DimensionTuple, overall_size: PositiveInt) -> Tuple[int, ...]:
-    """
-    If there is exactly one dimension with an undefined size, infer that size and return it and the rest of the sizes.
-    """
-    # If there is not exactly one dimension with an undefined size, we cannot or do not need to infer anything.
-    if dims.count(None) != 1:
-        return dims
-    # Get the index of the dimension with an undefined size.
-    sizes = [dim.size for dim in dims]
-    undefined_dim_index = sizes.index(None)
-    # Set the size of this dimension to 1 and calculate the product of the other dimensions.
-    sizes[undefined_dim_index] = 1
-    product = functools.reduce(operator.mul, sizes, 1)
-    # The overall size must be evenly divisible by the product of the other dimensions.
-    if overall_size % product != 0:
-        raise ValueError(f"The overall size {overall_size} is not evenly divisible by the product of the other dimensions {product}.")
-    # Infer the size of the undefined dimension.
-    sizes[undefined_dim_index] = overall_size // product
-    return tuple(sizes)
-
-
 def iter_dims(dims: einexpr.array_api.dimension.DimensionObject) -> Iterator[einexpr.array_api.dimension.Dimension]:
     """
     Iterates over all dimension objects.
     """
-    yield dims
     if isinstance(dims, einexpr.array_api.dimension.DimensionReplacement):
+        yield dims
         yield from iter_dims(dims.original)
         yield from iter_dims(dims.replacement)
     elif isinstance(dims, (tuple, einexpr.array_api.dimension.DimensionTuple)):
+        yield dims
         for dim in dims:
             yield from iter_dims(dim)
+    elif isinstance(dims, (list, set)):
+        yield dims
+        for dim in dims:
+            yield from iter_dims(dim)
+    elif isinstance(dims, einexpr.array_api.dimension.Dimension):
+        yield dims
     else:
         raise ValueError(f"Unexpected value {dims}.")
 
 
-def gather_sized_dims(dims: einexpr.array_api.dimension.DimensionObject) -> Set[einexpr.array_api.dimension.DimensionObject]:
+def map_over_dims(f: Callable[einexpr.array_api.dimension.DimensionObject, einexpr.array_api.dimension.DimensionObject], dims: D) -> D:
     """
-    Returns the set of all dimension objects that have a defined size. Ignores dimensions that don't have a defined size and raises an error if two dimensions with the same have inconsistent sizes.
+    Maps a function over all dimension objects.
     """
-    sizes = set()
-    named_sizes = {}
-    for dim_obj in iter_dims(dims):
-        if isinstance(dim_obj, einexpr.array_api.dimension.Sized):
-            if isinstance(dim_obj, einexpr.array_api.dimension.NamedBindingDimension):
-                if dim_obj.name in named_sizes:
-                    if named_sizes[dim_obj.name] != dim_obj.size:
-                        raise ValueError(f"The size of dimension {dim_obj.name} is inconsistent with the previously encountered size {named_sizes[dim_obj.name]}.")
-                else:
-                    named_sizes[dim_obj.name] = dim_obj.size
-            sizes.add(dim_obj)
+    if isinstance(dims, einexpr.array_api.dimension.DimensionReplacement):
+        return einexpr.array_api.dimension.DimensionReplacement(map_over_dims(f, dims.original), map_over_dims(f, dims.replacement))
+    elif isinstance(dims, (tuple, einexpr.array_api.dimension.DimensionTuple)):
+        return einexpr.array_api.dimension.DimensionTuple(map_over_dims(f, dim) for dim in dims)
+    elif isinstance(dims, (tuple, list, set)):
+        return type(dims)(map_over_dims(f, dim) for dim in dims)
+    elif isinstance(dims, einexpr.array_api.dimension.Dimension):
+        return f(dims)
+    else:
+        raise ValueError(f"Unexpected value {dims}.")
+
+
+def transform_dims_tree(tree: D) -> D:
+    """
+    Transforms a tree into a dimension object.
+    """
+    if isinstance(tree, einexpr.array_api.dimension.Dimension):
+        return tree
+    elif isinstance(tree, einexpr.array_api.dimension.DimensionReplacement):
+        return einexpr.array_api.dimension.DimensionReplacement(transform_dims_tree(tree.original), transform_dims_tree(tree.replacement))
+    elif isinstance(tree, (tuple, einexpr.array_api.dimension.DimensionTuple)):
+        return einexpr.array_api.dimension.DimensionTuple(transform_dims_tree(dim) for dim in tree)
+    else:
+        raise ValueError(f"Unexpected value {tree}.")
+
+
+def gather_sizes(dims: einexpr.array_api.dimension.DimensionObject) -> Dict[str, int]:
+    """
+    Returns a dictionary of dimension names and sizes.
+    """
+    sizes = {}
+    for dim in iter_dims(dims):
+        if isinstance(dim, einexpr.array_api.dimension.NamedDimension) and dim.size is not None:
+            if dim.name in sizes:
+                if sizes[dim.name] != dim.size:
+                    raise ValueError(f"Dimension {dim.name} has different sizes: {sizes[dim.name]} != {dim.size}")
+            else:
+                sizes[dim.name] = dim.size
     return sizes
 
 
-def simplify_dims(dims: einexpr.array_api.dimension.Dimensions, dim_sizes: Optional[Dict[str, int]] = None) -> einexpr.array_api.dimension.Dimensions:
+def gather_names(dims: einexpr.array_api.dimension.DimensionObject) -> Set[str]:
     """
-    Adds sizes to dimensions that are missing them.
+    Returns a set of dimension names.
     """
-    dim_sizes = dim_sizes or {}
-    dim_sizes = {dim.name if isinstance(dim, einexpr.array_api.dimension.NamedBindingDimension) else dim: size for dim, size in dim_sizes.items()}
-    existing_sizes = {dim.name if isinstance(dim, einexpr.array_api.dimension.NamedBindingDimension) else dim: dim.size for dim in gather_sized_dims(dims)}
-    dim_sizes = einexpr.utils.pedantic_dict_merge(dim_sizes, existing_sizes)
-    def helper(dims):
-        if isinstance(dims, einexpr.array_api.dimension.NamedBindingDimension):
-            if dims.name in dim_sizes:
-                if dims.size is not None and dims.size != dim_sizes[dims.name]:
-                    # TODO: This should never get triggered.
-                    raise ValueError(f"Expected dimension {dims} to have size {dim_sizes[dims]}, but got {dims.size}.")
-                dims.size = dim_sizes[dims.name]
-            else:
-                return dims
-        elif isinstance(dims, einexpr.array_api.dimension.DimensionTuple):
-            if any(isinstance(dim, einexpr.array_api.dimension.Sized) and dim.size is None for dim in dims) and dims.size is not None:
-                dims = dims.with_size(dims.size)
-        elif isinstance(dims, einexpr.array_api.dimension.DimensionReplacement):
-            # NOTE: Even though we don't, strictly speaking, need the passed dim_sizes to main consistency with the dims.original dims,
-            #       it's still a good idea to call simplify_dims on them just to help alert the user to any inconsistencies that may
-            #       cause problems at other points of their code.
-            original_dims = helper(dims.original)
-            replacement_dims = helper(dims.replacement)
-        
-        
-            
-        elif isinstance(dims, (tuple, einexpr.array_api.dimension.DimensionTuple)):
-            return einexpr.array_api.dimension.DimensionTuple((simplify_dims(dim, dim_sizes) for dim in dims), size=compute_total_size(dims))
+    names = set()
+    for dim in iter_dims(dims):
+        if isinstance(dim, einexpr.array_api.dimension.NamedDimension):
+            names.add(dim.name)
+    return names
+
+
+def apply_sizes(dims: D, sizes: Dict[str, int], overwrite: bool = False) -> D:
+    """
+    Applies a dictionary of dimension names and sizes to a dimension object, raising an error if the size is already set differently.
+    """
+    def helper(dims: D) -> D:
+        if isinstance(dims, einexpr.array_api.dimension.NamedDimension) and dims.name in sizes:
+            if not overwrite and dims.size is not None and dims.size != sizes[dims.name]:
+                raise einexpr.exceptions.DimensionMismatch(f"Dimension {dims.name} has different sizes: {dims.size} != {sizes[dims.name]}")
+            return replace(dims, size=sizes.get(dims.name, None))
         else:
-            raise ValueError(f"Unexpected value {dims}.")
+            return dims
+    return map_over_dims(helper, dims)
+
+
+def propogate_sizes(dims: D, sizes: Optional[Dict[str, int]] = None) -> D:
+    """
+    Propogates dimension sizes throughout the dimension object, raising an error when two or more named dimensions with the same name have different sizes.
+    """
+    # Gather all named dimension sizes
+    sizes = sizes or {}
+    sizes |= gather_sizes(dims)
+    # Apply sizes
+    return apply_sizes(dims, sizes)
+
+
+def process_dims_declaration(dims_raw: Union[str, Tuple], shape: Tuple[int]) -> einexpr.array_api.dimension.Dimensions:
+    """
+    Processes a dimensions declaration string into a dimension object.
+    """
+    if not dims_raw:
+        return einexpr.array_api.dimension.DimensionTuple()
+    dims = parse_dims(dims_raw)
+    sizes = {dim.name: size for dim, size in zip(dims, shape)}
+    return propogate_sizes(dims, sizes)
+
+
+def process_dims_reshape(dims_raw: Union[str, Tuple], shape: Tuple[int]) -> einexpr.array_api.dimension.Dimensions:
+    """
+    Processes a dimensions reshape string into a dimension object.
+    """
+    if not dims_raw:
+        return ()
+    dims = parse_dims_reshape(dims_raw)
+    sizes = {dim.name: size for dim, size in zip(dims, shape)}
+    return propogate_sizes(dims, sizes)
+
+
+def dims_equivalent(dims1: einexpr.array_api.dimension.Dimensions, dims2: einexpr.array_api.dimension.Dimensions, ignore_missing_sizes: bool = True) -> bool:
+    """
+    Returns True if the two dimension objects are equivalent.
+    """
+    if isinstance(dims1, einexpr.array_api.dimension.DimensionReplacement):
+        return dims_equivalent(dims1.original, dims2, ignore_missing_sizes) and dims_equivalent(dims1.replacement, dims2, ignore_missing_sizes)
+    elif isinstance(dims1, (tuple, einexpr.array_api.dimension.DimensionTuple)):
+        if isinstance(dims2, (tuple, einexpr.array_api.dimension.DimensionTuple)):
+            if len(dims1) != len(dims2):
+                return False
+            for dim1, dim2 in zip(dims1, dims2):
+                if not dims_equivalent(dim1, dim2, ignore_missing_sizes):
+                    return False
+            return True
+        else:
+            return False
+    elif isinstance(dims1, einexpr.array_api.dimension.Dimension):
+        if isinstance(dims2, einexpr.array_api.dimension.Dimension):
+            if dims1.name != dims2.name:
+                return False
+            if dims1.size is None or dims2.size is None:
+                return True
+            return dims1.size == dims2.size
+        else:
+            return False
+    else:
+        raise ValueError(f"Unexpected value {dims1}.")
+
+
+def dims_issubset(dims1: einexpr.array_api.dimension.DimensionTuple, dims2: einexpr.array_api.dimension.DimensionTuple, ignore_missing_sizes: bool = True) -> bool:
+    """
+    Returns True if the first tuple of dimensions is a subset of the second tuple of dimensions.
+    """
+    # We need to fill in the missing sizes in each tuple. If we don't, we could get a named dimension with a missing size (i.e. size=None) 'mismatching' against a dimension with the same name but a defined size.
+    # Gather sizes
+    sizes = gather_sizes(dims1) | gather_sizes(dims2)
+    # Apply sizes
+    try:
+        dims1 = apply_sizes(dims1, sizes)
+        dims2 = apply_sizes(dims2, sizes)
+    except ValueError:
+        return False
+    # Check if dims1 is a subset of dims2
+    return set(dims1) <= set(dims2)

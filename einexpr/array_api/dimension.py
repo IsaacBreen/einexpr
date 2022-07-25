@@ -4,13 +4,6 @@ from dataclasses import dataclass, field
 import einexpr.utils as utils
 
 
-class Sized(ABC):
-    """
-    A class that has a size
-    """
-    size: int
-
-
 class DimensionObject(ABC):
 
     @abstractmethod
@@ -34,51 +27,43 @@ class DimensionObject(ABC):
         pass
 
 
-class Dimension(DimensionObject, Sized):
+class Dimension(DimensionObject):
     """
     Represents a single dimension of a tensor.
     """
-    size: Optional[int] = field(default=None)
+    size: int = field(default=None)
 
 
-@dataclass(frozen=False)
-class NamedBindingDimension(DimensionObject, Sized):
+@dataclass(frozen=True, eq=False)
+class NamedDimension(Dimension):
     """
     A named dimension that binds eagerly to other dimensions of the same name.
     """
     
     name: str
-    size: Optional[int] = field(default=None)
+    size: int = field(default=None)
 
-    def with_size(self, size: int) -> "NamedBindingDimension":
-        return NamedBindingDimension(self.name, size)
+    def with_size(self, size: int) -> "NamedDimension":
+        return NamedDimension(self.name, size)
 
     def __str__(self):
         return self.name
-
-
-@dataclass(frozen=False)
-class AnonymousDimension(DimensionObject, Sized):
-    """
-    A dimension without a name that does not bind to other dimensions (unless forced to).
-    """
     
-    size: Optional[int] = field(default=None)
+    def __eq__(self, other):
+        if not isinstance(other, NamedDimension):
+            return False
+        if self.size is None or other.size is None:
+            raise ValueError("Cannot compare NamedDimension with size None")
+        return self.name == other.name and self.size == other.size
 
-    def with_size(self, size: int) -> "AnonymousDimension":
-        return AnonymousDimension(size)
 
-    def __str__(self):
-        return "?"
-
-
-@dataclass(frozen=False)
-class PositionalDimension(DimensionObject, Sized):
+@dataclass(frozen=True)
+class PositionalDimension(Dimension):
     """
     A dimension that is bound to a position in the tensor shape.
     """
-    
-    size: Optional[int] = field(default=None)
+
+    size: int = field(default=None)
 
     def with_size(self, size: int) -> "PositionalDimension":
         return PositionalDimension(size)
@@ -90,14 +75,13 @@ class PositionalDimension(DimensionObject, Sized):
         raise TypeError("PositionalDimension cannot be directly compared.")
 
 
-
-class DimensionTuple(DimensionObject, Sized):
+class DimensionTuple(DimensionObject):
     """
     A tuple of dimensions.
     """
-    size: Optional[int] = field(default=None)
+    size: int = field(default=None)
 
-    def __init__(self, dimensions: Iterable[Dimension], size: Optional[int] = None):
+    def __init__(self, dimensions: Iterable[Dimension] = (), size: int = None):
         self.dimensions = tuple(dimensions)
         self.size = size
 
@@ -135,12 +119,11 @@ class DimensionTuple(DimensionObject, Sized):
             raise TypeError(f"Cannot add {type(other)} to DimensionTuple")
 
 
-
-class DimensionReplacement(DimensionObject, Sized):
+class DimensionReplacement(DimensionObject):
     """
     A dimension that is to be replaced by another dimension.
     """
-    size: Optional[int] = field(default=None)
+    size: int = field(default=None)
 
     def __init__(self, original: Dimension, replacement: Dimension):
         self.original = original
@@ -168,13 +151,10 @@ class DimensionReplacement(DimensionObject, Sized):
 Dimensions = Sequence[Dimension]
 
 __all__ = [
-    "Sized",
     "DimensionObject",
     "Dimension",
     "Dimensions",
-    "NamedBindingDimension",
-    "AnonymousDimension",
-    "PositionalDimension",
+    "NamedDimension",
     "DimensionTuple",
     "DimensionReplacement",
 ]

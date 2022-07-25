@@ -13,18 +13,22 @@ from typing import *
 
 import numpy as np
 import numpy.typing as npt
-import torch as pt
 
 import einexpr
 
 
 class einarray():
+
+    a: einexpr.types.NonEinArray
+    dims: Tuple[einexpr.array_api.dimension.DimensionTuple]
+    ambiguous_dims: Set[einexpr.array_api.dimension.DimensionObject]
+    
     def __init__(
         self,
         a: Union[NonEinArray, einexpr.einarray],
         /, *,
         dims: Union[einexpr.array_api.dimension.Dimensions, None] = None,
-        ambiguous_dims: Set[Dimension] = None,
+        ambiguous_dims: Set[str] = None,
         copy: bool=True,
         backend: Optional[str] = None
     ) -> None:
@@ -40,10 +44,7 @@ class einarray():
             # Convert the array to the backend specified by the backend argument.
             backend_module = einexpr.backends.get_array_api_backend(backend)
             self.a = backend_module.asarray(self.a)
-        if self.dims is None:
-            self.dims = tuple(range(self.a.ndim))
-        elif isinstance(self.dims, str):
-            self.dims = einexpr.dimension_utils.parse_dims_declaration(self.dims)
+        self.dims = einexpr.dimension_utils.process_dims_declaration(self.dims, self.a.shape)
         if einexpr.dimension_utils.is_dimensionless(self.a):
             if len(self.dims) != 0:
                 raise ValueError(dims, "If the input is a scalar, the dimensions must be empty.")
@@ -52,15 +53,21 @@ class einarray():
                 raise ValueError(f"{self.a} does not conform to the Python array API standard")
             if self.a.ndim != len(self.dims) and not isinstance(self.a, einexpr.backends.PseudoRawArray):
                 raise ValueError(f"The number ({self.a.ndim}) of dimensions in the array does not match the number ({len(self.dims)}) of dimensions passed to the constructor.")
-        if not self.ambiguous_dims.issubset(self.dims):
+        if not self.ambiguous_dims <= einexpr.dimension_utils.gather_names(self.dims):
             raise ValueError(f"The ambiguous dimensions {self.ambiguous_dims} must be a subset of the dimensions {self.dims} passed to the constructor.")
+
 
     def get_dims_unordered(self: array) -> Set[Dimension]:
         return set(self.dims)
     
-    def coerce(self: array, dims: List[Dimension], do_not_collapse: Set[Dimension] = None, force_align: bool = True, ambiguous_dims: Set[Dimension] = None) -> einexpr.einarray:
+    def coerce(self: array, dims: Tuple[Dimension], do_not_collapse: Set[Dimension] = None, force_align: bool = True, ambiguous_dims: Set[Dimension] = None) -> einexpr.einarray:
         do_not_collapse = do_not_collapse or set()
         ambiguous_dims = ambiguous_dims or set()
+        # Check that the dimensions are valid.
+        if not einexpr.dimension_utils.dims_issubset(dims, self.dims):
+            raise ValueError(f"The dimensions {dims} are not a subset of the dimensions {self.dims} of the array.")
+        if not einexpr.dimension_utils.dims_issubset(ambiguous_dims, self.ambiguous_dims):
+            raise ValueError(f"The ambiguous dimensions {ambiguous_dims} are not a subset of the ambiguous dimensions {self.ambiguous_dims} of the array.")
         # Collapse all dimensions except those in contained in dims or do_not_collapse.
         dims_to_collapse = set(self.dims) - set(dims) - do_not_collapse
         out = einexpr.backends.reduce_sum(self, dims_to_collapse)
@@ -783,8 +790,7 @@ class einarray():
         out: array
             an array containing the accessed value(s). The returned array must have the same data type as ``self``.
         """
-        if isinstance(key, tuple):
-            key = (key,)
+        # TODO: fix this
         for k in key:
             if isinstance(k, slice):
                 if isinstance(k.start, int) or isinstance(k.stop, int) or isinstance(k.step, int):
@@ -793,7 +799,7 @@ class einarray():
                 raise NotImplementedError("Indexing with integers is not yet supported.")
             elif k is ellipsis:
                 raise NotImplementedError("Ellipsis is not yet supported.")
-        return self.coerce(einexpr.dimension_utils.parse_dims_reshape(key))
+        return self.coerce(einexpr.dimension_utils.process_dims_reshape(key, self.a.shape))
 
     def __gt__(self: array, other: Union[int, float, array], /) -> array:
         """
