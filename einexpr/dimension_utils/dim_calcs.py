@@ -339,6 +339,8 @@ def process_dims_declaration(dims_raw: Union[str, Tuple], shape: Tuple[int]) -> 
     """
     if not dims_raw:
         return einexpr.array_api.dimension.DimensionTuple()
+    if len(dims_raw) != len(shape):
+        raise ValueError(f"Dimensions declaration has wrong number of dimensions: {dims_raw}")
     dims = parse_dims(dims_raw)
     sizes = {dim.name: size for dim, size in zip(dims, shape)}
     return propogate_sizes(dims, sizes)

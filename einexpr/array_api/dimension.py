@@ -79,11 +79,9 @@ class DimensionTuple(DimensionObject):
     """
     A tuple of dimensions.
     """
-    size: int = field(default=None)
 
-    def __init__(self, dimensions: Iterable[Dimension] = (), size: int = None):
+    def __init__(self, dimensions: Iterable[Dimension] = ()):
         self.dimensions = tuple(dimensions)
-        self.size = size
 
     def __str__(self):
         return " ".join(str(dimension) for dimension in self.dimensions)
@@ -93,12 +91,11 @@ class DimensionTuple(DimensionObject):
 
     def __hash__(self):
         return hash(self.__str__())
-
+    
     def __eq__(self, other):
-        if isinstance(other, DimensionTuple):
-            return self.dimensions == other.dimensions
-        else:
+        if not isinstance(other, DimensionTuple):
             return False
+        return self.dimensions == other.dimensions
 
     def __getitem__(self, index):
         return self.dimensions[index]
