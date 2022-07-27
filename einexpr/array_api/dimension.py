@@ -18,14 +18,6 @@ class DimensionObject(ABC):
     def __repr__(self):
         pass
 
-    @abstractmethod
-    def __hash__(self):
-        pass
-
-    @abstractmethod
-    def __eq__(self, other):
-        pass
-
 
 class Dimension(DimensionObject):
     """
@@ -34,7 +26,7 @@ class Dimension(DimensionObject):
     size: int = field(default=None)
 
 
-@dataclass(frozen=True, eq=False)
+@dataclass(frozen=True, eq=True)
 class NamedDimension(Dimension):
     """
     A named dimension that binds eagerly to other dimensions of the same name.
@@ -48,16 +40,9 @@ class NamedDimension(Dimension):
 
     def __str__(self):
         return self.name
-    
-    def __eq__(self, other):
-        if not isinstance(other, NamedDimension):
-            return False
-        if self.size is None or other.size is None:
-            raise ValueError("Cannot compare NamedDimension with size None")
-        return self.name == other.name and self.size == other.size
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, eq=False)
 class PositionalDimension(Dimension):
     """
     A dimension that is bound to a position in the tensor shape.
@@ -115,6 +100,9 @@ class DimensionTuple(DimensionObject):
         else:
             raise TypeError(f"Cannot add {type(other)} to DimensionTuple")
 
+    def index(self, dimension):
+        return self.dimensions.index(dimension)
+
 
 class DimensionReplacement(DimensionObject):
     """
@@ -129,20 +117,22 @@ class DimensionReplacement(DimensionObject):
     def __str__(self):
         original_str = utils.minimalistic_str(self.original, outer_brackets=False)
         replacement_str = utils.minimalistic_str(self.replacement, outer_brackets=False)
-        return f"{original_str} -> {replacement_str}"
+        return f"({original_str} -> {replacement_str})"
     
     def __repr__(self):
         return f"DimensionReplacement({self.original!r}, {self.replacement!r})"
 
     def __hash__(self):
-        return hash((self.original, self.replacement))
+        raise NotImplementedError("DimensionReplacement is not hashable.")
+        # return hash((self.original, self.replacement))
 
     def __eq__(self, other):
-        return (
-            isinstance(other, DimensionReplacement)
-            and self.original == other.original
-            and self.replacement == other.replacement
-        )
+        raise NotImplementedError("DimensionReplacement is not comparable.")
+        # return (
+        #     isinstance(other, DimensionReplacement)
+        #     and self.original == other.original
+        #     and self.replacement == other.replacement
+        # )
 
 
 Dimensions = Sequence[Dimension]

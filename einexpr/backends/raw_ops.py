@@ -1,12 +1,14 @@
 from itertools import zip_longest
-from typing import Any, List, Optional, Sequence, Tuple, Union, Container, Iterator
+from typing import Any, Iterable, List, Optional, Sequence, Tuple, TypeVar, Union, Container, Iterator
 
 import numpy as np
 
 import einexpr
 
+RawArray = TypeVar('RawArray')
 
-def apply_transexpand(array: einexpr.types.NonEinArray, transexpansion: List[int]) -> 'einexpr.einarray':
+
+def apply_transexpand(array: RawArray, transexpansion: List[int]) -> RawArray:
     """
     Returns a new array with the given transpose.
     """
@@ -18,20 +20,54 @@ def apply_transexpand(array: einexpr.types.NonEinArray, transexpansion: List[int
         return array.__array_namespace__().permute_dims(array, transposition)[expansion]
 
 
-def align_to_dims(a: 'einexpr.einarray', dims: List['einexpr.array_api.dimension.Dimension'], expand: bool = False) -> einexpr.types.NonEinArray:
+def reshape(array: RawArray, shape: Tuple[int, ...]) -> RawArray:
     """
-    Aligns the given arrays to the given dimensions and expands along dimensions that each input array does not have.
+    Reshape the given array to the given shape.
+    """
+    return array.__array_namespace__().reshape(array, shape)
+
+
+def align_to_dims(a: 'einexpr.einarray', dims: List['einexpr.array_api.dimension.Dimension']) -> RawArray:
+    """
+    Aligns the given arrays to the given dimensions, collapses along dimensions that appear in the input array but not the ``dims`` argument, and expands along dimensions that the input array does not have.
     """
     if tuple(einexpr.dimension_utils.get_dims(a)) == tuple(dims):
-        return a.__array__()
+        return a.a
     else:
-        if not expand and set(dims) - set(einexpr.dimension_utils.get_dims(a)):
-            raise ValueError(f"The dimensions {dims} requested must be a permutation of the dimensions {einexpr.dimension_utils.get_dims(a)} of the input array. To expand new dimensions, pass expand=True.")
-        # if not ignore_extra_dims and set(einexpr.dimension_utils.get_dims(a)) - set(dims):
-        #     raise ValueError(f"The dimensions {einexpr.dimension_utils.get_dims(a)} of the input array must be a subset of the requested dimensions {dims}. To ignore extra dimensions, pass ignore_extra_dims=True.")
-        return apply_transexpand(a.__array__(), einexpr.dimension_utils.calculate_transexpand([dim for dim in einexpr.dimension_utils.get_dims(a) if dim in dims], dims))
-    
-    
+        # Note: there are two kind of expansions referred to below: expansions as in reshaping ``(i j)`` into ``i j``, and
+        # expansions as in using expand_dims to creaate a new dimension ``k`` of size 1 such that ``i j`` becomes ``i j k``.
+        #
+        # Suppose ``x`` is an einarray that we want to reshape from ``i (j k) l`` to ``(i k) j m``, where ``m`` is a new dimension.
+        # The steps are as follows:
+        # 1. Fully expand the input array: ``x['i (j k) l')]`` -> ``x['i j k l']``
+        # 2. Fully expand the output dimensions: ``(i k) j m`` -> ``i j k m``
+        # 3. Collapse the expanded array along dimension ``l``, which is not in the output dimensions: ``x['i j k l']`` -> ``x['i j k']``
+        # 4. Permute the dimensions of the collapsed array into the shape given by step 2: ``x['i j k']`` -> ``x['i k j']``
+        # 5. Create a new dimension ``m`` of size 1: ``x['i k j']`` -> ``x['i k j m']``
+        # 6. Reshape to combine dimensions as required: ``x['i k j m']`` -> ``x['(j k) i m']``
+        #
+        raw_array = einexpr.dimension_utils.get_raw(a)
+        # 1. Fully expand the raw array
+        current_dims = einexpr.dimension_utils.get_dims(a)
+        expanded_current_dims = einexpr.dimension_utils.expand_dims(current_dims)
+        expanded_shape = einexpr.dimension_utils.dims_to_shape(expanded_current_dims)
+        raw_array = reshape(raw_array, expanded_shape)
+        assert raw_array.shape == expanded_shape
+        # 2. Fully expand the output dimensions
+        expanded_new_dims = einexpr.dimension_utils.expand_dims(dims)
+        # 3. Collapse along dimensions that are not in the output dimensions
+        dims_to_collapse = set(expanded_current_dims) - set(expanded_new_dims)
+        raw_array = einexpr.sum(einexpr.einarray(raw_array, dims=expanded_current_dims), axis=dims_to_collapse).a
+        collapsed_expanded_current_dims = tuple(dim for dim in expanded_current_dims if dim not in dims_to_collapse)
+        # 4 & 5. Permute the dimensions of the raw array and create a new dimension in one go
+        transexpand = einexpr.dimension_utils.calculate_transexpand(collapsed_expanded_current_dims, expanded_new_dims)
+        raw_array = apply_transexpand(raw_array, transexpand)
+        # 6. Combine as required
+        final_shape = einexpr.dimension_utils.dims_to_shape(dims)
+        raw_array = reshape(raw_array, final_shape)
+        return raw_array
+
+
 def align_arrays(*arrays: 'einexpr.einarray', return_output_dims: bool = False) -> Union[List[einexpr.types.NonEinArray], Tuple[List[einexpr.types.NonEinArray], List['einexpr.array_api.dimension.Dimension']]]:
     """
     Aligns the given arrays to common dimensions.
@@ -47,22 +83,9 @@ def align_arrays(*arrays: 'einexpr.einarray', return_output_dims: bool = False) 
             if isinstance(einexpr.dimension_utils.get_raw(array), (int, float)):
                 raw_aligned_arrays.append(einexpr.dimension_utils.get_raw(array))
             else:
-                raw_aligned_arrays.append(apply_transexpand(einexpr.dimension_utils.get_raw(array), einexpr.dimension_utils.calculate_transexpand(einexpr.dimension_utils.get_dims(array), out_dims)))
+                transexpand = einexpr.dimension_utils.calculate_transexpand(einexpr.dimension_utils.get_dims(array), out_dims)
+                raw_aligned_arrays.append(apply_transexpand(einexpr.dimension_utils.get_raw(array), transexpand))
         if return_output_dims:
             return raw_aligned_arrays, out_dims
         else:
             return raw_aligned_arrays
-
-
-def reduce_sum(array: 'einexpr.einarray', dims: Union[Container['einexpr.array_api.dimension.Dimension'], Iterator['einexpr.array_api.dimension.Dimension']]) -> 'einexpr.einarray':
-    """
-    Collapse the given array along the given dimensions.
-    """
-    if not set(einexpr.dimension_utils.get_dims(array)) & set(dims):
-        return array
-    if set(dims) - set(einexpr.dimension_utils.get_dims(array)):
-        raise ValueError(f"The dimensions {dims} must be a subset of the dimensions {einexpr.dimension_utils.get_dims(a)} of the input array.")
-    return einexpr.einarray(
-        einexpr.dimension_utils.get_raw(array).__array_namespace__().sum(einexpr.dimension_utils.get_raw(array), axis=tuple(i for i, dim in enumerate(einexpr.dimension_utils.get_dims(array)) if dim in dims)),
-        dims=[dim for dim in einexpr.dimension_utils.get_dims(array) if dim not in dims], ambiguous_dims={dim for dim in einexpr.dimension_utils.get_dims(array) if dim not in dims}
-    )

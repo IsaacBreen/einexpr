@@ -97,7 +97,7 @@ class MultiDimensionReduction:
         assert isinstance(args, (list, tuple))
         assert isinstance(kwargs, dict)
         assert all(isinstance(arg, (einexpr.einarray, int, float)) for arg in args)
-        assert 'axis' in args
+        assert 'axis' in kwargs
     
     @staticmethod
     def _calculate_axis(args, kwargs):

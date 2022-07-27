@@ -350,7 +350,7 @@ def random_einexpr(expr_maker, random_expr_json):
         print(expr_json_to_str(random_expr_json))
         raise e
     out = expr[random_expr_json["out_dims"]]
-    if hasattr(out, 'dims') and tuple(out.dims) != tuple(random_expr_json["out_dims"]):
+    if hasattr(out, 'dims') and einexpr.dimension_utils.primitivize_dims(out.dims) != tuple(random_expr_json["out_dims"]):
         raise ValueError("dims and out_dims are not compatible")
     return out
 

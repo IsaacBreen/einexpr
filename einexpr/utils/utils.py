@@ -1,4 +1,5 @@
 from __future__ import annotations
+from dataclasses import dataclass, field
 
 import functools
 import inspect
@@ -264,3 +265,11 @@ def pedantic_dict_merge(*dicts: Dict) -> Dict:
                 raise ValueError(f'Duplicate key {key} with different values: {result[key]} and {value}')
             result[key] = value
     return result
+
+
+@dataclass(frozen=True)
+class ExpandSentinel:
+    """
+    A sentinel object that indicates that an iterable should be expanded into its parent.
+    """
+    content: Iterable = field(default_factory=list)
