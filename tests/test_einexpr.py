@@ -17,7 +17,7 @@ import pytest
 
 pp = pprint.PrettyPrinter(indent=4)
 
-N_TRIALS_MULTIPLIER = 10
+N_TRIALS_MULTIPLIER = 1000
 TOLERANCE = 1e-12
 DEFAULT_DTYPE = npa.float64
 
@@ -411,6 +411,7 @@ def test_random_expr(seed, random_expr_json, random_expr_value, random_einexpr):
                 raise ValueError(f"Values do not match: {expr.__array__()} != {val}")
 
 
+@pytest.mark.skip
 def test_list_to_einarray():
     x = einexpr.einarray([1,2,3], dims='i')
     y = x+x
@@ -487,8 +488,8 @@ def test_reshape():
     x = einexpr.einarray([[1,2,3],[4,5,6]], dims='i j')
     assert x.shape == (2,3)
     assert x['(i->n) j'].shape == (2,3)
-    assert x['i j -> (i j)'].shape == (6,)
-    assert x['i j -> n'].shape == (6,)
+    assert x['(i j)'].shape == (6,)
+    assert x['(i j) -> n'].shape == (6,)
     assert x['j i'].shape == (3,2)
     assert x['(j->m) (i->n)'].shape == (3,2)
 

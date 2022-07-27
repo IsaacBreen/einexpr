@@ -45,6 +45,8 @@ class einarray():
             backend_module = einexpr.backends.get_array_api_backend(backend)
             self.a = backend_module.asarray(self.a)
         self.dims = einexpr.dimension_utils.process_dims_declaration(self.dims, self.a.shape)
+        if any(einexpr.dimension_utils.compute_total_size(dim) is None for dim in self.dims):
+            raise einexpr.exceptions.InternalError("All dimensions must have a size.")
         if einexpr.dimension_utils.is_dimensionless(self.a):
             if len(self.dims) != 0:
                 raise ValueError(dims, "If the input is a scalar, the dimensions must be empty.")
@@ -801,16 +803,20 @@ class einarray():
                 raise NotImplementedError("Indexing with integers is not yet supported.")
             elif k is ellipsis:
                 raise NotImplementedError("Ellipsis is not yet supported.")
-        # Suppose ``x`` is an einarray that we want to reshape from ``i (j k)`` to ``(k i)->n l``. This entails three operations:
+        # Suppose ``x`` is an einarray that we want to reshape from ``i (j k)`` to ``(k i)->n``. This entails three operations:
         # 1. Collapse along dimension ``j``.
         # 2. Reorder the dimensions ``i`` and ``k``.
         # 3. Combine ``i`` and ``k`` into a single dimension ``n``.
-        # 4. Create a new dimension ``l``.
         # Prepare the 'instructions'
         instructions = einexpr.dimension_utils.process_dims_reshape(key, existing_dims=self.dims)
         # Calculate the dimensions of the output array before any replacements are made.
         final_dims_before_replacement = einexpr.dimension_utils.ignore_replacements(instructions)
-        # Align the raw array to these. This performs steps 1-4 but only returns a raw array (without names).
+        # Ensure that these are a subset of the existing dimensions.
+        final_names = set(einexpr.dimension_utils.gather_names(final_dims_before_replacement))
+        current_names = set(einexpr.dimension_utils.gather_names(self.dims))
+        if not final_names <= current_names:
+            raise ValueError(f"The named dimensions {final_names} of the output array are not a subset of the existing dimensions {current_names}.")
+        # Align the raw array to these. This performs steps 1-3 but only returns a raw array (without names).
         raw_array: einexpr.types.NonEinArray = einexpr.backends.align_to_dims(self, final_dims_before_replacement)
         # Put the raw array into an einarray with the replacement dimensions.
         final_dims = einexpr.dimension_utils.apply_replacements(instructions)

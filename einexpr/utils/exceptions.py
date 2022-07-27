@@ -4,3 +4,7 @@ class InternalError(Exception):
 
 class DimensionMismatch(Exception):
     pass
+
+
+class InternalError(Exception):
+    pass

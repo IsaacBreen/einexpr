@@ -26,7 +26,7 @@ class Dimension(DimensionObject):
     size: int = field(default=None)
 
 
-@dataclass(frozen=True, eq=True)
+@dataclass(frozen=True, eq=True, order=True)
 class NamedDimension(Dimension):
     """
     A named dimension that binds eagerly to other dimensions of the same name.
@@ -40,6 +40,8 @@ class NamedDimension(Dimension):
 
     def __str__(self):
         return self.name
+    
+
 
 
 @dataclass(frozen=True, eq=False)
@@ -81,6 +83,12 @@ class DimensionTuple(DimensionObject):
         if not isinstance(other, DimensionTuple):
             return False
         return self.dimensions == other.dimensions
+    
+    def __lt__(self, other):
+        if isinstance(other, DimensionTuple):
+            return self.dimensions < other.dimensions
+        else:
+            raise TypeError(f"Cannot compare {type(other)} to DimensionTuple")
 
     def __getitem__(self, index):
         return self.dimensions[index]

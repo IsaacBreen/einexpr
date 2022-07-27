@@ -123,8 +123,8 @@ class TreeToReshapeDimension(Transformer):
     def start(self, root_dims) -> Any:
         return root_dims
 
-    def root_dims(self, *dims) -> einexpr.array_api.dimension.DimensionTuple:
-        return einexpr.array_api.dimension.DimensionTuple(dim for dim in dims if dim is not None)
+    def root_dims(self, dim: D) -> D:
+        return dim
 
     def replacable_dim(self, value) -> Union[einexpr.array_api.dimension.Dimension, einexpr.array_api.dimension.DimensionTuple]:
         return value
@@ -140,8 +140,11 @@ class TreeToReshapeDimension(Transformer):
         else:
             raise ValueError(f"Unexpected value {value}.")
 
-    def tuple(self, *dims) -> einexpr.array_api.dimension.DimensionTuple:
-        return einexpr.array_api.dimension.DimensionTuple(dim for dim in dims if dim is not None)
+    def tuple(self, expand_sentinel: einexpr.utils.ExpandSentinel) -> einexpr.array_api.dimension.DimensionTuple:
+        return einexpr.array_api.dimension.DimensionTuple(expand_sentinel.content)
+    
+    def bare_tuple(self, *dims) -> einexpr.utils.ExpandSentinel:
+        return einexpr.utils.ExpandSentinel(tuple(dim for dim in dims if dim is not None))
     
     def sequence(self, *xs) -> Tuple:
         return einexpr.array_api.dimension.DimensionTuple(x for x in xs if x is not None)
@@ -163,12 +166,12 @@ dims_reshape_grammar = Lark(
         %ignore WS
 
         start: root_dims
-        root_dims: (replacable_dim [sep])* | dim_replacement
-        ?replacable_dim: dim | "(" ( replacable_dim | dim_replacement ) ")" | tuple{replacable_dim}
-        dim_replacement: ( irreplacable_dim | sequence{irreplacable_dim} ) "->" ( irreplacable_dim | sequence{replacable_dim} )
+        ?root_dims: replacable_dim | bare_tuple{replacable_dim}
+        ?replacable_dim: dim | "(" replacable_dim ")" | dim_replacement | tuple{replacable_dim}
+        dim_replacement: irreplacable_dim "->" irreplacable_dim
         ?irreplacable_dim: dim | "(" irreplacable_dim ")" | tuple{irreplacable_dim}
-        tuple{x}: "(" x sep ")" | "(" sequence{x} ")"
-        sequence{x}: x [sep] (x [sep])+
+        tuple{x}: "(" bare_tuple{x} ")"
+        bare_tuple{x}: x sep | x [sep] (x [sep])+
         ?sep: ","
         dim: NAME
         NAME: /[^\W\d]\w*/
@@ -185,11 +188,18 @@ def parse_dims(dims_raw: Union[str, Tuple]) -> Tuple:
     Dimensions string example: "you_can_use_commas,or_spaces to_separate_dimensions ( l (m n) ) dimension_identifiers_can_be_any_valid_python_identifier"
     """
     if not dims_raw:
-        return ()
+        return einexpr.array_api.dimension.DimensionTuple(())
 
     def helper(dims_raw):
         if isinstance(dims_raw, (tuple, list, einexpr.array_api.dimension.DimensionTuple)):
-            return einexpr.array_api.dimension.DimensionTuple((helper(dim) for dim in dims_raw))
+            children = []
+            for child in dims_raw:
+                child_processed = helper(child)
+                if isinstance(child_processed, einexpr.utils.ExpandSentinel):
+                    children.extend(child_processed.content)
+                else:
+                    children.append(child_processed)
+            return einexpr.array_api.dimension.DimensionTuple(tuple(children))
         elif isinstance(dims_raw, einexpr.array_api.dimension.Dimension):
             return dims_raw
         elif isinstance(dims_raw, str):
@@ -197,14 +207,16 @@ def parse_dims(dims_raw: Union[str, Tuple]) -> Tuple:
             return TreeToReshapeDimension().transform(tree)
         else:
             raise ValueError(f"Unexpected value {dims_raw}.")
+    
     dims = helper(dims_raw)
+    if isinstance(dims, einexpr.utils.ExpandSentinel):
+        dims = einexpr.array_api.dimension.DimensionTuple(dims.content)
+    elif isinstance(dims_raw, str) or isinstance(dims, einexpr.array_api.dimension.Dimension):
+        dims = einexpr.array_api.dimension.DimensionTuple((dims,))
     dims = propogate_sizes(dims)
-    if isinstance(dims, einexpr.array_api.dimension.Dimension):
-        return (dims,)
-    else:
-        return dims
-
-
+    if not isinstance(dims, einexpr.array_api.dimension.DimensionTuple):
+        raise ValueError(f"Unexpected value {dims}.")
+    return dims
 
 def parse_dims_reshape(dims_raw: Union[str, Tuple]) -> Tuple:
     """
@@ -352,7 +364,10 @@ def process_dims_declaration(dims_raw: Union[str, Tuple], shape: Tuple[int]) -> 
     if len(dims) != len(shape):
         raise ValueError(f"Declaration {dims_raw} has wrong number of dimensions. Expected {len(shape)}, got {len(dims)}.")
     dim_sizes = gather_sizes(dims) | {dim.name: size for dim, size in zip(dims, shape) if isinstance(dim, einexpr.array_api.dimension.NamedDimension)}
-    return propogate_sizes(dims, dim_sizes)
+    dims = propogate_sizes(dims, dim_sizes)
+    if any(compute_total_size(dim) is None for dim in dims):
+        raise einexpr.exceptions.InternalError("All dimensions must have a size.")
+    return dims
 
 
 def process_dims_reshape(dims_raw: Union[str, Tuple], existing_dims: einexpr.array_api.dimension.DimensionObject) -> einexpr.array_api.dimension.Dimensions:
