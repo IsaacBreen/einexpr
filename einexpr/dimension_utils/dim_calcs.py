@@ -433,10 +433,12 @@ def primitivize_dims(dims: einexpr.array_api.dimension.DimensionObject) -> einex
     """
     if isinstance(dims, einexpr.array_api.dimension.DimensionReplacement):
         return primitivize_dims(dims.replacement)
-    elif isinstance(dims, (tuple, einexpr.array_api.dimension.DimensionTuple)):
+    elif isinstance(dims, (list, tuple, einexpr.array_api.dimension.DimensionTuple)):
         return tuple(primitivize_dims(dim) for dim in dims)
     elif isinstance(dims, einexpr.array_api.dimension.Dimension):
         return dims.name
+    elif isinstance(dims, (int, str)):
+        return dims
     else:
         raise ValueError(f"Unexpected value {dims}.")
 

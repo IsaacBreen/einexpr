@@ -62,23 +62,37 @@ class einarray():
     def get_dims_unordered(self: array) -> Set[Dimension]:
         return set(self.dims)
     
-    # def coerce(self: array, dims: Tuple[Dimension], do_not_collapse: Set[Dimension] = None, force_align: bool = True, ambiguous_dims: Set[Dimension] = None) -> einexpr.einarray:
-    #     do_not_collapse = do_not_collapse or set()
-    #     ambiguous_dims = ambiguous_dims or set()
-    #     # Check that the dimensions are valid.
-    #     if not einexpr.dimension_utils.dims_issubset(einexpr.dimension_utils.ignore_replacements(dims), self.dims):
-    #         raise ValueError(f"The dimensions {dims} are not a subset of the dimensions {self.dims} of the array.")
-    #     if not einexpr.dimension_utils.dims_issubset(ambiguous_dims, self.ambiguous_dims):
-    #         raise ValueError(f"The ambiguous dimensions {ambiguous_dims} are not a subset of the ambiguous dimensions {self.ambiguous_dims} of the array.")
-    #     # Collapse all dimensions except those in contained in dims or do_not_collapse.
-    #     dims_to_collapse = set(self.dims) - set(einexpr.dimension_utils.ignore_replacements(dims)) - do_not_collapse
-    #     out = einexpr.backends.reduce_sum(self, dims, dims_to_collapse)
-    #     if not force_align:
-    #         return out
-    #     else:
-    #         out_dims = [dim for dim in dims if dim in out.dims] + [dim for dim in out.dims if dim not in dims and dim in do_not_collapse]
-    #         return einarray(einexpr.backends.align_to_dims(out, out_dims), dims=out_dims, ambiguous_dims=ambiguous_dims)
-    
+    def coerce(self: array, dims: Tuple[Dimension]) -> einexpr.einarray:
+        # Note that ``(j k)->n`` means 'flatten along the dimensions named ``j`` and ``k`` and name the
+        # resulting dimension ``n``'.        
+        # TODO: fix this
+        for k in dims:
+            if isinstance(k, slice):
+                if isinstance(k.start, int) or isinstance(k.stop, int) or isinstance(k.step, int):
+                    raise NotImplementedError("Slicing with integers is not yet supported.")
+            elif isinstance(k, int):
+                raise NotImplementedError("Indexing with integers is not yet supported.")
+            elif k is ellipsis:
+                raise NotImplementedError("Ellipsis is not yet supported.")
+        # Suppose ``x`` is an einarray that we want to reshape from ``i (j k)`` to ``(k i)->n``. This entails three operations:
+        # 1. Collapse along dimension ``j``.
+        # 2. Reorder the dimensions ``i`` and ``k``.
+        # 3. Combine ``i`` and ``k`` into a single dimension ``n``.
+        # Prepare the 'instructions'
+        instructions = einexpr.dimension_utils.process_dims_reshape(dims, existing_dims=self.dims)
+        # Calculate the dimensions of the output array before any replacements are made.
+        final_dims_before_replacement = einexpr.dimension_utils.ignore_replacements(instructions)
+        # Ensure that these are a subset of the existing dimensions.
+        final_names = set(einexpr.dimension_utils.gather_names(final_dims_before_replacement))
+        current_names = set(einexpr.dimension_utils.gather_names(self.dims))
+        if not final_names <= current_names:
+            raise ValueError(f"The named dimensions {final_names} of the output array are not a subset of the existing dimensions {current_names}.")
+        # Align the raw array to these. This performs steps 1-3 but only returns a raw array (without names).
+        raw_array: einexpr.types.NonEinArray = einexpr.backends.align_to_dims(self, final_dims_before_replacement)
+        # Put the raw array into an einarray with the replacement dimensions.
+        final_dims = einexpr.dimension_utils.apply_replacements(instructions)
+        return einexpr.einarray(raw_array, dims=final_dims)    
+
     def __array__(self: array, dtype: Optional[npt.DTypeLike] = None) -> einexpr.einarray:
         return self.a
 
@@ -86,7 +100,7 @@ class einarray():
         return einarray(einexpr.backends.PseudoRawArray(), dims=self.dims, ambiguous_dims=self.ambiguous_dims)
 
     def __repr__(self: array) -> str:
-        return f"einarray({self.a}, {self.dims})"
+        return f"einarray({self.a}, dims={self.dims})"
 
     @property
     def dtype(self: array) -> Dtype:
@@ -776,51 +790,26 @@ class einarray():
             ambiguous_dims=ambiguous_dims)
         return result
 
-    def __getitem__(self: array, key: Union[int, slice, ellipsis, Tuple[Union[int, slice, ellipsis], ...], array], /) -> array:
+    # TODO: type hint is wrong
+    def __getitem__(self: array, key: Union[int, slice, ellipsis, Tuple[Union[int, slice, ellipsis], ...], array, str, einexpr.DimensionObject, Tuple[Union[str, einexpr.DimensionObject, ellipsis], ...]], /) -> array:
         """
-        Returns ``self[key]``.
+        When called with an integer, a slice, or a tuple of integers or slices, returns a new array containing the elements at the given indices.
+        
+        When called with a string, a dimension, or a tuple of dimensions, returns a new einarray with its dimensions rearranged to match the given order, and collapses any dimensions that are not specified.
 
         Parameters
         ----------
         self: array
             array instance.
-        key: Union[int, slice, ellipsis, Tuple[Union[int, slice, ellipsis], ...], array]
+        key: Union[int, slice, ellipsis, Tuple[Union[int, slice, ellipsis], ...], array, str, einexpr.DimensionObject, Tuple[Union[str, einexpr.DimensionObject, ellipsis], ...]]
             index key.
 
         Returns
         -------
         out: array
-            an array containing the accessed value(s). The returned array must have the same data type as ``self``.
+            an array containing the accessed value(s) if called with integer keys, or a new einarray with the accessed value(s) if called with strings or dimension objects.
         """
-        # Note that ``(j k)->n`` means 'flatten along the dimensions named ``j`` and ``k`` and name the
-        # resulting dimension ``n``'.        
-        # TODO: fix this
-        for k in key:
-            if isinstance(k, slice):
-                if isinstance(k.start, int) or isinstance(k.stop, int) or isinstance(k.step, int):
-                    raise NotImplementedError("Slicing with integers is not yet supported.")
-            elif isinstance(k, int):
-                raise NotImplementedError("Indexing with integers is not yet supported.")
-            elif k is ellipsis:
-                raise NotImplementedError("Ellipsis is not yet supported.")
-        # Suppose ``x`` is an einarray that we want to reshape from ``i (j k)`` to ``(k i)->n``. This entails three operations:
-        # 1. Collapse along dimension ``j``.
-        # 2. Reorder the dimensions ``i`` and ``k``.
-        # 3. Combine ``i`` and ``k`` into a single dimension ``n``.
-        # Prepare the 'instructions'
-        instructions = einexpr.dimension_utils.process_dims_reshape(key, existing_dims=self.dims)
-        # Calculate the dimensions of the output array before any replacements are made.
-        final_dims_before_replacement = einexpr.dimension_utils.ignore_replacements(instructions)
-        # Ensure that these are a subset of the existing dimensions.
-        final_names = set(einexpr.dimension_utils.gather_names(final_dims_before_replacement))
-        current_names = set(einexpr.dimension_utils.gather_names(self.dims))
-        if not final_names <= current_names:
-            raise ValueError(f"The named dimensions {final_names} of the output array are not a subset of the existing dimensions {current_names}.")
-        # Align the raw array to these. This performs steps 1-3 but only returns a raw array (without names).
-        raw_array: einexpr.types.NonEinArray = einexpr.backends.align_to_dims(self, final_dims_before_replacement)
-        # Put the raw array into an einarray with the replacement dimensions.
-        final_dims = einexpr.dimension_utils.apply_replacements(instructions)
-        return einexpr.einarray(raw_array, dims=final_dims)
+        return self.coerce(key)
 
     def __gt__(self: array, other: Union[int, float, array], /) -> array:
         """

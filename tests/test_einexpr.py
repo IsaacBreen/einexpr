@@ -493,14 +493,12 @@ def test_reshape():
     assert x['j i'].shape == (3,2)
     assert x['(j->m) (i->n)'].shape == (3,2)
 
-    # x['(i j) -> (j i)']
-    # x['i j -> j i']
 
-    # x['i->n j->m']
-    # x['(i->n) (j->m)']
-
-    # x['i j -> n']
-    # x['(i j) -> n']
+def test_named_axis(X):
+    X = einexpr.einarray(X, dims='i j')
+    assert einexpr.dimension_utils.primitivize_dims(einexpr.sum(X, axis='i').dims) == einexpr.dimension_utils.primitivize_dims(einexpr.sum(X, axis=0).dims) == ('j',)
+    assert einexpr.dimension_utils.primitivize_dims(einexpr.sum(X, axis='j').dims) == einexpr.dimension_utils.primitivize_dims(einexpr.sum(X, axis=1).dims) == ('i',)
     
-    
-    # y['((i j)) -> (i j)']
+    Y = X['(i j)']
+    assert einexpr.dimension_utils.primitivize_dims(Y.dims) == (('i', 'j'),)
+    assert einexpr.dimension_utils.primitivize_dims(einexpr.sum(Y, axis='i').dims) == (('j',),)

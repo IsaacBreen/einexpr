@@ -103,10 +103,13 @@ class MultiDimensionReduction:
     def _calculate_axis(args, kwargs):
         axis = kwargs.get('axis')
         if axis is None:
-            axis = list(range(len(get_dims(args[0]))))
+            axis = tuple(range(len(get_dims(args[0]))))
         elif isinstance(axis, (einexpr.array_api.dimension.Dimension, int)):
-            axis = [axis]
-        axis = [get_dims(args[0]).index(dim) if isinstance(dim, einexpr.array_api.dimension.Dimension) else dim for dim in axis]
+            axis = (axis,)
+        elif isinstance(axis, set):
+            axis = tuple(axis)
+        dims_primitive = einexpr.dimension_utils.primitivize_dims(get_dims(args[0]))
+        axis = [dims_primitive.index(dim) if isinstance(dim, (list, tuple, str)) else dim for dim in einexpr.dimension_utils.primitivize_dims(axis)]
         assert all(isinstance(dim, int) for dim in axis)
         axis = [i if i >= 0 else i + len(get_dims(args[0])) for i in axis]
         return tuple(axis)
