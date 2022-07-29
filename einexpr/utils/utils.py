@@ -1,4 +1,5 @@
 from __future__ import annotations
+import collections
 from dataclasses import dataclass, field
 
 import functools
@@ -10,6 +11,9 @@ from typing import *
 import warnings
 
 import numpy as np
+
+
+T = TypeVar('T')
 
 
 def deprecated(func):
@@ -207,22 +211,6 @@ def list_to_english(lst: List) -> str:
             return ', '.join(str(item) for item in lst[:-1]) + ' and ' + str(lst[-1])
 
 
-def pytree_mapreduce(tree, map_func, reduce_func=lambda x: x):
-    """
-    Mapreduce a tree of Python objects.
-    """
-    if isinstance(tree, list):
-        return reduce_func([pytree_mapreduce(item, map_func, reduce_func) for item in tree])
-    elif isinstance(tree, tuple):
-        return reduce_func(tuple(pytree_mapreduce(item, map_func, reduce_func) for item in tree))
-    elif isinstance(tree, dict):
-        return reduce_func({key: pytree_mapreduce(value, map_func, reduce_func) for key, value in tree.items()})
-    elif isinstance(tree, set):
-        return reduce_func({pytree_mapreduce(item, map_func, reduce_func) for item in tree})
-    else:
-        return map_func(tree)
-    
-    
 def deep_str(tree):
     """
     Convert a tree of Python objects to a string.
@@ -273,3 +261,55 @@ class ExpandSentinel:
     A sentinel object that indicates that an iterable should be expanded into its parent.
     """
     content: Iterable = field(default_factory=list)
+
+
+@dataclass(frozen=True)
+class RemoveSentinel:
+    """
+    A sentinel object that indicates that an element should be removed from its parent.
+    """
+    pass
+
+
+def pytree_mapreduce(tree, map_func=lambda x: x, reduce_func=lambda x: x):
+    """
+    Mapreduce a tree of Python objects.
+    """
+    if isinstance(tree, list):
+        return reduce_func(list(_item for item in tree if not isinstance(_item := pytree_mapreduce(item, map_func, reduce_func), RemoveSentinel)))
+    elif isinstance(tree, tuple):
+        return reduce_func(tuple(_item for item in tree if not isinstance(_item := pytree_mapreduce(item, map_func, reduce_func), RemoveSentinel)))
+    elif isinstance(tree, dict):
+        return reduce_func({key: _value for key, value in tree.items() if not isinstance(_value := pytree_mapreduce(value, map_func, reduce_func), RemoveSentinel)})
+    elif isinstance(tree, set):
+        return reduce_func({_item for item in tree if not isinstance(_item := pytree_mapreduce(item, map_func, reduce_func), RemoveSentinel)})
+    else:
+        return map_func(tree)
+
+
+def deep_remove(tree: T, match_func: Callable[Any, bool]) -> T:
+    """
+    Remove elements from a tree of Python objects.
+    """
+    return pytree_mapreduce(tree, lambda x: x, lambda x: x if not match_func(x) else RemoveSentinel())
+
+
+def get_position(tree, item):
+    if isinstance(tree, collections.abc.Sequence) and not isinstance(tree, str):
+        for i, subtree in enumerate(tree):
+            if subtree == item:
+                return (i,)
+            elif (child_position := get_position(subtree, item)) is not None:
+                return (i,) + child_position
+    return None
+
+
+def split_at(tree, position):
+    if len(position) == 1:
+        return tree[:position[0]], tree[position[0]+1:]
+    elif isinstance(tree, list):
+        lhs, rhs = split_at(tree[position[0]], position[1:])
+        return [*tree[:position[0]], lhs], [rhs, *tree[position[0]+1:]]
+    else:
+        lhs, rhs = split_at(tree[position[0]], position[1:])
+        return (*tree[:position[0]], lhs), (rhs, *tree[position[0]+1:])

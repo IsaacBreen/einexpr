@@ -2,7 +2,7 @@ from importlib.metadata import entry_points, EntryPoint
 import sys
 from collections import namedtuple
 from types import ModuleType
-from typing import Any, Callable, Dict, Union
+from typing import Any, Callable, Dict, Optional, Union
 import einexpr
 
 
@@ -45,7 +45,7 @@ def _discover_default_array_api() -> ModuleType:
         _DEFAULT_BACKEND = list(_BACKENDS.values()).pop().load()
 
 
-def get_array_api_backend(name: Union[str, None]) -> ModuleType:
+def get_array_api_backend(name: Optional[str] = None) -> ModuleType:
     """
     Returns the array API backend with the given name.
     """

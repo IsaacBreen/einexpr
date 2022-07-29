@@ -1,3 +1,4 @@
+from types import ModuleType
 from typing import Sequence
 
 from ._types import (List, NestedSequence, Optional, SupportsBufferProtocol, Tuple, Union, array, device, dtype)
@@ -6,7 +7,7 @@ from .dimension import Dimensions
 import einexpr
 
 
-def arange(start: Union[int, float], /, stop: Optional[Union[int, float]] = None, step: Union[int, float] = 1, *, dtype: Optional[dtype] = None, device: Optional[device] = None) -> array:
+def arange(start: Union[int, float], /, stop: Optional[Union[int, float]] = None, step: Union[int, float] = 1, *, dtype: Optional[dtype] = None, device: Optional[device] = None, dims: Dimensions = (), backend: Union[ModuleType, str] = None) -> array:
     """
     Returns evenly spaced values within the half-open interval ``[start, stop)`` as a one-dimensional array.
 
@@ -32,9 +33,15 @@ def arange(start: Union[int, float], /, stop: Optional[Union[int, float]] = None
     out: array
         a one-dimensional array containing evenly spaced values. The length of the output array must be ``ceil((stop-start)/step)`` if ``stop - start`` and ``step`` have the same sign, and length ``0`` otherwise.
     """
-    raise NotImplementedError
+    if backend is None:
+        backend = einexpr.backends.get_array_api_backend()
+    if isinstance(backend, str):
+        backend = einexpr.backends.get_array_api_backend(backend)
+    elif not isinstance(backend, ModuleType):
+        raise TypeError(f"If specified, backend must be a module or a string, not {type(backend)}")
+    return einexpr.einarray(backend.arange(start, stop, step, dtype=dtype, device=device), dims=dims)
 
-def asarray(obj: Union[array, bool, int, float, complex, NestedSequence, SupportsBufferProtocol], /, *, dims: Dimensions = (), dtype: Optional[dtype] = None, device: Optional[device] = None, copy: Optional[bool] = None) -> array:
+def asarray(obj: Union[array, bool, int, float, complex, NestedSequence, SupportsBufferProtocol], /, *, dtype: Optional[dtype] = None, device: Optional[device] = None, copy: Optional[bool] = None, dims: Dimensions = (), backend: Union[ModuleType, str] = None) -> array:
     r"""
     Convert the input to an array.
 
@@ -78,7 +85,7 @@ def asarray(obj: Union[array, bool, int, float, complex, NestedSequence, Support
     """
     return einexpr.einarray(obj, dims=dims)
 
-def empty(shape: Union[int, Tuple[int, ...]], *, dtype: Optional[dtype] = None, device: Optional[device] = None) -> array:
+def empty(shape: Union[int, Tuple[int, ...]], *, dtype: Optional[dtype] = None, device: Optional[device] = None, dims: Dimensions = (), backend: Union[ModuleType, str] = None) -> array:
     """
     Returns an uninitialized array having a specified `shape`.
 
@@ -96,9 +103,15 @@ def empty(shape: Union[int, Tuple[int, ...]], *, dtype: Optional[dtype] = None, 
     out: array
         an array containing uninitialized data.
     """
-    raise NotImplementedError
+    if backend is None:
+        backend = einexpr.backends.get_array_api_backend()
+    if isinstance(backend, str):
+        backend = einexpr.backends.get_array_api_backend(backend)
+    elif not isinstance(backend, ModuleType):
+        raise TypeError(f"If specified, backend must be a module or a string, not {type(backend)}")
+    return einexpr.einarray(backend.empty(shape, dtype=dtype, device=device), dims=dims)
 
-def empty_like(x: array, /, *, dtype: Optional[dtype] = None, device: Optional[device] = None) -> array:
+def empty_like(x: array, /, *, dtype: Optional[dtype] = None, device: Optional[device] = None, dims: Dimensions = (), backend: Union[ModuleType, str] = None) -> array:
     """
     Returns an uninitialized array with the same ``shape`` as an input array ``x``.
 
@@ -116,9 +129,21 @@ def empty_like(x: array, /, *, dtype: Optional[dtype] = None, device: Optional[d
     out: array
         an array having the same shape as ``x`` and containing uninitialized data.
     """
-    raise NotImplementedError
+    args = (x,)
+    kwargs = {'dtype': dtype, 'device': device, 'dims': dims}
+    helper = einexpr.dimension_utils.MultiArgumentElementwise
+    helper.validate_args(args, kwargs)
+    out_dims = helper.calculate_output_dims(args, kwargs)
+    ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
+    processed_args, processed_kwargs = helper.process_args(args, kwargs)
+    result = einexpr.einarray(
+        x.a.__array_namespace__().full_like(*processed_args, **processed_kwargs), 
+        dims=out_dims, 
+        ambiguous_dims=ambiguous_dims)
+    return result
 
-def eye(n_rows: int, n_cols: Optional[int] = None, /, *, k: int = 0, dtype: Optional[dtype] = None, device: Optional[device] = None) -> array:
+
+def eye(n_rows: int, n_cols: Optional[int] = None, /, *, k: int = 0, dtype: Optional[dtype] = None, device: Optional[device] = None, dims: Dimensions = (), backend: Union[ModuleType, str] = None) -> array:
     """
     Returns a two-dimensional array with ones on the ``k``\th diagonal and zeros elsewhere.
 
@@ -143,9 +168,15 @@ def eye(n_rows: int, n_cols: Optional[int] = None, /, *, k: int = 0, dtype: Opti
     out: array
         an array where all elements are equal to zero, except for the ``k``\th diagonal, whose values are equal to one.
     """
-    raise NotImplementedError
+    if backend is None:
+        backend = einexpr.backends.get_array_api_backend()
+    if isinstance(backend, str):
+        backend = einexpr.backends.get_array_api_backend(backend)
+    elif not isinstance(backend, ModuleType):
+        raise TypeError(f"If specified, backend must be a module or a string, not {type(backend)}")
+    return einexpr.einarray(backend.eye(n_rows, n_cols=n_cols, k=k, dtype=dtype, device=device), dims=dims)
 
-def from_dlpack(x: object, /) -> array:
+def from_dlpack(x: object, /, dims: Dimensions = (), backend: Union[ModuleType, str] = None) -> array:
     """
     Returns a new array containing the data from another (array) object with a ``__dlpack__`` method.
 
@@ -164,9 +195,15 @@ def from_dlpack(x: object, /) -> array:
 
            The returned array may be either a copy or a view. See :ref:`data-interchange` for details.
     """
-    raise NotImplementedError
+    if backend is None:
+        backend = einexpr.backends.get_array_api_backend()
+    if isinstance(backend, str):
+        backend = einexpr.backends.get_array_api_backend(backend)
+    elif not isinstance(backend, ModuleType):
+        raise TypeError(f"If specified, backend must be a module or a string, not {type(backend)}")
+    return einexpr.einarray(backend.from_dlpack(x), dims=dims)
 
-def full(shape: Union[int, Tuple[int, ...]], fill_value: Union[bool, int, float, complex], *, dtype: Optional[dtype] = None, device: Optional[device] = None) -> array:
+def full(shape: Union[int, Tuple[int, ...]], fill_value: Union[bool, int, float, complex], *, dtype: Optional[dtype] = None, device: Optional[device] = None, dims: Dimensions = (), backend: Union[ModuleType, str] = None) -> array:
     """
     Returns a new array having a specified ``shape`` and filled with ``fill_value``.
 
@@ -195,9 +232,15 @@ def full(shape: Union[int, Tuple[int, ...]], fill_value: Union[bool, int, float,
     out: array
         an array where every element is equal to ``fill_value``.
     """
-    raise NotImplementedError
+    if backend is None:
+        backend = einexpr.backends.get_array_api_backend()
+    if isinstance(backend, str):
+        backend = einexpr.backends.get_array_api_backend(backend)
+    elif not isinstance(backend, ModuleType):
+        raise TypeError(f"If specified, backend must be a module or a string, not {type(backend)}")
+    return einexpr.einarray(backend.full(shape, fill_value, dtype=dtype, device=device), dims=dims)
 
-def full_like(x: array, /, fill_value: Union[bool, int, float, complex], *, dtype: Optional[dtype] = None, device: Optional[device] = None) -> array:
+def full_like(x: array, /, fill_value: Union[bool, int, float, complex], *, dtype: Optional[dtype] = None, device: Optional[device] = None, dims: Dimensions = (), backend: Union[ModuleType, str] = None) -> array:
     """
     Returns a new array filled with ``fill_value`` and having the same ``shape`` as an input array ``x``.
 
@@ -237,7 +280,7 @@ def full_like(x: array, /, fill_value: Union[bool, int, float, complex], *, dtyp
         ambiguous_dims=ambiguous_dims)
     return result
 
-def linspace(start: Union[int, float], stop: Union[int, float], /, num: int, *, dtype: Optional[dtype] = None, device: Optional[device] = None, endpoint: bool = True) -> array:
+def linspace(start: Union[int, float], stop: Union[int, float], /, num: int, *, dtype: Optional[dtype] = None, device: Optional[device] = None, endpoint: bool = True, dims: Dimensions = (), backend: Union[ModuleType, str] = None) -> array:
     """
     Returns evenly spaced numbers over a specified interval.
 
@@ -272,7 +315,13 @@ def linspace(start: Union[int, float], stop: Union[int, float], /, num: int, *, 
     .. note::
        As mixed data type promotion is implementation-defined, behavior when ``start`` or ``stop`` exceeds the maximum safe integer of an output real-valued floating-point data type is implementation-defined. An implementation may choose to overflow or raise an exception.
     """
-    raise NotImplementedError
+    if backend is None:
+        backend = einexpr.backends.get_array_api_backend()
+    if isinstance(backend, str):
+        backend = einexpr.backends.get_array_api_backend(backend)
+    elif not isinstance(backend, ModuleType):
+        raise TypeError(f"If specified, backend must be a module or a string, not {type(backend)}")
+    return einexpr.einarray(backend.linspace(start, stop, num, dtype=dtype, device=device, endpoint=endpoint), dims=dims)
 
 def meshgrid(*arrays: array, indexing: str = 'xy') -> List[array]:
     """
@@ -301,7 +350,7 @@ def meshgrid(*arrays: array, indexing: str = 'xy') -> List[array]:
     """
     raise NotImplementedError
 
-def ones(shape: Union[int, Tuple[int, ...]], *, dtype: Optional[dtype] = None, device: Optional[device] = None) -> array:
+def ones(shape: Union[int, Tuple[int, ...]], *, dtype: Optional[dtype] = None, device: Optional[device] = None, dims: Dimensions = (), backend: Union[ModuleType, str] = None) -> array:
     """
     Returns a new array having a specified ``shape`` and filled with ones.
 
@@ -322,9 +371,15 @@ def ones(shape: Union[int, Tuple[int, ...]], *, dtype: Optional[dtype] = None, d
     out: array
         an array containing ones.
     """
-    raise NotImplementedError
+    if backend is None:
+        backend = einexpr.backends.get_array_api_backend()
+    if isinstance(backend, str):
+        backend = einexpr.backends.get_array_api_backend(backend)
+    elif not isinstance(backend, ModuleType):
+        raise TypeError(f"If specified, backend must be a module or a string, not {type(backend)}")
+    return einexpr.einarray(backend.ones(shape, dtype=dtype, device=device), dims=dims)
 
-def ones_like(x: array, /, *, dtype: Optional[dtype] = None, device: Optional[device] = None) -> array:
+def ones_like(x: array, /, *, dtype: Optional[dtype] = None, device: Optional[device] = None, dims: Dimensions = (), backend: Union[ModuleType, str] = None) -> array:
     """
     Returns a new array filled with ones and having the same ``shape`` as an input array ``x``.
 
@@ -358,7 +413,7 @@ def ones_like(x: array, /, *, dtype: Optional[dtype] = None, device: Optional[de
         ambiguous_dims=ambiguous_dims)
     return result
 
-def tril(x: array, /, *, k: int = 0) -> array:
+def tril(x: array, /, *, k: int = 0, dims: Dimensions = (), backend: Union[ModuleType, str] = None) -> array:
     """
     Returns the lower triangular part of a matrix (or a stack of matrices) ``x``.
 
@@ -380,9 +435,20 @@ def tril(x: array, /, *, k: int = 0) -> array:
     out: array
         an array containing the lower triangular part(s). The returned array must have the same shape and data type as ``x``. All elements above the specified diagonal ``k`` must be zeroed. The returned array should be allocated on the same device as ``x``.
     """
-    raise NotImplementedError
+    args = (x,)
+    kwargs = {'k': k}
+    helper = einexpr.dimension_utils.MultiArgumentElementwise
+    helper.validate_args(args, kwargs)
+    out_dims = helper.calculate_output_dims(args, kwargs)
+    ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
+    processed_args, processed_kwargs = helper.process_args(args, kwargs)
+    result = einexpr.einarray(
+        x.a.__array_namespace__().tril(*processed_args, **processed_kwargs), 
+        dims=out_dims, 
+        ambiguous_dims=ambiguous_dims)
+    return result
 
-def triu(x: array, /, *, k: int = 0) -> array:
+def triu(x: array, /, *, k: int = 0, dims: Dimensions = (), backend: Union[ModuleType, str] = None) -> array:
     """
     Returns the upper triangular part of a matrix (or a stack of matrices) ``x``.
 
@@ -404,9 +470,20 @@ def triu(x: array, /, *, k: int = 0) -> array:
     out: array
         an array containing the upper triangular part(s). The returned array must have the same shape and data type as ``x``. All elements below the specified diagonal ``k`` must be zeroed. The returned array should be allocated on the same device as ``x``.
     """
-    raise NotImplementedError
+    args = (x,)
+    kwargs = {'k': k}
+    helper = einexpr.dimension_utils.MultiArgumentElementwise
+    helper.validate_args(args, kwargs)
+    out_dims = helper.calculate_output_dims(args, kwargs)
+    ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
+    processed_args, processed_kwargs = helper.process_args(args, kwargs)
+    result = einexpr.einarray(
+        x.a.__array_namespace__().triu(*processed_args, **processed_kwargs), 
+        dims=out_dims, 
+        ambiguous_dims=ambiguous_dims)
+    return result
 
-def zeros(shape: Union[int, Tuple[int, ...]], *, dtype: Optional[dtype] = None, device: Optional[device] = None) -> array:
+def zeros(shape: Union[int, Tuple[int, ...]], *, dtype: Optional[dtype] = None, device: Optional[device] = None, dims: Dimensions = (), backend: Union[ModuleType, str] = None) -> array:
     """
     Returns a new array having a specified ``shape`` and filled with zeros.
 
@@ -424,9 +501,15 @@ def zeros(shape: Union[int, Tuple[int, ...]], *, dtype: Optional[dtype] = None, 
     out: array
         an array containing zeros.
     """
-    raise NotImplementedError
+    if backend is None:
+        backend = einexpr.backends.get_array_api_backend()
+    if isinstance(backend, str):
+        backend = einexpr.backends.get_array_api_backend(backend)
+    elif not isinstance(backend, ModuleType):
+        raise TypeError(f"If specified, backend must be a module or a string, not {type(backend)}")
+    return einexpr.einarray(backend.zeros(shape, dtype=dtype, device=device), dims=dims)    
 
-def zeros_like(x: array, /, *, dtype: Optional[dtype] = None, device: Optional[device] = None) -> array:
+def zeros_like(x: array, /, *, dtype: Optional[dtype] = None, device: Optional[device] = None, dims: Dimensions = (), backend: Union[ModuleType, str] = None) -> array:
     """
     Returns a new array filled with zeros and having the same ``shape`` as an input array ``x``.
 

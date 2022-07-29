@@ -100,7 +100,8 @@ class MultiDimensionReduction:
         assert 'axis' in kwargs
     
     @staticmethod
-    def _calculate_axis(args, kwargs):
+    def _calculate_named_axis(args, kwargs):
+        array = args[0]
         axis = kwargs.get('axis')
         if axis is None:
             axis = tuple(range(len(get_dims(args[0]))))
@@ -108,28 +109,60 @@ class MultiDimensionReduction:
             axis = (axis,)
         elif isinstance(axis, set):
             axis = tuple(axis)
-        dims_primitive = einexpr.dimension_utils.primitivize_dims(get_dims(args[0]))
-        axis = [dims_primitive.index(dim) if isinstance(dim, (list, tuple, str)) else dim for dim in einexpr.dimension_utils.primitivize_dims(axis)]
-        assert all(isinstance(dim, int) for dim in axis)
-        axis = [i if i >= 0 else i + len(get_dims(args[0])) for i in axis]
-        return tuple(axis)
+        _axis = []
+        array_dims = einexpr.dimension_utils.primitivize_dims(get_dims(array))
+        # Convert all integer axes into dimension objects
+        for i, dim in enumerate(einexpr.dimension_utils.primitivize_dims(axis)):
+            if isinstance(dim, (list, tuple, str)):
+                _axis.append(dim)
+            elif isinstance(dim, int):
+                _axis.append(array_dims[dim])
+            else:
+                raise TypeError(f'{dim} is not a recognized dimension')
+        axis = tuple(_axis)
+        # Ensure all dimensions are unique
+        flattened_axis = einexpr.dimension_utils.expand_dims(axis)
+        if len(flattened_axis) != len(set(flattened_axis)):
+            raise ValueError(f'Duplicate dimensions in axis: {axis}')
+        # # Isolate the dimensions to be reduced
+        # array_dims = einexpr.dimension_utils.isolate_dims(array_dims, axis)
+        return axis
+    
+    @staticmethod
+    def _calculate_integer_axis(args, kwargs):
+        array: einexpr.einarray = args[0]
+        named_axis = MultiDimensionReduction._calculate_named_axis(args, kwargs)
+        array_dims = einexpr.dimension_utils.isolate_dims(get_dims(array), named_axis)
+        array_dims = einexpr.dimension_utils.primitivize_dims(array_dims)
+        axis = tuple(array_dims.index(dim) for dim in named_axis)
+        return axis
     
     @staticmethod
     def process_args(args, kwargs):
         # args, kwargs = ArgumentHelper.preprocess_args(args, kwargs)
-        axis = MultiDimensionReduction._calculate_axis(args, kwargs)
-        return (get_raw(args[0]), *args[1:]), {**kwargs, 'axis': axis}
+        named_axis = MultiDimensionReduction._calculate_named_axis(args, kwargs)
+        integer_axis = MultiDimensionReduction._calculate_integer_axis(args, kwargs)
+        array: einexpr.einarray = args[0].isolate_dims(named_axis)
+        return (get_raw(array), *args[1:]), {**kwargs, 'axis': integer_axis}
 
     @staticmethod
     def calculate_output_dims(args, kwargs):
         args, kwargs = ArgumentHelper.preprocess_args(args, kwargs)
-        axis = MultiDimensionReduction._calculate_axis(args, kwargs)
-        return [dim for i, dim in enumerate(get_dims(args[0])) if i not in axis]
+        # Convert all integer axes into dimension objects
+        named_axis = MultiDimensionReduction._calculate_named_axis(args, kwargs)
+        array: einexpr.einarray = args[0]
+        array_dims = einexpr.dimension_utils.isolate_dims(get_dims(array), named_axis)
+        assert set(einexpr.dimension_utils.primitivize_dims(array_dims)) & set(named_axis) == set(named_axis), 'All dimensions in axis must be in the array'
+        output_dims = tuple(dim for dim in array_dims if dim not in named_axis)
+        output_dims = einexpr.dimension_utils.parse_dims(output_dims)
+        sizes = einexpr.dimension_utils.gather_sizes(get_dims(array))
+        output_dims = einexpr.dimension_utils.apply_sizes(output_dims, sizes)
+        return output_dims
     
     @staticmethod
     def calculate_output_ambiguous_dims(args, kwargs):
         args, kwargs = ArgumentHelper.preprocess_args(args, kwargs)
-        axis = MultiDimensionReduction._calculate_axis(args, kwargs)
+        axis = MultiDimensionReduction._calculate_integer_axis(args, kwargs)
         ambiguous_out_dims = get_ambiguous_dims(args[0]) - {dim for i, dim in enumerate(get_dims(args[0])) if i in axis}
         return ambiguous_out_dims
 

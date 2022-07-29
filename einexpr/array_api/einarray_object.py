@@ -54,7 +54,8 @@ class einarray():
             if not einexpr.backends.conforms_to_array_api(self.a):
                 raise ValueError(f"{self.a} does not conform to the Python array API standard")
             if self.a.ndim != len(self.dims) and not isinstance(self.a, einexpr.backends.PseudoRawArray):
-                raise ValueError(f"The number ({self.a.ndim}) of dimensions in the array does not match the number ({len(self.dims)}) of dimensions passed to the constructor.")
+                if len(self.dims) == 0:
+                    raise ValueError(f"The number ({self.a.ndim}) of dimensions in the array does not match the number ({len(self.dims)}) of dimensions passed to the constructor. Did you forget to pass the dimensions? e.g. `einexpr.einarray(a, dims=({', '.join('d' + str(i) for i in range(a.ndim))}))`")
         if not self.ambiguous_dims <= set(self.dims):
             raise ValueError(f"The ambiguous dimensions {self.ambiguous_dims} must be a subset of the dimensions {self.dims} passed to the constructor.")
 
@@ -92,12 +93,18 @@ class einarray():
         # Put the raw array into an einarray with the replacement dimensions.
         final_dims = einexpr.dimension_utils.apply_replacements(instructions)
         return einexpr.einarray(raw_array, dims=final_dims)    
+    
+    def isolate_dims(self: array, dims: Iterable[Dimension]) -> einexpr.einarray:
+        """
+        Extract the dimensions in ``dims`` into the first level if they are part of a composite dimension.
+        """
+        return self.coerce(einexpr.dimension_utils.isolate_dims(self.dims, dims))
 
     def __array__(self: array, dtype: Optional[npt.DTypeLike] = None) -> einexpr.einarray:
         return self.a
 
     def tracer(self: array) -> 'einarray':
-        return einarray(einexpr.backends.PseudoRawArray(), dims=self.dims, ambiguous_dims=self.ambiguous_dims)
+        return einarray(einexpr.backends.PseudoRawArray(self.shape, self.dtype), dims=self.dims, ambiguous_dims=self.ambiguous_dims)
 
     def __repr__(self: array) -> str:
         return f"einarray({self.a}, dims={self.dims})"

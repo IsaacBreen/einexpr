@@ -1,9 +1,10 @@
+import collections
 import functools
 import operator
 from os import PRIO_PGRP
 import re
 from itertools import chain, zip_longest
-from typing import Any, Callable, Dict, Iterator, List, Optional, Sequence, Set, Tuple, TypeVar, Union
+from typing import Any, Callable, Dict, Iterable, Iterator, List, Optional, Sequence, Set, Tuple, TypeVar, Union
 
 import numpy as np
 from pydantic import PositiveInt
@@ -285,6 +286,8 @@ def map_over_dims(f: Callable[einexpr.array_api.dimension.DimensionObject, einex
         return type(dims)(map_over_dims(f, dim) for dim in dims)
     elif isinstance(dims, einexpr.array_api.dimension.Dimension):
         return f(dims)
+    elif isinstance(dims, str):
+        return f(einexpr.array_api.dimension.NamedDimension(dims))
     else:
         raise ValueError(f"Unexpected value {dims}.")
 
@@ -312,7 +315,7 @@ def gather_sizes(dims: einexpr.array_api.dimension.DimensionObject) -> Dict[str,
         if isinstance(dim, einexpr.array_api.dimension.NamedDimension) and dim.size is not None:
             if dim.name in sizes:
                 if sizes[dim.name] != dim.size:
-                    raise ValueError(f"Dimension {dim.name} has different sizes: {sizes[dim.name]} != {dim.size}")
+                    raise ValueError(f"Dimension {dim.name} has conflicting sizes: {sizes[dim.name]} and {dim.size}.")
             else:
                 sizes[dim.name] = dim.size
     return sizes
@@ -377,8 +380,7 @@ def process_dims_reshape(dims_raw: Union[str, Tuple], existing_dims: einexpr.arr
     if not dims_raw:
         return einexpr.array_api.dimension.DimensionTuple()
     dims = parse_dims_reshape(dims_raw)
-    dim_sizes = gather_sizes(dims) | gather_sizes(existing_dims)
-    return propogate_sizes(dims, dim_sizes)
+    return propogate_sizes(dims, gather_sizes(existing_dims))
 
 
 def dims_equivalent(dims1: einexpr.array_api.dimension.Dimensions, dims2: einexpr.array_api.dimension.Dimensions, ignore_missing_sizes: bool = True) -> bool:
@@ -481,8 +483,30 @@ def expand_dims(dims: D) -> D:
         elif isinstance(dims, (tuple, einexpr.array_api.dimension.DimensionTuple)):
             for dim in dims:
                 yield from helper(dim)
-        elif isinstance(dims, einexpr.array_api.dimension.Dimension):
+        elif isinstance(dims, (str, einexpr.array_api.dimension.Dimension)):
             yield dims
         else:
             raise ValueError(f"Unexpected value {dims}.")
     return tuple(helper(dims))
+
+
+def isolate_dim(array_dims: Tuple[einexpr.array_api.Dimension], dim: einexpr.array_api.Dimension) -> Tuple[einexpr.array_api.Dimension, einexpr.array_api.Dimension]:
+    """
+    Extract the dimensions in ``dim`` into the first level if it is part of a composite dimension.
+    """    
+    position = einexpr.utils.get_position(array_dims, dim)
+    if position is None:
+        raise ValueError(f"Dimension {dim} is not part of the array dimensions {array_dims}.")
+    lhs, rhs = einexpr.utils.split_at(array_dims, position)
+    return einexpr.utils.deep_remove((*lhs, dim, *rhs), lambda x: x == ())
+
+
+def isolate_dims(array_dims: Tuple[einexpr.array_api.Dimension], dims: Iterable[einexpr.array_api.Dimension]) -> einexpr.array_api.einarray:
+    """
+    Extract the dimensions in ``dims`` into the first level if they are part of a composite dimension.
+    """
+    array_dims = einexpr.dimension_utils.primitivize_dims(array_dims)
+    dims = einexpr.dimension_utils.primitivize_dims(dims)
+    for dim in dims:
+        array_dims = isolate_dim(array_dims, dim)
+    return array_dims

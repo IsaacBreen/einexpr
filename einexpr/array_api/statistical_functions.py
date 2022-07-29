@@ -270,7 +270,7 @@ def sum(x: array, /, *, axis: Optional[Union[int, Tuple[int, ...]]] = None, dtyp
     processed_args, processed_kwargs = helper.process_args(args, kwargs)
     result = einexpr.einarray(
         x.a.__array_namespace__().sum(*processed_args, **processed_kwargs), 
-        dims=out_dims, 
+        dims=out_dims,
         ambiguous_dims=ambiguous_dims)
     return result
 
