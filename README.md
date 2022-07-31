@@ -1,4 +1,4 @@
-<h2 align="center"> ⌚︎👀 </h2>
+<h2 align="left"> ⌚︎👀 </h2>
 <p align="center">
     <b>Awaiting array API implementations</b>
 </p>
@@ -16,7 +16,7 @@ If you're super keen to experience <font face = "Monaco"> einexpr </font>, you c
 pip install git+https://github.com/numpy/numpy
 ```
 
-<h1 align="center"> <font face = "Monaco"> einexpr </font> </h1>
+<h1 align="left"> <font face = "Monaco"> einexpr </font> </h1>
 
 <p align="center">
     <b> <font face = "Monaco"> einexpr </font> makes it easy to write fast, maintainable, interpretable ML code </b>
