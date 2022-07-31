@@ -4,25 +4,25 @@
 </p>
 
 
-While <font face = "Monaco"> einexpr </font> is ready for the world, it seems the Python ecosystem is not yet ready for <font face = "Monaco"> einexpr </font>.
+While <font face = "Consolas">einexpr</font> is ready for the world, it seems the Python ecosystem is not yet ready for <font face = "Consolas">einexpr</font>.
 
-In the interest of future-readiness, <font face = "Monaco"> einexpr </font> is built with first-class support for Python array API standard-conforming libraries. Since the standard is so new, none of the major tensor libraries have finished implementing it yet.
+In the interest of future-readiness, <font face = "Consolas">einexpr</font> is built with first-class support for Python array API standard-conforming libraries. Since the standard is so new, none of the major tensor libraries have finished implementing it yet.
 
 Don't worry, though; your favourite tensor library developers are almost certainly hard at work implementing it right now! Check back soon! 😁
 
-If you're super keen to experience <font face = "Monaco"> einexpr </font>, you can try it out right now by installing NumPy `1.24.dev0` using:
+If you're super keen to experience <font face = "Consolas">einexpr</font>, you can try it out right now by installing NumPy `1.24.dev0` using:
 
 ```bash
 pip install git+https://github.com/numpy/numpy
 ```
 
-<h1 align="center"> <font face = "Monaco"> einexpr </font> </h1>
+<h1 align="center"> <font face = "Consolas">einexpr</font> </h1>
 
 <p align="center">
-    <b> <font face = "Monaco"> einexpr </font> makes it easy to write fast, maintainable, interpretable ML code </b>
+    <b> <font face = "Consolas">einexpr</font> makes it easy to write fast, maintainable, interpretable ML code </b>
 </p>
 
-Inspired by Einstein summation notation, <font face = "Monaco"> einexpr </font> encourages explicit dimension naming.
+Inspired by Einstein summation notation, <font face = "Consolas">einexpr</font> encourages explicit dimension naming.
 
 This doesn't enable you to do anything you couldn't before, but it does dramatically reduce the mental overhead of working with multi-dimensional arrays.
 
