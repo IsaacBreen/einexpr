@@ -29,10 +29,10 @@ This doesn't enable you to do anything you couldn't before, but it does dramatic
 ```python
 import einexpr as ei
 
-X = ei.array([[1, 2], [3, 4]])['i j']
-Y = ei.array([[5, 6], [7, 8]])['i j']
-a = ei.array([1,2])['i']
-b = ei.array([3,4])['i']
+X = ei.array([[1, 2], [3, 4]])
+Y = ei.array([[5, 6], [7, 8]])
+a = ei.array([1,2])
+b = ei.array([3,4])
 
 # Dot product
 x = a['i'] + b['i']
