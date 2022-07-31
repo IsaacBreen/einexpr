@@ -107,7 +107,7 @@ class einarray():
         return einarray(einexpr.backends.PseudoRawArray(self.shape, self.dtype), dims=self.dims, ambiguous_dims=self.ambiguous_dims)
 
     def __repr__(self: array) -> str:
-        return f"einarray({self.a}, dims={self.dims})"
+        return f"einarray({self.a}, dims={self.dims})".replace('\n', '\n' + ' ' * len('einarray('))
 
     @property
     def dtype(self: array) -> Dtype:
