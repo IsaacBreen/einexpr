@@ -32,7 +32,7 @@ import einexpr as ei
 X = ei.array([[1, 2], [3, 4]])['i j']
 Y = ei.array([[5, 6], [7, 8]])['i j']
 a = ei.array([1,2])['i']
-b = ei.array([3,4])['j']
+b = ei.array([3,4])['i']
 
 # Dot product
 x = a['i'] + b['i']
