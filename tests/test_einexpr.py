@@ -511,11 +511,23 @@ def test_ellipsis(X):
     X['... j']
     X['j ...']
     X['... i']
+    
+    einexpr.ones((1,2,3))['i j k']['i j ...']
 
 
 def test_dim_binding(X):
     X = einexpr.einarray(X)
     assert einexpr.dimension_utils.primitivize_dims(X['i j'].dims) == ('i', 'j')
+    
+    X = einexpr.ones((1,2,3))
+    X['_ _ _']
+    X['i _ _']
+    X['_ j _']
+    X['_ _ k']
+    X['i j _']
+    X['i _ k']
+    X['_ j k']
+    X['i j k']
 
 
 def test_dim_errors(X):
@@ -533,3 +545,17 @@ def test_positional_dims(X):
     assert len(R := (X*X).dims) == 2 and all(isinstance(dim, einexpr.dimension.PositionalDimension) for dim in R)
     assert len(R := (X*Y).dims) == 2 and all(isinstance(dim, einexpr.dimension.PositionalDimension) for dim in R)
     assert einexpr.dimension_utils.primitivize_dims((X*Z).dims) == ('i', 'j')
+
+
+def test_positional_dims_and_rename(X):
+    X = einexpr.einarray(X)
+
+    assert einexpr.dimension_utils.primitivize_dims(X['i _'].dims) == ('i', '_')
+    assert einexpr.dimension_utils.primitivize_dims(X['_ _->n'].dims) == ('_', 'n')
+    assert einexpr.dimension_utils.primitivize_dims(X['_->i j->n'].dims) == ('i', 'j')
+
+
+def test_positional_dims_and_ellipsis_and_rename(X):
+    X = einexpr.einarray(X)
+
+    assert einexpr.dimension_utils.primitivize_dims(X['... _->n'].dims) == ('_', 'n')
