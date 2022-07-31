@@ -31,7 +31,7 @@ def max(x: array, /, *, axis: Optional[Union[int, Tuple[int, ...]]] = None, keep
     """
     args = (x,)
     kwargs = {'axis': axis, 'keepdims': keepdims}
-    helper = einexpr.dimension_utils.MultiDimensionReduction
+    helper = einexpr.dimension_utils.SingleArgumentMultipleDimensionReduction
     helper.validate_args(args, kwargs)
     out_dims = helper.calculate_output_dims(args, kwargs)
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -72,7 +72,7 @@ def mean(x: array, /, *, axis: Optional[Union[int, Tuple[int, ...]]] = None, kee
     """
     args = (x,)
     kwargs = {'axis': axis, 'keepdims': keepdims}
-    helper = einexpr.dimension_utils.MultiDimensionReduction
+    helper = einexpr.dimension_utils.SingleArgumentMultipleDimensionReduction
     helper.validate_args(args, kwargs)
     out_dims = helper.calculate_output_dims(args, kwargs)
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -112,7 +112,7 @@ def min(x: array, /, *, axis: Optional[Union[int, Tuple[int, ...]]] = None, keep
     """
     args = (x,)
     kwargs = {'axis': axis, 'keepdims': keepdims}
-    helper = einexpr.dimension_utils.MultiDimensionReduction
+    helper = einexpr.dimension_utils.SingleArgumentMultipleDimensionReduction
     helper.validate_args(args, kwargs)
     out_dims = helper.calculate_output_dims(args, kwargs)
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -166,7 +166,7 @@ def prod(x: array, /, *, axis: Optional[Union[int, Tuple[int, ...]]] = None, dty
     """
     args = (x,)
     kwargs = {'axis': axis, 'dtype': dtype, 'keepdims': keepdims}
-    helper = einexpr.dimension_utils.MultiDimensionReduction
+    helper = einexpr.dimension_utils.SingleArgumentMultipleDimensionReduction
     helper.validate_args(args, kwargs)
     out_dims = helper.calculate_output_dims(args, kwargs)
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -209,7 +209,7 @@ def std(x: array, /, *, axis: Optional[Union[int, Tuple[int, ...]]] = None, corr
     """
     args = (x,)
     kwargs = {'axis': axis, 'correction': correction, 'keepdims': keepdims}
-    helper = einexpr.dimension_utils.MultiDimensionReduction
+    helper = einexpr.dimension_utils.SingleArgumentMultipleDimensionReduction
     helper.validate_args(args, kwargs)
     out_dims = helper.calculate_output_dims(args, kwargs)
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -263,7 +263,7 @@ def sum(x: array, /, *, axis: Optional[Union[int, Tuple[int, ...]]] = None, dtyp
     """
     args = (x,)
     kwargs = {'axis': axis, 'dtype': dtype, 'keepdims': keepdims}
-    helper = einexpr.dimension_utils.MultiDimensionReduction
+    helper = einexpr.dimension_utils.SingleArgumentMultipleDimensionReduction
     helper.validate_args(args, kwargs)
     out_dims = helper.calculate_output_dims(args, kwargs)
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -307,7 +307,7 @@ def var(x: array, /, *, axis: Optional[Union[int, Tuple[int, ...]]] = None, corr
     """
     args = (x,)
     kwargs = {'axis': axis, 'correction': correction, 'keepdims': keepdims}
-    helper = einexpr.dimension_utils.MultiDimensionReduction
+    helper = einexpr.dimension_utils.SingleArgumentMultipleDimensionReduction
     helper.validate_args(args, kwargs)
     out_dims = helper.calculate_output_dims(args, kwargs)
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from ._types import (array, dtype as Dtype, device as Device, Optional, Tuple,
                      Union, Any, PyCapsule, Enum, ellipsis, NonEinArray)
-from .dimension import Dimension
+from .dimension import Dimension, PositionalDimension
 
 import einexpr
 
@@ -29,7 +29,7 @@ class einarray():
         /, *,
         dims: Union[einexpr.array_api.dimension.Dimensions, None] = None,
         ambiguous_dims: Set[str] = None,
-        copy: bool=True,
+        copy: bool = True,
         backend: Optional[str] = None
     ) -> None:
         if isinstance(a, einarray):
@@ -40,10 +40,12 @@ class einarray():
             self.a = a
             self.dims = dims
             self.ambiguous_dims = ambiguous_dims or set()
+        # ARRAY
         if backend is not None or not einexpr.backends.conforms_to_array_api(self.a):
             # Convert the array to the backend specified by the backend argument.
             backend_module = einexpr.backends.get_array_api_backend(backend)
             self.a = backend_module.asarray(self.a)
+        # DIMS
         self.dims = einexpr.dimension_utils.process_dims_declaration(self.dims, self.a.shape)
         if any(einexpr.dimension_utils.compute_total_size(dim) is None for dim in self.dims):
             raise einexpr.exceptions.InternalError("All dimensions must have a size.")
@@ -56,25 +58,20 @@ class einarray():
             if self.a.ndim != len(self.dims) and not isinstance(self.a, einexpr.backends.PseudoRawArray):
                 if len(self.dims) == 0:
                     raise ValueError(f"The number ({self.a.ndim}) of dimensions in the array does not match the number ({len(self.dims)}) of dimensions passed to the constructor. Did you forget to pass the dimensions? e.g. `einexpr.einarray(a, dims=({', '.join('d' + str(i) for i in range(a.ndim))}))`")
+        for i, dim in enumerate(self.dims, start=-len(self.dims)):
+            if isinstance(dim, einexpr.array_api.dimension.PositionalDimension) and dim.position != i:
+                raise ValueError(f"The actual position {i} of the dimension {dim!r} in the dimension tuple {self.dims} is inconsistent with the position {dim.position} specified in the object.")
+        # AMBIGUOUS DIMS
         if not self.ambiguous_dims <= set(self.dims):
             raise ValueError(f"The ambiguous dimensions {self.ambiguous_dims} must be a subset of the dimensions {self.dims} passed to the constructor.")
-
 
     def get_dims_unordered(self: array) -> Set[Dimension]:
         return set(self.dims)
     
     def coerce(self: array, dims: Tuple[Dimension]) -> einexpr.einarray:
         # Note that ``(j k)->n`` means 'flatten along the dimensions named ``j`` and ``k`` and name the
-        # resulting dimension ``n``'.        
-        # TODO: fix this
-        for k in dims:
-            if isinstance(k, slice):
-                if isinstance(k.start, int) or isinstance(k.stop, int) or isinstance(k.step, int):
-                    raise NotImplementedError("Slicing with integers is not yet supported.")
-            elif isinstance(k, int):
-                raise NotImplementedError("Indexing with integers is not yet supported.")
-            elif k is ellipsis:
-                raise NotImplementedError("Ellipsis is not yet supported.")
+        # resulting dimension ``n``'.
+        #
         # Suppose ``x`` is an einarray that we want to reshape from ``i (j k)`` to ``(k i)->n``. This entails three operations:
         # 1. Collapse along dimension ``j``.
         # 2. Reorder the dimensions ``i`` and ``k``.
@@ -83,11 +80,11 @@ class einarray():
         instructions = einexpr.dimension_utils.process_dims_reshape(dims, existing_dims=self.dims)
         # Calculate the dimensions of the output array before any replacements are made.
         final_dims_before_replacement = einexpr.dimension_utils.ignore_replacements(instructions)
-        # Ensure that these are a subset of the existing dimensions.
-        final_names = set(einexpr.dimension_utils.gather_names(final_dims_before_replacement))
-        current_names = set(einexpr.dimension_utils.gather_names(self.dims))
-        if not final_names <= current_names:
-            raise ValueError(f"The named dimensions {final_names} of the output array are not a subset of the existing dimensions {current_names}.")
+        # # Ensure that these are a subset of the existing dimensions.
+        # final_names = set(einexpr.dimension_utils.gather_names(final_dims_before_replacement))
+        # current_names = set(einexpr.dimension_utils.gather_names(self.dims))
+        # if not final_names <= current_names:
+        #     raise ValueError(f"The named dimensions {final_names} of the output array are not a subset of the existing dimensions {current_names}.")
         # Align the raw array to these. This performs steps 1-3 but only returns a raw array (without names).
         raw_array: einexpr.types.NonEinArray = einexpr.backends.align_to_dims(self, final_dims_before_replacement)
         # Put the raw array into an einarray with the replacement dimensions.
@@ -98,7 +95,10 @@ class einarray():
         """
         Extract the dimensions in ``dims`` into the first level if they are part of a composite dimension.
         """
-        return self.coerce(einexpr.dimension_utils.isolate_dims(self.dims, dims))
+        new_dims = einexpr.dimension_utils.isolate_dims(self.dims, dims)
+        if einexpr.dimension_utils.primitivize_dims(new_dims) == einexpr.dimension_utils.primitivize_dims(self.dims):
+            return self
+        return self.coerce(new_dims)
 
     def __array__(self: array, dtype: Optional[npt.DTypeLike] = None) -> einexpr.einarray:
         return self.a
@@ -256,7 +256,7 @@ class einarray():
         """
         args = (self,)
         kwargs = {}
-        helper = einexpr.dimension_utils.MultiArgumentElementwise
+        helper = einexpr.dimension_utils.MultipleArgumentElementwise
         helper.validate_args(args, kwargs)
         out_dims = helper.calculate_output_dims(args, kwargs)
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -314,7 +314,7 @@ class einarray():
         """
         args = (self, other,)
         kwargs = {}
-        helper = einexpr.dimension_utils.MultiArgumentElementwise
+        helper = einexpr.dimension_utils.MultipleArgumentElementwise
         helper.validate_args(args, kwargs)
         out_dims = helper.calculate_output_dims(args, kwargs)
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -372,7 +372,7 @@ class einarray():
         """
         args = (self, other,)
         kwargs = {}
-        helper = einexpr.dimension_utils.MultiArgumentElementwise
+        helper = einexpr.dimension_utils.MultipleArgumentElementwise
         helper.validate_args(args, kwargs)
         out_dims = helper.calculate_output_dims(args, kwargs)
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -405,7 +405,7 @@ class einarray():
         """
         args = (self, other,)
         kwargs = {}
-        helper = einexpr.dimension_utils.MultiArgumentElementwise
+        helper = einexpr.dimension_utils.MultipleArgumentElementwise
         helper.validate_args(args, kwargs)
         out_dims = helper.calculate_output_dims(args, kwargs)
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -441,7 +441,7 @@ class einarray():
         """
         args = (self, other,)
         kwargs = {}
-        helper = einexpr.dimension_utils.MultiArgumentElementwise
+        helper = einexpr.dimension_utils.MultipleArgumentElementwise
         helper.validate_args(args, kwargs)
         out_dims = helper.calculate_output_dims(args, kwargs)
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -591,7 +591,7 @@ class einarray():
         """
         args = (self, other,)
         kwargs = {}
-        helper = einexpr.dimension_utils.MultiArgumentElementwise
+        helper = einexpr.dimension_utils.MultipleArgumentElementwise
         helper.validate_args(args, kwargs)
         out_dims = helper.calculate_output_dims(args, kwargs)
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -679,7 +679,7 @@ class einarray():
         """
         args = (self, other,)
         kwargs = {}
-        helper = einexpr.dimension_utils.MultiArgumentElementwise
+        helper = einexpr.dimension_utils.MultipleArgumentElementwise
         helper.validate_args(args, kwargs)
         out_dims = helper.calculate_output_dims(args, kwargs)
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -753,7 +753,7 @@ class einarray():
         """
         args = (self, other,)
         kwargs = {}
-        helper = einexpr.dimension_utils.MultiArgumentElementwise
+        helper = einexpr.dimension_utils.MultipleArgumentElementwise
         helper.validate_args(args, kwargs)
         out_dims = helper.calculate_output_dims(args, kwargs)
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -786,7 +786,7 @@ class einarray():
         """
         args = (self, other,)
         kwargs = {}
-        helper = einexpr.dimension_utils.MultiArgumentElementwise
+        helper = einexpr.dimension_utils.MultipleArgumentElementwise
         helper.validate_args(args, kwargs)
         out_dims = helper.calculate_output_dims(args, kwargs)
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -840,7 +840,7 @@ class einarray():
         """
         args = (self, other,)
         kwargs = {}
-        helper = einexpr.dimension_utils.MultiArgumentElementwise
+        helper = einexpr.dimension_utils.MultipleArgumentElementwise
         helper.validate_args(args, kwargs)
         out_dims = helper.calculate_output_dims(args, kwargs)
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -906,7 +906,7 @@ class einarray():
         """
         args = (self,)
         kwargs = {}
-        helper = einexpr.dimension_utils.MultiArgumentElementwise
+        helper = einexpr.dimension_utils.MultipleArgumentElementwise
         helper.validate_args(args, kwargs)
         out_dims = helper.calculate_output_dims(args, kwargs)
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -939,7 +939,7 @@ class einarray():
         """
         args = (self, other,)
         kwargs = {}
-        helper = einexpr.dimension_utils.MultiArgumentElementwise
+        helper = einexpr.dimension_utils.MultipleArgumentElementwise
         helper.validate_args(args, kwargs)
         out_dims = helper.calculate_output_dims(args, kwargs)
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -972,7 +972,7 @@ class einarray():
         """
         args = (self, other,)
         kwargs = {}
-        helper = einexpr.dimension_utils.MultiArgumentElementwise
+        helper = einexpr.dimension_utils.MultipleArgumentElementwise
         helper.validate_args(args, kwargs)
         out_dims = helper.calculate_output_dims(args, kwargs)
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -1007,7 +1007,7 @@ class einarray():
         """
         args = (self, other,)
         kwargs = {}
-        helper = einexpr.dimension_utils.MultiArgumentElementwise
+        helper = einexpr.dimension_utils.MultipleArgumentElementwise
         helper.validate_args(args, kwargs)
         out_dims = helper.calculate_output_dims(args, kwargs)
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -1040,7 +1040,7 @@ class einarray():
         """
         args = (self, other,)
         kwargs = {}
-        helper = einexpr.dimension_utils.MultiArgumentElementwise
+        helper = einexpr.dimension_utils.MultipleArgumentElementwise
         helper.validate_args(args, kwargs)
         out_dims = helper.calculate_output_dims(args, kwargs)
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -1191,7 +1191,7 @@ class einarray():
         """
         args = (self, other,)
         kwargs = {}
-        helper = einexpr.dimension_utils.MultiArgumentElementwise
+        helper = einexpr.dimension_utils.MultipleArgumentElementwise
         helper.validate_args(args, kwargs)
         out_dims = helper.calculate_output_dims(args, kwargs)
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -1258,7 +1258,7 @@ class einarray():
         """
         args = (self, other,)
         kwargs = {}
-        helper = einexpr.dimension_utils.MultiArgumentElementwise
+        helper = einexpr.dimension_utils.MultipleArgumentElementwise
         helper.validate_args(args, kwargs)
         out_dims = helper.calculate_output_dims(args, kwargs)
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -1309,7 +1309,7 @@ class einarray():
         """
         args = (self, other,)
         kwargs = {}
-        helper = einexpr.dimension_utils.MultiArgumentElementwise
+        helper = einexpr.dimension_utils.MultipleArgumentElementwise
         helper.validate_args(args, kwargs)
         out_dims = helper.calculate_output_dims(args, kwargs)
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -1363,7 +1363,7 @@ class einarray():
         """
         args = (self, other,)
         kwargs = {}
-        helper = einexpr.dimension_utils.MultiArgumentElementwise
+        helper = einexpr.dimension_utils.MultipleArgumentElementwise
         helper.validate_args(args, kwargs)
         out_dims = helper.calculate_output_dims(args, kwargs)
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -1396,7 +1396,7 @@ class einarray():
         """
         args = (self, other,)
         kwargs = {}
-        helper = einexpr.dimension_utils.MultiArgumentElementwise
+        helper = einexpr.dimension_utils.MultipleArgumentElementwise
         helper.validate_args(args, kwargs)
         out_dims = helper.calculate_output_dims(args, kwargs)
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -1433,7 +1433,7 @@ class einarray():
         """
         args = (self,)
         kwargs = {}
-        helper = einexpr.dimension_utils.MultiArgumentElementwise
+        helper = einexpr.dimension_utils.MultipleArgumentElementwise
         helper.validate_args(args, kwargs)
         out_dims = helper.calculate_output_dims(args, kwargs)
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -1466,7 +1466,7 @@ class einarray():
         """
         args = (self, other,)
         kwargs = {}
-        helper = einexpr.dimension_utils.MultiArgumentElementwise
+        helper = einexpr.dimension_utils.MultipleArgumentElementwise
         helper.validate_args(args, kwargs)
         out_dims = helper.calculate_output_dims(args, kwargs)
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -1501,7 +1501,7 @@ class einarray():
         """
         args = (self, other,)
         kwargs = {}
-        helper = einexpr.dimension_utils.MultiArgumentElementwise
+        helper = einexpr.dimension_utils.MultipleArgumentElementwise
         helper.validate_args(args, kwargs)
         out_dims = helper.calculate_output_dims(args, kwargs)
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -1532,7 +1532,7 @@ class einarray():
         """
         args = (self,)
         kwargs = {}
-        helper = einexpr.dimension_utils.MultiArgumentElementwise
+        helper = einexpr.dimension_utils.MultipleArgumentElementwise
         helper.validate_args(args, kwargs)
         out_dims = helper.calculate_output_dims(args, kwargs)
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -1599,7 +1599,7 @@ class einarray():
         """
         args = (self, other,)
         kwargs = {}
-        helper = einexpr.dimension_utils.MultiArgumentElementwise
+        helper = einexpr.dimension_utils.MultipleArgumentElementwise
         helper.validate_args(args, kwargs)
         out_dims = helper.calculate_output_dims(args, kwargs)
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -1668,7 +1668,7 @@ class einarray():
         """
         args = (self, other,)
         kwargs = {}
-        helper = einexpr.dimension_utils.MultiArgumentElementwise
+        helper = einexpr.dimension_utils.MultipleArgumentElementwise
         helper.validate_args(args, kwargs)
         out_dims = helper.calculate_output_dims(args, kwargs)
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -1701,7 +1701,7 @@ class einarray():
         """
         args = (self, other,)
         kwargs = {}
-        helper = einexpr.dimension_utils.MultiArgumentElementwise
+        helper = einexpr.dimension_utils.MultipleArgumentElementwise
         helper.validate_args(args, kwargs)
         out_dims = helper.calculate_output_dims(args, kwargs)
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -1736,7 +1736,7 @@ class einarray():
         """
         args = (self, other,)
         kwargs = {}
-        helper = einexpr.dimension_utils.MultiArgumentElementwise
+        helper = einexpr.dimension_utils.MultipleArgumentElementwise
         helper.validate_args(args, kwargs)
         out_dims = helper.calculate_output_dims(args, kwargs)
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -1793,7 +1793,7 @@ class einarray():
         """
         args = (self, other,)
         kwargs = {}
-        helper = einexpr.dimension_utils.MultiArgumentElementwise
+        helper = einexpr.dimension_utils.MultipleArgumentElementwise
         helper.validate_args(args, kwargs)
         out_dims = helper.calculate_output_dims(args, kwargs)
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -1826,7 +1826,7 @@ class einarray():
         """
         args = (self, other,)
         kwargs = {}
-        helper = einexpr.dimension_utils.MultiArgumentElementwise
+        helper = einexpr.dimension_utils.MultipleArgumentElementwise
         helper.validate_args(args, kwargs)
         out_dims = helper.calculate_output_dims(args, kwargs)
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -1891,7 +1891,7 @@ class einarray():
         """
         args = (self, other,)
         kwargs = {}
-        helper = einexpr.dimension_utils.MultiArgumentElementwise
+        helper = einexpr.dimension_utils.MultipleArgumentElementwise
         helper.validate_args(args, kwargs)
         out_dims = helper.calculate_output_dims(args, kwargs)
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -1958,7 +1958,7 @@ class einarray():
         """
         args = (self, other,)
         kwargs = {}
-        helper = einexpr.dimension_utils.MultiArgumentElementwise
+        helper = einexpr.dimension_utils.MultipleArgumentElementwise
         helper.validate_args(args, kwargs)
         out_dims = helper.calculate_output_dims(args, kwargs)
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -1991,7 +1991,7 @@ class einarray():
         """
         args = (self, other,)
         kwargs = {}
-        helper = einexpr.dimension_utils.MultiArgumentElementwise
+        helper = einexpr.dimension_utils.MultipleArgumentElementwise
         helper.validate_args(args, kwargs)
         out_dims = helper.calculate_output_dims(args, kwargs)
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -2026,7 +2026,7 @@ class einarray():
         """
         args = (self, other,)
         kwargs = {}
-        helper = einexpr.dimension_utils.MultiArgumentElementwise
+        helper = einexpr.dimension_utils.MultipleArgumentElementwise
         helper.validate_args(args, kwargs)
         out_dims = helper.calculate_output_dims(args, kwargs)
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)

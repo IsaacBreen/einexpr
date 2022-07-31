@@ -1,3 +1,4 @@
+from types import GeneratorType
 from typing import Tuple
 import einexpr
 
@@ -27,5 +28,7 @@ def apply_tracer(obj):
         return {apply_tracer(key): apply_tracer(value) for key, value in obj.items()}
     elif isinstance(obj, einexpr.einarray):
         return obj.tracer()
+    elif isinstance(obj, GeneratorType):
+        return (apply_tracer(item) for item in obj)
     else:
         return obj

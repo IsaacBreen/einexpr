@@ -17,7 +17,7 @@ import pytest
 
 pp = pprint.PrettyPrinter(indent=4)
 
-N_TRIALS_MULTIPLIER = 1000
+N_TRIALS_MULTIPLIER = 10
 TOLERANCE = 1e-12
 DEFAULT_DTYPE = npa.float64
 
@@ -502,3 +502,34 @@ def test_named_axis(X):
     Y = X['(i j)']
     assert einexpr.dimension_utils.primitivize_dims(Y.dims) == (('i', 'j'),)
     assert einexpr.dimension_utils.primitivize_dims(einexpr.sum(Y, axis='i').dims) == (('j',),)
+
+    
+def test_ellipsis(X):
+    X = einexpr.einarray(X, dims='i j')
+    X['...']
+    X['i ...']
+    X['... j']
+    X['j ...']
+    X['... i']
+
+
+def test_dim_binding(X):
+    X = einexpr.einarray(X)
+    assert einexpr.dimension_utils.primitivize_dims(X['i j'].dims) == ('i', 'j')
+
+
+def test_dim_errors(X):
+    X = einexpr.einarray(X)
+    with pytest.raises(ValueError):
+        X['i']
+
+
+def test_positional_dims(X):
+    X = einexpr.einarray(X)
+    Y = einexpr.einarray(X)
+    Z = einexpr.einarray(X, dims='i j')
+    
+    
+    assert len(R := (X*X).dims) == 2 and all(isinstance(dim, einexpr.dimension.PositionalDimension) for dim in R)
+    assert len(R := (X*Y).dims) == 2 and all(isinstance(dim, einexpr.dimension.PositionalDimension) for dim in R)
+    assert einexpr.dimension_utils.primitivize_dims((X*Z).dims) == ('i', 'j')

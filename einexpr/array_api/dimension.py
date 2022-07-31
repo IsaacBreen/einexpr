@@ -1,6 +1,11 @@
-from abc import ABC, abstractmethod
-from typing import Iterable, Optional, Sequence
+import einexpr
+from abc import ABC, abstractmethod, abstractproperty
+from typing import Dict, Iterable, Optional, Sequence, Tuple, TypeVar, Union
+from typing import overload
 from dataclasses import dataclass, field
+from uuid import uuid4
+
+from pydantic import NegativeInt, PositiveInt
 import einexpr.utils as utils
 
 
@@ -24,9 +29,13 @@ class Dimension(DimensionObject):
     Represents a single dimension of a tensor.
     """
     size: int = field(default=None)
+    
+    @abstractproperty
+    def id(self) -> str:
+        pass
 
 
-@dataclass(frozen=True, eq=True, order=True)
+@dataclass(frozen=True, eq=True)
 class NamedDimension(Dimension):
     """
     A named dimension that binds eagerly to other dimensions of the same name.
@@ -35,31 +44,77 @@ class NamedDimension(Dimension):
     name: str
     size: int = field(default=None)
 
+    @property
+    def id(self) -> str:
+        return self.name
+
     def with_size(self, size: int) -> "NamedDimension":
         return NamedDimension(self.name, size)
 
     def __str__(self):
         return self.name
     
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, NamedDimension):
+            return False
+        if self.name != other.name:
+            return False
+        if self.size is not None and self.size != other.size:
+            return False
+        return True
+    
+    def __hash__(self) -> int:
+        return hash((self.name, self.size))
 
+
+def UniqueDimension():
+    """
+    A dimension object whose name is a UUID.
+    """
+    
+    return NamedDimension(str(uuid4()))
 
 
 @dataclass(frozen=True, eq=False)
 class PositionalDimension(Dimension):
     """
-    A dimension that is bound to a position in the tensor shape.
+    A dimension that is bound to a position in the tensor.
     """
 
-    size: int = field(default=None)
+    position: NegativeInt
+    size: Optional[PositiveInt] = field(default=None)
+    
+    def __post_init__(self):
+        if self.position >= 0:
+            raise ValueError("Position must be negative.")
+        if self.size is not None and self.size < 0:
+            raise ValueError("Size must be positive.")
+    
+    @property
+    def id(self) -> str:
+        return str(self.position)
 
-    def with_size(self, size: int) -> "PositionalDimension":
-        return PositionalDimension(size)
+    def with_size(self, size: int) -> "NamedDimension":
+        return PositionalDimension(self.position, size)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "_"
-
-    def __eq__(self, other):
-        raise TypeError("PositionalDimension cannot be directly compared.")
+    
+    @property
+    def name(self) -> str:
+        return str(self.position)
+    
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, PositionalDimension):
+            return False
+        if self.position != other.position:
+            return False
+        if self.size is not None and self.size != other.size:
+            return False
+        return True
+    
+    def __hash__(self) -> int:
+        return hash((self.position, self.size))
 
 
 class DimensionTuple(DimensionObject):
@@ -71,7 +126,7 @@ class DimensionTuple(DimensionObject):
         self.dimensions = tuple(dimensions)
 
     def __str__(self):
-        return " ".join(str(dimension) for dimension in self.dimensions)
+        return '"' + " ".join(str(dimension) for dimension in self.dimensions) + '"'
 
     def __repr__(self):
         return f"DimensionTuple({self.dimensions})"
@@ -131,16 +186,57 @@ class DimensionReplacement(DimensionObject):
         return f"DimensionReplacement({self.original!r}, {self.replacement!r})"
 
     def __hash__(self):
-        raise NotImplementedError("DimensionReplacement is not hashable.")
-        # return hash((self.original, self.replacement))
+        return hash((self.original, self.replacement))
+        # raise NotImplementedError("DimensionReplacement is not hashable.")
 
     def __eq__(self, other):
-        raise NotImplementedError("DimensionReplacement is not comparable.")
+        return isinstance(other, DimensionReplacement)
+        # raise NotImplementedError("DimensionReplacement is not comparable.")
         # return (
         #     isinstance(other, DimensionReplacement)
         #     and self.original == other.original
         #     and self.replacement == other.replacement
         # )
+
+
+class PositionalDimensionPlaceholder:
+    pass
+
+
+@overload
+def dims(n: int) -> Tuple[NamedDimension, ...]:
+    ...
+
+
+@overload
+def dims(size_by_name: Dict[str, int]) -> Tuple[NamedDimension, ...]:
+    ...
+
+D = TypeVar("D", bound=DimensionObject)
+@overload
+def dims(d: D) -> D:
+    ...
+
+
+@overload
+def dims(s: str) -> Union[NamedDimension, DimensionTuple]:
+    ...
+
+def dims(x):
+    if isinstance(x, int):
+        return tuple(UniqueDimension() for _ in range(x))
+    elif isinstance(x, dict) and all(isinstance(k, str) for k in x):
+        return tuple(NamedDimension(k, v) for k, v in x.items())
+    elif isinstance(x, (list, tuple, DimensionObject)):
+        return einexpr.dimension_utils.parse_dims(x)
+    elif isinstance(x, str):
+        d = einexpr.dimension_utils.parse_dims(x)
+        if len(d) == 1:
+            return d[0]
+        else:
+            return d
+    else:
+        raise TypeError(f"Cannot parse {type(x)} as dimensions.")
 
 
 Dimensions = Sequence[Dimension]
@@ -150,6 +246,10 @@ __all__ = [
     "Dimension",
     "Dimensions",
     "NamedDimension",
+    "PositionalDimension",
+    "UniqueDimension",
     "DimensionTuple",
     "DimensionReplacement",
+    "PositionalDimensionPlaceholder",
+    "dims",
 ]

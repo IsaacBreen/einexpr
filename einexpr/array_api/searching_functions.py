@@ -22,7 +22,7 @@ def argmax(x: array, /, *, axis: Optional[int] = None, keepdims: bool = False) -
     """
     args = (x,)
     kwargs = {'axis': axis, 'keepdims': keepdims}
-    helper = einexpr.dimension_utils.MultiDimensionReduction
+    helper = einexpr.dimension_utils.SingleArgumentMultipleDimensionReduction
     helper.validate_args(args, kwargs)
     out_dims = helper.calculate_output_dims(args, kwargs)
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -53,7 +53,7 @@ def argmin(x: array, /, *, axis: Optional[int] = None, keepdims: bool = False) -
     """
     args = (x,)
     kwargs = {'axis': axis, 'keepdims': keepdims}
-    helper = einexpr.dimension_utils.MultiDimensionReduction
+    helper = einexpr.dimension_utils.SingleArgumentMultipleDimensionReduction
     helper.validate_args(args, kwargs)
     out_dims = helper.calculate_output_dims(args, kwargs)
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
@@ -111,7 +111,7 @@ def where(condition: array, x1: array, x2: array, /) -> array:
     """
     args = (condition, x1, x2,)
     kwargs = {}
-    helper = einexpr.dimension_utils.MultiArgumentElementwise
+    helper = einexpr.dimension_utils.MultipleArgumentElementwise
     helper.validate_args(args, kwargs)
     out_dims = helper.calculate_output_dims(args, kwargs)
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)

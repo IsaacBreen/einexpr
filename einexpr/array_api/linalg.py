@@ -179,7 +179,7 @@ def inv(x: array, /) -> array:
     """
     args = (x,)
     kwargs = {}
-    helper = einexpr.dimension_utils.MultiArgumentElementwise
+    helper = einexpr.dimension_utils.MultipleArgumentElementwise
     helper.validate_args(args, kwargs)
     out_dims = helper.calculate_output_dims(args, kwargs)
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)

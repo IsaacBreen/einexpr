@@ -53,11 +53,11 @@ class ImplementFunctions(m.MatcherDecoratableTransformer):
         if func_name in single_arg_elementwise_function_names:
             implementation_helper_name = 'SingleArgumentElementwise'
         elif func_name in multiple_arg_elementwise_function_names:
-            implementation_helper_name = 'MultiArgumentElementwise'
+            implementation_helper_name = 'MultipleArgumentElementwise'
         elif func_name in single_dimension_reduction_function_names:
-            implementation_helper_name = 'SingleDimensionReduction'
+            implementation_helper_name = 'SingleArgumentSingleDimensionReduction'
         elif func_name in multiple_dimension_reduction_function_names:
-            implementation_helper_name = 'MultiDimensionReduction'
+            implementation_helper_name = 'SingleArgumentMultipleDimensionReduction'
         elif func_name in concatenation_function_names:
             implementation_helper_name = 'Concatenation'
         else:
