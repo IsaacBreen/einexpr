@@ -50,16 +50,25 @@ assert x['i j'] == ei.outer(a, b)
 X = ei.array([[1, 2], [3, 4]])
 Y = ei.array([[5, 6], [7, 8]])
 
+# Flatten
+x = X['i j']
+assert x['(i,j)'] == ei.reshape(X, (-1,))
+
 # Matrix-vector multiplication
 x = X['i j'] * a['j']
 assert x['i'] == ei.matmul(X, a)
-
-# Matrix-matrix multiplication
-x = X['i j'] * Y['j k']
-assert x['i k'] == ei.matmul(X, Y)
 ```
 
+You can also treat dimensions as first-class objects.
 
+```python
+i, j = ei.dims(2) # Unnamed object
+k, l = ei.dims('k l') # Named objects
+
+# Matrix-matrix multiplication
+x = X[i, j] * Y[j, k]
+assert x[i, k] == ei.matmul(X, Y)
+```
 
 ## Installation
 
