@@ -1,4 +1,4 @@
-<h2 align="center"> ⏰👀 </h2>
+<h2 align="center"> ⏰ 👀 </h2>
 <p align="center">
     <b>Awaiting array API implementations</b>
 </p>
