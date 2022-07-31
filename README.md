@@ -1,6 +1,32 @@
-## What is einexpr?
+<h2 align="center"> ⌚︎👀 </h2>
+<p align="center">
+    <b>Awaiting array API implementations</b>
+</p>
 
-einexpr brings true Einstein summation notation to Python, allowing you to convert your gory tensor manipulations into aesthetically pleasing and easy-to-follow arithmetic expressions with an idiomatic Python style (using standard operators: +, -, /, *, **) and support for your favourite np.* functions. Think einsum + addition + exponentiation + seamless interoperation with Jax. (PyTorch and TensorFlow support on the way.)
+
+While einexpr is ready for the world, it seems the Python ecosystem is not yet ready for einexpr.
+
+In the interest of future-readiness, einexpr is built with first-class support for Python array API standard-conforming libraries. Since the standard is so new, none of the major tensor libraries have finished implementing it yet.
+
+Don't worry, though; your favourite tensor library developers are almost certainly hard at work implementing it right now! Check back soon! 😁
+
+If you're super keen to experience einexpr, you can try it out right now by installing NumPy 1.24.dev0 using:
+
+```bash
+pip install git+https://github.com/numpy/numpy
+```
+
+<h1 align="center"> <font face = "Comic sans MS"> einexpr </font> </h1>
+
+<p align="center">
+    <b> einexpr makes it easy to write fast, maintainable, interpretable ML code </b>
+</p>
+
+Inspired by Einstein summation notation, einexpr encourages explicit dimension naming.
+
+How many times have you had to switch back and forth between your `__init__` and  `forward` methods to figure out what your a layer is doing?
+
+Gone are the days of tediously tracking the dimensions of your tensors throughout your code.
 
 ```python
 from einexpr import einexpr, einfunc
@@ -32,3 +58,5 @@ print(x['i, k'])
 ```bash
 pip install einexpr
 ```
+
+## What is 
