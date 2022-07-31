@@ -16,7 +16,7 @@ If you're super keen to experience `einexpr`, you can try it out right now by in
 pip install git+https://github.com/numpy/numpy
 ```
 
-# `einexpr`
+# einexpr
 
 <p align="center">
     <b> `einexpr` makes it easy to write fast, maintainable, interpretable ML code </b>
