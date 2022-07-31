@@ -1,3 +1,14 @@
+<style>
+  @font-face {
+    font-family: 'PT Sans';
+    font-style: normal;
+    font-weight: normal;
+    src: local('PT Sans'), local('PTSans-Regular'),
+      url(data:application/font-woff2;charset=utf-8;base64,d09GRgABAAAAAHowABMAAAAA+OAA) format('woff2');
+  }
+</style>
+
+
 <h2 align="center"> ⌚︎👀 </h2>
 <p align="center">
     <b>Awaiting array API implementations</b>
@@ -16,7 +27,7 @@ If you're super keen to experience einexpr, you can try it out right now by inst
 pip install git+https://github.com/numpy/numpy
 ```
 
-<h1 align="center"> <font face = "Comic sans MS"> einexpr </font> </h1>
+<h1 align="center"> <font face = "Courier New"> einexpr </font> </h1>
 
 <p align="center">
     <b> einexpr makes it easy to write fast, maintainable, interpretable ML code </b>
@@ -24,9 +35,7 @@ pip install git+https://github.com/numpy/numpy
 
 Inspired by Einstein summation notation, einexpr encourages explicit dimension naming.
 
-How many times have you had to switch back and forth between your `__init__` and  `forward` methods to figure out what your a layer is doing?
-
-Gone are the days of tediously tracking the dimensions of your tensors throughout your code.
+This doesn't enable you to do anything you couldn't before, but it does dramatically reduce the mental overhead of working with multi-dimensional arrays.
 
 ```python
 from einexpr import einexpr, einfunc
