@@ -72,7 +72,7 @@ def UniqueDimension():
     A dimension object whose name is a UUID.
     """
     
-    return NamedDimension(str(uuid4()))
+    return NamedDimension('_' + str(uuid4()).replace('-', ''))
 
 
 @dataclass(frozen=True, eq=False)
@@ -126,7 +126,7 @@ class DimensionTuple(DimensionObject):
         self.dimensions = tuple(dimensions)
 
     def __str__(self):
-        return '"' + " ".join(str(dimension) for dimension in self.dimensions) + '"'
+        return '(' + " ".join(str(dimension) for dimension in self.dimensions) + ')'
 
     def __repr__(self):
         return f"DimensionTuple({self.dimensions})"
@@ -178,8 +178,10 @@ class DimensionReplacement(DimensionObject):
         self.replacement = replacement
 
     def __str__(self):
-        original_str = utils.minimalistic_str(self.original, outer_brackets=False)
-        replacement_str = utils.minimalistic_str(self.replacement, outer_brackets=False)
+        # original_str = utils.minimalistic_str(self.original, outer_brackets=False)
+        # replacement_str = utils.minimalistic_str(self.replacement, outer_brackets=False)
+        original_str = str(self.original)
+        replacement_str = str(self.replacement)
         return f"({original_str} -> {replacement_str})"
     
     def __repr__(self):
@@ -237,7 +239,6 @@ def dims(x):
             return d
     else:
         raise TypeError(f"Cannot parse {type(x)} as dimensions.")
-
 
 Dimensions = Sequence[Dimension]
 
