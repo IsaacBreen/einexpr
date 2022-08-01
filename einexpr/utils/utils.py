@@ -261,6 +261,18 @@ class ExpandSentinel:
     A sentinel object that indicates that an iterable should be expanded into its parent.
     """
     content: Iterable = field(default_factory=list)
+    
+    def __iter__(self):
+        return iter(self.content)
+    
+    def __len__(self):
+        return len(self.content)
+    
+    def __getitem__(self, index):
+        return self.content[index]
+    
+    def __contains__(self, item):
+        return item in self.content
 
 
 @dataclass(frozen=True)
