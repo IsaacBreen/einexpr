@@ -9,6 +9,7 @@ from pydantic import NegativeInt, PositiveInt
 import einexpr.utils as utils
 
 
+@utils.deprecated
 class DimensionObject(ABC):
 
     @abstractmethod
@@ -24,6 +25,7 @@ class DimensionObject(ABC):
         pass
 
 
+@utils.deprecated
 class Dimension(DimensionObject):
     """
     Represents a single dimension of a tensor.
@@ -35,6 +37,7 @@ class Dimension(DimensionObject):
         pass
 
 
+@utils.deprecated
 @dataclass(frozen=True, eq=True)
 class NamedDimension(Dimension):
     """
@@ -67,6 +70,7 @@ class NamedDimension(Dimension):
         return hash((self.name, self.size))
 
 
+@utils.deprecated
 def UniqueDimension():
     """
     A dimension object whose name is a UUID.
@@ -75,6 +79,7 @@ def UniqueDimension():
     return NamedDimension('_' + str(uuid4()).replace('-', ''))
 
 
+@utils.deprecated
 @dataclass(frozen=True, eq=False)
 class AbsorbableDimension(Dimension):
     """
@@ -97,6 +102,7 @@ class AbsorbableDimension(Dimension):
         return hash(id(self))
 
 
+@utils.deprecated
 @dataclass(frozen=True, eq=False)
 class PositionalDimension(Dimension):
     """
@@ -139,6 +145,7 @@ class PositionalDimension(Dimension):
         return hash((self.position, self.size))
 
 
+@utils.deprecated
 class DimensionTuple(DimensionObject):
     """
     A tuple of dimensions.
@@ -189,6 +196,7 @@ class DimensionTuple(DimensionObject):
         return self.dimensions.index(dimension)
 
 
+@utils.deprecated
 class DimensionReplacement(DimensionObject):
     """
     A dimension that is to be replaced by another dimension.
@@ -223,6 +231,7 @@ class DimensionReplacement(DimensionObject):
         # )
 
 
+@utils.deprecated
 class PositionalDimensionPlaceholder:
     pass
 
@@ -262,6 +271,16 @@ def dims(x):
     else:
         raise TypeError(f"Cannot parse {type(x)} as dimensions.")
 
+
+class DimensionSpecification:
+    """
+    A specification of the dimensions of a tensor.
+    """
+
+    def __init__(self, dimensions: 
+
+
+
 Dimensions = Sequence[Dimension]
 
 __all__ = [
@@ -271,8 +290,10 @@ __all__ = [
     "NamedDimension",
     "PositionalDimension",
     "UniqueDimension",
+    "AbsorbableDimension",
     "DimensionTuple",
     "DimensionReplacement",
     "PositionalDimensionPlaceholder",
     "dims",
+    "DimensionSpecification",
 ]

@@ -16,24 +16,9 @@ import numpy as np
 T = TypeVar('T')
 
 
-def deprecated(func):
-    """This is a decorator which can be used to mark functions
-    as deprecated. It will result in a warning being emitted
-    when the function is used."""
-    @functools.wraps(func)
-    def new_func(*args, **kwargs):
-        warnings.simplefilter('always', DeprecationWarning)  # turn off filter
-        warnings.warn("Call to deprecated function {}.".format(func.__name__),
-                      category=DeprecationWarning,
-                      stacklevel=2)
-        warnings.simplefilter('default', DeprecationWarning)  # reset filter
-        return func(*args, **kwargs)
-    return new_func
-
-
 def enhanced_decorator(decorator_to_enhance):
     def enchanced_decorator(*args, **kwargs):
-        if len(args) == 1 and callable(args[0]) and len(kwargs) == 0:
+        if len(args) == 1 and (callable(args[0]) or isinstance(args[0], type)) and not kwargs:
             return decorator_to_enhance(args[0])
         elif len(args) == 0:
             def decorator_wrapper(func):
@@ -41,8 +26,48 @@ def enhanced_decorator(decorator_to_enhance):
             return decorator_wrapper
         else:
             raise TypeError(
-                f"decorator_maker() takes either a one positional argument (the function to decorate) or zero or more keyword arguments (got positional arguments {args} and keyword arguments {kwargs}")
+                f"Enhanced decorator takes either a one positional argument (the function or class to decorate) or zero or more keyword arguments. Got positional arguments {args} and keyword arguments {kwargs}.")
     return enchanced_decorator
+
+
+@enhanced_decorator
+def deprecated(item, /, *, message=None):
+    """
+    Use this decorator to mark functions and classes as deprecated. It will emit a warning upon use of the deprecated item.
+    """
+    message = "" if message is None else ' ' + message
+    if isinstance(item, type):
+        # Warn whenever the class is instantiated or subclassed
+        class DeprecatedClass(item):
+            def __new__(cls, *args, **kwargs):
+                warnings.warn(f"Instantiation of deprecated class {item.__name__}." + message, DeprecationWarning)
+                return super().__new__(cls, *args, **kwargs)
+            
+            def __init_subclass__(cls, **kwargs):
+                warnings.warn(f"Subclassing of deprecated class {item.__name__}." + message, DeprecationWarning)
+                super().__init_subclass__(**kwargs)
+                
+        # Wrap all instances of classmethod and staticmethod to emit a warning
+        # TODO: this doesn't work for some reason... 
+        for name, method in inspect.getmembers(item, inspect.isfunction):
+            if isinstance(method, classmethod):
+                setattr(DeprecatedClass, name, classmethod(deprecated(message=message)(method.__func__)))
+            elif isinstance(method, staticmethod):
+                setattr(DeprecatedClass, name, staticmethod(deprecated(message=message)(method.__func__)))
+            
+        return DeprecatedClass
+    elif callable(item):
+        @functools.wraps(item)
+        def new_func(*args, **kwargs):
+            warnings.simplefilter('always', DeprecationWarning)  # turn off filter
+            warnings.warn(f"Call to deprecated function {item.__name__}." + message,
+                        category=DeprecationWarning,
+                        stacklevel=2)
+            warnings.simplefilter('default', DeprecationWarning)  # reset filter
+            return item(*args, **kwargs)
+    else:
+        raise TypeError(f"deprecated decorator takes either a function or class. Got argument {item} of type {type(item)}.")
+    return new_func
 
 
 def powerset(iterable, reverse: bool = False) -> Iterator[Set[Any]]:
