@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from ._types import (array, dtype as Dtype, device as Device, Optional, Tuple,
                      Union, Any, PyCapsule, Enum, ellipsis, NonEinArray)
-from .dimension import AtomicDimension, PositionalDimension
+from .dimension import AtomicDimension, DimensionSpecification, PositionalDimension
 
 import einexpr
 
@@ -27,10 +27,11 @@ class einarray():
         self,
         a: Union[NonEinArray, einexpr.einarray],
         /, *,
-        dims: Union[einexpr.array_api.dimension.Dimensions, None] = None,
+        dims: Optional[einexpr.array_api.dimension.DimensionSpecification] = None,
         ambiguous_dims: Set[str] = None,
         copy: bool = True,
-        backend: Optional[str] = None
+        backend: Optional[str] = None,
+        dim_sizes: Optional[Dict[einexpr.array_api.dimension.AtomicDimension, int]] = None,
     ) -> None:
         if isinstance(a, einarray):
             self.a = a.a
@@ -61,6 +62,12 @@ class einarray():
         for i, dim in enumerate(self.dims, start=-len(self.dims)):
             if isinstance(dim, einexpr.array_api.dimension.PositionalDimension) and dim.position != i:
                 raise ValueError(f"The actual position {i} of the dimension {dim!r} in the dimension tuple {self.dims} is inconsistent with the position {dim.position} specified in the object.")
+        if isinstance(self.dims, einexpr.array_api.dimension.DimensionSpecification):
+            self.dims = self.dims.copy()
+        else:
+            dim_sizes = dim_sizes or {}
+            dim_sizes |= {dim: size for dim, size in zip(self.dims, self.a.shape)}
+            self.dims = einexpr.array_api.dimension.DimensionSpecification(self.dims, dim_sizes)
         # AMBIGUOUS DIMS
         if not self.ambiguous_dims <= set(self.dims):
             raise ValueError(f"The ambiguous dimensions {self.ambiguous_dims} must be a subset of the dimensions {self.dims} passed to the constructor.")

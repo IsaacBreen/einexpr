@@ -27,7 +27,7 @@ def reshape(array: RawArray, shape: Tuple[int, ...]) -> RawArray:
     return array.__array_namespace__().reshape(array, shape)
 
 
-def align_to_dims(a: 'einexpr.einarray', dims: List['einexpr.array_api.dimension.AtomicDimension']) -> RawArray:
+def align_to_dims(a: 'einexpr.einarray', dims: Tuple[einexpr.array_api.dimension.DimensionSpecification]) -> RawArray:
     """
     Aligns the given arrays to the given dimensions, collapses along dimensions that appear in the input array but not the ``dims`` argument, and expands along dimensions that the input array does not have.
     """

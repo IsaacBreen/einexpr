@@ -17,22 +17,22 @@ Functions implemented in einexpr/array_api/searching_functions.py
     ❌  einexpr.array_api.searching_functions.nonzero(x: array, /)                         
     ✅  einexpr.array_api.searching_functions.where(condition: array, x1: array, x2: array, /)                           
 Functions implemented in einexpr/array_api/creation_functions.py
-    ✅  einexpr.array_api.creation_functions.arange(start: Union[int, float], /, stop: Optional[Union[int, float]] = None, step: Union[int, float] = 1, *, dtype: Optional[dtype] = None, device: Optional[device] = None, dims: Dimensions = None, backend: Union[ModuleType, str] = None)                          
-    ✅  einexpr.array_api.creation_functions.asarray(obj: Union[array, bool, int, float, complex, NestedSequence, SupportsBufferProtocol], /, *, dtype: Optional[dtype] = None, device: Optional[device] = None, copy: Optional[bool] = None, dims: Dimensions = None, backend: Union[ModuleType, str] = None)                         
-    ✅  einexpr.array_api.creation_functions.empty(shape: Union[int, Tuple[int, ...]], *, dtype: Optional[dtype] = None, device: Optional[device] = None, dims: Dimensions = None, backend: Union[ModuleType, str] = None)                           
-    ✅  einexpr.array_api.creation_functions.empty_like(x: array, /, *, dtype: Optional[dtype] = None, device: Optional[device] = None, dims: Dimensions = None, backend: Union[ModuleType, str] = None)                      
-    ✅  einexpr.array_api.creation_functions.eye(n_rows: int, n_cols: Optional[int] = None, /, *, k: int = 0, dtype: Optional[dtype] = None, device: Optional[device] = None, dims: Dimensions = None, backend: Union[ModuleType, str] = None)                             
-    ✅  einexpr.array_api.creation_functions.from_dlpack(x: object, /, dims: Dimensions = None, backend: Union[ModuleType, str] = None)                     
-    ✅  einexpr.array_api.creation_functions.full(shape: Union[int, Tuple[int, ...]], fill_value: Union[bool, int, float, complex], *, dtype: Optional[dtype] = None, device: Optional[device] = None, dims: Dimensions = None, backend: Union[ModuleType, str] = None)                            
-    ✅  einexpr.array_api.creation_functions.full_like(x: array, /, fill_value: Union[bool, int, float, complex], *, dtype: Optional[dtype] = None, device: Optional[device] = None, dims: Dimensions = None, backend: Union[ModuleType, str] = None)                       
-    ✅  einexpr.array_api.creation_functions.linspace(start: Union[int, float], stop: Union[int, float], /, num: int, *, dtype: Optional[dtype] = None, device: Optional[device] = None, endpoint: bool = True, dims: Dimensions = None, backend: Union[ModuleType, str] = None)                        
+    ✅  einexpr.array_api.creation_functions.arange(start: Union[int, float], /, stop: Optional[Union[int, float]] = None, step: Union[int, float] = 1, *, dtype: Optional[dtype] = None, device: Optional[device] = None, dims: DimensionSpecification = None, backend: Union[ModuleType, str] = None)                          
+    ✅  einexpr.array_api.creation_functions.asarray(obj: Union[array, bool, int, float, complex, NestedSequence, SupportsBufferProtocol], /, *, dtype: Optional[dtype] = None, device: Optional[device] = None, copy: Optional[bool] = None, dims: DimensionSpecification = None, backend: Union[ModuleType, str] = None)                         
+    ✅  einexpr.array_api.creation_functions.empty(shape: Union[int, Tuple[int, ...]], *, dtype: Optional[dtype] = None, device: Optional[device] = None, dims: DimensionSpecification = None, backend: Union[ModuleType, str] = None)                           
+    ✅  einexpr.array_api.creation_functions.empty_like(x: array, /, *, dtype: Optional[dtype] = None, device: Optional[device] = None, dims: DimensionSpecification = None, backend: Union[ModuleType, str] = None)                      
+    ✅  einexpr.array_api.creation_functions.eye(n_rows: int, n_cols: Optional[int] = None, /, *, k: int = 0, dtype: Optional[dtype] = None, device: Optional[device] = None, dims: DimensionSpecification = None, backend: Union[ModuleType, str] = None)                             
+    ✅  einexpr.array_api.creation_functions.from_dlpack(x: object, /, dims: DimensionSpecification = None, backend: Union[ModuleType, str] = None)                     
+    ✅  einexpr.array_api.creation_functions.full(shape: Union[int, Tuple[int, ...]], fill_value: Union[bool, int, float, complex], *, dtype: Optional[dtype] = None, device: Optional[device] = None, dims: DimensionSpecification = None, backend: Union[ModuleType, str] = None)                            
+    ✅  einexpr.array_api.creation_functions.full_like(x: array, /, fill_value: Union[bool, int, float, complex], *, dtype: Optional[dtype] = None, device: Optional[device] = None, dims: DimensionSpecification = None, backend: Union[ModuleType, str] = None)                       
+    ✅  einexpr.array_api.creation_functions.linspace(start: Union[int, float], stop: Union[int, float], /, num: int, *, dtype: Optional[dtype] = None, device: Optional[device] = None, endpoint: bool = True, dims: DimensionSpecification = None, backend: Union[ModuleType, str] = None)                        
     ❌  einexpr.array_api.creation_functions.meshgrid(*arrays: array, indexing: str = 'xy')                        
-    ✅  einexpr.array_api.creation_functions.ones(shape: Union[int, Tuple[int, ...]], *, dtype: Optional[dtype] = None, device: Optional[device] = None, dims: Dimensions = None, backend: Union[ModuleType, str] = None)                            
-    ✅  einexpr.array_api.creation_functions.ones_like(x: array, /, *, dtype: Optional[dtype] = None, device: Optional[device] = None, dims: Dimensions = None, backend: Union[ModuleType, str] = None)                       
-    ✅  einexpr.array_api.creation_functions.tril(x: array, /, *, k: int = 0, dims: Dimensions = None, backend: Union[ModuleType, str] = None)                            
-    ✅  einexpr.array_api.creation_functions.triu(x: array, /, *, k: int = 0, dims: Dimensions = None, backend: Union[ModuleType, str] = None)                            
-    ✅  einexpr.array_api.creation_functions.zeros(shape: Union[int, Tuple[int, ...]], *, dtype: Optional[dtype] = None, device: Optional[device] = None, dims: Dimensions = None, backend: Union[ModuleType, str] = None)                           
-    ✅  einexpr.array_api.creation_functions.zeros_like(x: array, /, *, dtype: Optional[dtype] = None, device: Optional[device] = None, dims: Dimensions = None, backend: Union[ModuleType, str] = None)                      
+    ✅  einexpr.array_api.creation_functions.ones(shape: Union[int, Tuple[int, ...]], *, dtype: Optional[dtype] = None, device: Optional[device] = None, dims: DimensionSpecification = None, backend: Union[ModuleType, str] = None)                            
+    ✅  einexpr.array_api.creation_functions.ones_like(x: array, /, *, dtype: Optional[dtype] = None, device: Optional[device] = None, dims: DimensionSpecification = None, backend: Union[ModuleType, str] = None)                       
+    ✅  einexpr.array_api.creation_functions.tril(x: array, /, *, k: int = 0, dims: DimensionSpecification = None, backend: Union[ModuleType, str] = None)                            
+    ✅  einexpr.array_api.creation_functions.triu(x: array, /, *, k: int = 0, dims: DimensionSpecification = None, backend: Union[ModuleType, str] = None)                            
+    ✅  einexpr.array_api.creation_functions.zeros(shape: Union[int, Tuple[int, ...]], *, dtype: Optional[dtype] = None, device: Optional[device] = None, dims: DimensionSpecification = None, backend: Union[ModuleType, str] = None)                           
+    ✅  einexpr.array_api.creation_functions.zeros_like(x: array, /, *, dtype: Optional[dtype] = None, device: Optional[device] = None, dims: DimensionSpecification = None, backend: Union[ModuleType, str] = None)                      
 Functions implemented in einexpr/array_api/_types.py
     ✅  einexpr.array_api._types.NestedSequence.__getitem__(self, key: int, /)                     
     ✅  einexpr.array_api._types.NestedSequence.__len__(self, /)                         
@@ -57,7 +57,7 @@ Functions implemented in einexpr/array_api/einarray_object.py
     ✅  einexpr.array_api.einarray_object.einarray.__init__(self,
     a: Union[NonEinArray, einexpr.einarray],
     /, *,
-    dims: Union[einexpr.array_api.dimension.Dimensions, None] = None,
+    dims: Union[einexpr.array_api.dimension.DimensionSpecification, None] = None,
     ambiguous_dims: Set[str] = None,
     copy: bool = True,
     backend: Optional[str] = None

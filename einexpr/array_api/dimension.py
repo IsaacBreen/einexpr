@@ -272,23 +272,54 @@ def dims(x):
         raise TypeError(f"Cannot parse {type(x)} as dimensions.")
 
 
-Dimensions = Sequence[AtomicDimension]
+
+Dimension = AtomicDimension | Tuple['Dimension', ...]
 
 
 class DimensionSpecification:
     """
     A specification of the dimensions of a tensor.
     """
+    
+    dimensions: Tuple[Dimension, ...]
+    sizes: Dict[AtomicDimension, int]
 
-    def __init__(self, dimensions: Optional[Dimensions] = None, sizes: Optional[Dict[str, int]] = None):
-        self.dimensions = dimensions
-        self.sizes = sizes
+    def __init__(self, dimensions: Iterable[AtomicDimension], sizes: Dict[AtomicDimension, int]):
+        self.dimensions = tuple(dimensions)
+        self.sizes = sizes or {}
+    
+    def __iter__(self):
+        return iter(self.dimensions)
+    
+    def __len__(self):
+        return len(self.dimensions)
+    
+    def __getitem__(self, index):
+        return self.dimensions[index]
+    
+    def index(self, dimension):
+        return self.dimensions.index(dimension)
+    
+    def __hash__(self):
+        return hash((self.dimensions, tuple(self.sizes.items())))
+    
+    def __eq__(self, other):
+        return isinstance(other, DimensionSpecification) and self.dimensions == other.dimensions and self.sizes == other.sizes
+
+    def __str__(self):
+        return str(self.dimensions)
+    
+    def __repr__(self):
+        return f"DimensionSpecification({self.dimensions!r}, {self.sizes!r})"
+    
+    def copy(self):
+        return DimensionSpecification(self.dimensions, self.sizes.copy())
 
 
 __all__ = [
     "DimensionObject",
     "AtomicDimension",
-    "Dimensions",
+    "DimensionSpecification",
     "NamedDimension",
     "PositionalDimension",
     "UniqueDimension",

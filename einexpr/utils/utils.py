@@ -41,11 +41,17 @@ def deprecated(item, /, *, message=None):
         class DeprecatedClass(item):
             def __new__(cls, *args, **kwargs):
                 warnings.warn(f"Instantiation of deprecated class {item.__name__}." + message, DeprecationWarning)
-                return super().__new__(cls, *args, **kwargs)
+                return super().__new__(cls)
             
             def __init_subclass__(cls, **kwargs):
                 warnings.warn(f"Subclassing of deprecated class {item.__name__}." + message, DeprecationWarning)
                 super().__init_subclass__(**kwargs)
+                
+            def __repr__(self):
+                return f"<Deprecated {super().__repr__()}>"
+            
+            def __str__(self):
+                return super().__str__()
                 
         # Wrap all instances of classmethod and staticmethod to emit a warning
         # TODO: this doesn't work for some reason... 

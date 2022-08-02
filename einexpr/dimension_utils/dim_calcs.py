@@ -22,6 +22,12 @@ from dataclasses import replace
 D = TypeVar("D", bound=einexpr.array_api.dimension.DimensionObject)
 
 
+def _convert_from_spec(dims):
+    if isinstance(dims, einexpr.array_api.dimension.DimensionSpecification):
+        return dims.dimensions
+    return dims
+
+
 def get_unambiguous_broadcast_dims(
     *dims: List[einexpr.array_api.dimension.AtomicDimension],
 ) -> Set[einexpr.array_api.dimension.AtomicDimension]:
@@ -261,7 +267,7 @@ def parse_dims_reshape(dims_raw: Union[str, Tuple]) -> Tuple:
     return parse_dims(dims_raw)
 
 
-def compute_total_size(dims: einexpr.array_api.dimension.Dimensions) -> Optional[int]:
+def compute_total_size(dims: einexpr.array_api.dimension.DimensionSpecification) -> Optional[int]:
     """
     Returns the total dimensions size, or None if the dimensions are not known.
     """
@@ -284,6 +290,7 @@ def dims_to_shape(dims: D) -> Tuple[int, ...]:
     """
     Converts a dimensions object into a shape tuple.
     """
+    dims = _convert_from_spec(dims)
     sizes = tuple(tuple(compute_total_size(dim) for dim in dims))
     assert all(size is not None for size in sizes)
     return sizes
@@ -329,6 +336,8 @@ def map_over_dims(
         elif isinstance(dim_obj, str):
             dim_obj = einexpr.array_api.dimension.NamedDimension(dim_obj)
             return  f(dim_obj, position) if enumerate_positions else f(dim_obj)
+        elif isinstance(dim_obj, einexpr.array_api.dimension.DimensionSpecification):
+            return einexpr.array_api.dimension.DimensionSpecification(tuple(_map_over_dims(dim, position + (i,)) for i, dim in enumerate(dim_obj)), sizes=dim_obj.sizes)
         elif dim_obj is ...:
             return dim_obj
         elif strict:
@@ -368,7 +377,7 @@ def iter_dims(
                     pass
                 case _:
                     raise ValueError(f"Unexpected value for argument enumerate_dimension_replacement_mode: {enumerate_dimension_replacement_path_mode}. Expecting one of 'both', 'original', 'replacement', or 'passthrough'.")
-        elif isinstance(dim_obj, (list, set, tuple, einexpr.array_api.dimension.DimensionTuple)):
+        elif isinstance(dim_obj, (list, set, tuple, einexpr.array_api.dimension.DimensionTuple, einexpr.array_api.dimension.DimensionSpecification)):
             yield (dim_obj, position)
             for i, dim in enumerate(dim_obj):
                 yield from _iter_dims(dim, position + (i,))
@@ -442,7 +451,7 @@ def propogate_sizes(dims: D, sizes: Optional[Dict[str, int]] = None) -> D:
     return apply_sizes(dims, sizes)
 
 
-def expand_ellipsis(dims: einexpr.array_api.dimension.DimensionObject, defaults: einexpr.array_api.dimension.Dimensions) -> einexpr.array_api.dimension.DimensionObject:
+def expand_ellipsis(dims: einexpr.array_api.dimension.DimensionObject, defaults: einexpr.array_api.dimension.DimensionSpecification) -> einexpr.array_api.dimension.DimensionObject:
     """
     Expands a dimension object with ellipsis into a dimension object with the given shape.
     """
@@ -456,10 +465,11 @@ def expand_ellipsis(dims: einexpr.array_api.dimension.DimensionObject, defaults:
     return dims
 
 
-def process_dims_declaration(dims_raw: Union[str, Tuple, None], shape: Tuple[int, ...]) -> einexpr.array_api.dimension.Dimensions:
+def process_dims_declaration(dims_raw: Union[str, Tuple, None], shape: Tuple[int, ...]) -> einexpr.array_api.dimension.DimensionSpecification:
     """
     Processes a dimensions declaration into a dimension object.
     """
+    dims_raw = _convert_from_spec(dims_raw)
     if dims_raw is None:
         # Use full tuple of positional dimensions
         dims_raw = tuple(einexpr.array_api.dimension.PositionalDimension(i, size) for i, size in enumerate(shape, start=-len(shape)))
@@ -479,7 +489,7 @@ def process_dims_declaration(dims_raw: Union[str, Tuple, None], shape: Tuple[int
         if len(ellipsis_replacement) > 0 and len(dims) >= len(shape):
             raise einexpr.exceptions.InternalError("Ellipsis appears to be expanding as one or more dimensions, but the size of the expanded dimensions tuple is greater than that of the shape tuple.")
     if len(dims) != len(shape):
-        raise einexpr.exceptions.InternalError("Dimensions tuple size does not match shape tuple size.")
+        raise einexpr.exceptions.InternalError("DimensionSpecification tuple size does not match shape tuple size.")
     dims = tuple(einexpr.array_api.dimension.PositionalDimension(i, size) if isinstance(dim, einexpr.array_api.dimension.AbsorbableDimension) else dim for i, (dim, size) in enumerate(zip(dims, shape), start=-len(shape)))
     if len(dims) != len(shape):
         raise ValueError(f"Declaration {dims_raw} has wrong number of dimensions. Expected {len(shape)}, got {len(dims)}.")
@@ -488,11 +498,10 @@ def process_dims_declaration(dims_raw: Union[str, Tuple, None], shape: Tuple[int
     return dims
 
 
-def process_dims_reshape(dims_raw: Union[str, Tuple], existing_dims: einexpr.array_api.dimension.DimensionObject) -> einexpr.array_api.dimension.Dimensions:
+def process_dims_reshape(dims_raw: Union[str, Tuple], existing_dims: einexpr.array_api.dimension.DimensionObject) -> einexpr.array_api.dimension.DimensionSpecification:
     """
     Processes a dimensions reshape string into a dimension object.
     """
-    # 
     if not dims_raw:
         return einexpr.array_api.dimension.DimensionTuple()
     dims = parse_dims_reshape(dims_raw)
@@ -525,7 +534,7 @@ def process_dims_reshape(dims_raw: Union[str, Tuple], existing_dims: einexpr.arr
     assert not any(isinstance(dim, einexpr.array_api.dimension.AbsorbableDimension) for dim in iter_dims(dims, enumerate_dimension_replacement_has_position="both"))
     return dims
 
-def dims_equivalent(dims1: einexpr.array_api.dimension.Dimensions, dims2: einexpr.array_api.dimension.Dimensions, ignore_missing_sizes: bool = True) -> bool:
+def dims_equivalent(dims1: einexpr.array_api.dimension.DimensionSpecification, dims2: einexpr.array_api.dimension.DimensionSpecification, ignore_missing_sizes: bool = True) -> bool:
     """
     Returns True if the two dimension objects are equivalent.
     """
@@ -575,6 +584,7 @@ def primitivize_dims(dims: einexpr.array_api.dimension.DimensionObject) -> einex
     """
     Converts a dimensions object into simple (possibly nested) tuples of strings. This is a lossy conversion.
     """
+    dims = _convert_from_spec(dims)
     if isinstance(dims, einexpr.array_api.dimension.DimensionReplacement):
         return primitivize_dims(dims.replacement)
     elif isinstance(dims, (list, tuple, einexpr.array_api.dimension.DimensionTuple)):
@@ -634,6 +644,7 @@ def expand_dims(dims: D) -> D:
     """
     Expands all composite dimensions into their constituents, effectually 'flattening' the dimension tree itself.
     """
+    dims = _convert_from_spec(dims)
     def helper(dims: D) -> D:
         if isinstance(dims, einexpr.array_api.dimension.DimensionReplacement):
             raise ValueError(f"Can't expand a dimension replacement: {dims}. Use ignore_replacements() or apply_replacements() first.")
