@@ -87,11 +87,6 @@ class einarray():
         instructions = einexpr.dimension_utils.process_dims_reshape(dims, existing_dims=self.dims)
         # Calculate the dimensions of the output array before any replacements are made.
         final_dims_before_replacement = einexpr.dimension_utils.ignore_replacements(instructions)
-        # # Ensure that these are a subset of the existing dimensions.
-        # final_names = set(einexpr.dimension_utils.gather_names(final_dims_before_replacement))
-        # current_names = set(einexpr.dimension_utils.gather_names(self.dims))
-        # if not final_names <= current_names:
-        #     raise ValueError(f"The named dimensions {final_names} of the output array are not a subset of the existing dimensions {current_names}.")
         # Align the raw array to these. This performs steps 1-3 but only returns a raw array (without names).
         raw_array: einexpr.types.NonEinArray = einexpr.backends.align_to_dims(self, final_dims_before_replacement)
         # Put the raw array into an einarray with the replacement dimensions.
