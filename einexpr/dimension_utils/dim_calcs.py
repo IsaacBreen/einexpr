@@ -164,7 +164,7 @@ class TreeToReshapeDimension(Transformer):
         return einexpr.array_api.dimension.NamedDimension(value)
     
     def positional_dim(self, value: str) -> einexpr.array_api.dimension.PositionalDimension:
-        return einexpr.array_api.dimension.PositionalDimensionPlaceholder()
+        return einexpr.array_api.dimension.AbsorbableDimension()
 
     def EMPTY(self, tree) -> str:
         return tree.value
@@ -238,7 +238,7 @@ def parse_dims(dims_raw: Union[str, Tuple]) -> Tuple:
         elif isinstance(dims_raw, int):
             return einexpr.array_api.dimension.PositionalDimension(dims_raw)
         elif dims_raw is None:
-            return None
+            return einexpr.array_api.dimension.AbsorbableDimension()
         else:
             raise ValueError(f"Unexpected value {dims_raw}.")
     
@@ -287,25 +287,13 @@ def dims_to_shape(dims: D) -> Tuple[int, ...]:
     return tuple(compute_total_size(dim) for dim in dims)
 
 
-def iter_dims(dim_obj: einexpr.array_api.dimension.DimensionObject, enumerate_positions: bool = False) -> Iterator[einexpr.array_api.dimension.Dimension]:
-    """
-    Iterates over all dimension objects.
-    """
-    def _iter_dims(dim_obj, position):
-        if isinstance(dim_obj, einexpr.array_api.dimension.DimensionReplacement):
-            yield (dim_obj, position)
-            yield from _iter_dims(dim_obj.original, position + (0,))
-            yield from _iter_dims(dim_obj.replacement, position + (1,))
-        elif isinstance(dim_obj, (list, set, tuple, einexpr.array_api.dimension.DimensionTuple)):
-            yield (dim_obj, position)
-            for i, dim in enumerate(dim_obj):
-                yield from _iter_dims(dim, position + (i,))
-        else:
-            yield (dim_obj, position)
-    yield from ((dim_obj, pos) if enumerate_positions else dim_obj for dim_obj, pos in _iter_dims(dim_obj, ()))
-
-
-def map_over_dims(f: Callable[einexpr.array_api.dimension.DimensionObject, einexpr.array_api.dimension.DimensionObject], dim_obj: D, strict: bool = True, enumerate_positions: bool = False, enumerate_dimension_replacement_path_mode: Literal["both", "original", "replacement", "neither"] = "both", enumerate_dimension_replacement_has_position: bool = False) -> D:
+def map_over_dims(
+    f: Callable[einexpr.array_api.dimension.DimensionObject, einexpr.array_api.dimension.DimensionObject],
+    dim_obj: D, strict: bool = True,
+    enumerate_positions: bool = False,
+    enumerate_dimension_replacement_path_mode: Literal["both", "original", "replacement", "neither"] = "both",
+    enumerate_dimension_replacement_has_position: bool = False
+)-> D:
     """
     Maps a function over all dimension objects.
     """
@@ -327,10 +315,10 @@ def map_over_dims(f: Callable[einexpr.array_api.dimension.DimensionObject, einex
                     original = _map_over_dims(original, position_original)
                 case "replacement":
                     replacement = _map_over_dims(replacement, position_replacement)
-                case "passthrough":
+                case "neither":
                     pass
                 case _:
-                    raise ValueError(f"Unexpected value for argument enumerate_dimension_replacement_mode: {enumerate_dimension_replacement_mode}. Expecting one of 'both', 'original', 'replacement', or 'passthrough'.")
+                    raise ValueError(f"Unexpected value for argument enumerate_dimension_replacement_mode: {enumerate_dimension_replacement_path_mode}. Expecting one of 'both', 'original', 'replacement', or 'passthrough'.")
             return einexpr.array_api.dimension.DimensionReplacement(original, replacement)
         elif isinstance(dim_obj, (list, set, tuple, einexpr.array_api.dimension.DimensionTuple)):
             return type(dim_obj)(_map_over_dims(dim, position + (i,)) for i, dim in enumerate(dim_obj))
@@ -339,11 +327,52 @@ def map_over_dims(f: Callable[einexpr.array_api.dimension.DimensionObject, einex
         elif isinstance(dim_obj, str):
             dim_obj = einexpr.array_api.dimension.NamedDimension(dim_obj)
             return  f(dim_obj, position) if enumerate_positions else f(dim_obj)
+        elif dim_obj is ...:
+            return dim_obj
         elif strict:
             raise ValueError(f"Unexpected value {dim_obj}.")
         else:
             return f(dim_obj, position) if enumerate_positions else f(dim_obj)
     return _map_over_dims(dim_obj, ())
+
+
+def iter_dims(
+    dim_obj: einexpr.array_api.dimension.DimensionObject,
+    enumerate_positions: bool = False,
+    enumerate_dimension_replacement_path_mode: Literal["both", "original", "replacement", "neither"] = "both",
+    enumerate_dimension_replacement_has_position: bool = False
+) -> Iterator[einexpr.array_api.dimension.Dimension]:
+    """
+    Iterates over all dimension objects.
+    """
+    def _iter_dims(dim_obj, position):
+        if isinstance(dim_obj, einexpr.array_api.dimension.DimensionReplacement):
+            if enumerate_dimension_replacement_has_position:
+                position_original = position + (0,)
+                position_replacement = position + (1,)
+            else:
+                position_original = position
+                position_replacement = position
+            yield (dim_obj, position)
+            match enumerate_dimension_replacement_path_mode:
+                case "both":
+                    yield from _iter_dims(dim_obj.original, position_original)
+                    yield from _iter_dims(dim_obj.replacement, position_replacement)
+                case "original":
+                    yield from _iter_dims(dim_obj.original, position_original)
+                case "replacement":
+                    yield from _iter_dims(dim_obj.replacement, position_replacement)
+                case "neither":
+                    pass
+                case _:
+                    raise ValueError(f"Unexpected value for argument enumerate_dimension_replacement_mode: {enumerate_dimension_replacement_path_mode}. Expecting one of 'both', 'original', 'replacement', or 'passthrough'.")
+        elif isinstance(dim_obj, (list, set, tuple, einexpr.array_api.dimension.DimensionTuple)):
+            yield (dim_obj, position)
+            for i, dim in enumerate(dim_obj):
+                yield from _iter_dims(dim, position + (i,))
+        else:
+            yield (dim_obj, position)
+    yield from ((dim_obj, pos) if enumerate_positions else dim_obj for dim_obj, pos in _iter_dims(dim_obj, ()))
 
 
 def transform_dims_tree(tree: D) -> D:
@@ -424,29 +453,34 @@ def expand_ellipsis(dims: einexpr.array_api.dimension.DimensionObject, defaults:
         dims = (*before_ellipsis, *ellipsis_replacement, *after_ellipsis)
     return dims
 
+
 def process_dims_declaration(dims_raw: Union[str, Tuple, None], shape: Tuple[int, ...]) -> einexpr.array_api.dimension.Dimensions:
     """
     Processes a dimensions declaration into a dimension object.
     """
     if dims_raw is None:
-        # Use full tuple of positional dimensions represented by ``None``
-        dims_raw = (None,) * len(shape)
+        # Use full tuple of positional dimensions
+        dims_raw = (einexpr.array_api.dimension.PositionalDimension(i, size) for i, size in enumerate(shape))
     elif not isinstance(dims_raw, (str, tuple, list, einexpr.array_api.dimension.DimensionTuple)):
         raise ValueError(f"Unexpected value {dims_raw}.")
     dims = parse_dims(dims_raw)
-    # dims = expand_ellipsis(dims, shape)
-    defaults = shape
+    dim_sizes = gather_sizes(dims) | {dim.id: size for dim, size in zip(dims, shape) if isinstance(dim, einexpr.array_api.dimension.Dimension)}
+    dims = propogate_sizes(dims, dim_sizes)
+    # Expand ellipsis
     if ... in dims:
         i_ellipsis = dims.index(...)
         before_ellipsis = dims[:i_ellipsis]
         after_ellipsis = dims[i_ellipsis + 1:]
-        len_ellipsis = len(defaults) - len(before_ellipsis) - len(after_ellipsis)
-        ellipsis_replacement = defaults[i_ellipsis:i_ellipsis + len_ellipsis]
+        len_ellipsis = len(shape) - len(before_ellipsis) - len(after_ellipsis)
+        ellipsis_replacement = (einexpr.array_api.dimension.AbsorbableDimension() for _ in range(len_ellipsis))
         dims = (*before_ellipsis, *ellipsis_replacement, *after_ellipsis)
+        if len(ellipsis_replacement) > 0 and len(dims) >= len(shape):
+            raise einexpr.exceptions.InternalError("Ellipsis appears to be expanding as one or more dimensions, but the size of the expanded dimensions tuple is greater than that of the shape tuple.")
+    if len(dims) != len(shape):
+        raise einexpr.exceptions.InternalError("Dimensions tuple size does not match shape tuple size.")
+    dims = tuple(einexpr.array_api.dimension.PositionalDimension(i, size) if isinstance(dim, einexpr.array_api.dimension.AbsorbableDimension) else dim for i, (dim, size) in enumerate(zip(dims, shape), start=-len(shape)))
     if len(dims) != len(shape):
         raise ValueError(f"Declaration {dims_raw} has wrong number of dimensions. Expected {len(shape)}, got {len(dims)}.")
-    dim_sizes = gather_sizes(dims) | {dim.id: size for dim, size in zip(dims, shape) if isinstance(dim, einexpr.array_api.dimension.Dimension)}
-    dims = propogate_sizes(dims, dim_sizes)
     if any(compute_total_size(dim) is None for dim in dims):
         raise einexpr.exceptions.InternalError("All dimensions must have a size.")
     return dims
@@ -456,27 +490,58 @@ def process_dims_reshape(dims_raw: Union[str, Tuple], existing_dims: einexpr.arr
     """
     Processes a dimensions reshape string into a dimension object.
     """
+    # 
     if not dims_raw:
         return einexpr.array_api.dimension.DimensionTuple()
     dims = parse_dims_reshape(dims_raw)
     dims = propogate_sizes(dims, gather_sizes(existing_dims))
     existing_dims = propogate_sizes(existing_dims, gather_sizes(dims))
-    # dims = expand_ellipsis(dims, existing_dims)
+    concrete_dims = {dim for dim in ignore_replacements(dims) if isinstance(dim, (
+        einexpr.array_api.dimension.NamedDimension,
+        einexpr.array_api.dimension.DimensionTuple,
+        tuple,
+    ))}
+    # NOTE: to keeps things simple for now, we don't allow complex reshaping (involving the modification of compound dimensions) when an ellipsis is present.
+    #       This should be fixed in the future.
     if ... in dims:
+        if not concrete_dims <= set(existing_dims):
+            raise einexpr.exceptions.InternalError(f"einexpr does not yet support reshaping to a dimension that in the set of the existing dimensions. Existing dimensions: {existing_dims}, reshape dimensions: {dims}")
+        # Replace ellipsis with absorbing dimensions for the remaining dimensions
         i_ellipsis = dims.index(...)
-        before_ellipsis = dims[:i_ellipsis]
-        after_ellipsis = dims[i_ellipsis + 1:]
-        in_ellipsis = set(existing_dims) - set(before_ellipsis) - set(after_ellipsis)
-        ellipsis_replacement = [dim for dim in existing_dims if dim in in_ellipsis]
-        dims = (*before_ellipsis, *ellipsis_replacement, *after_ellipsis)
-        if len(ellipsis_replacement) > 0 and len(dims) >= len(existing_dims):
-            raise einexpr.exceptions.InternalError("Ellipsis appears to be expanding as one or more dimensions, but the size of the expanded dimensions tuple is greater than that of the existing dimensions.")
-    # Bind positional dimensions
-    replacements = get_positional_dim_replacements((ignore_replacements(dims), existing_dims))
-    replacees = {named_dim: pos_dim for pos_dim, named_dim in replacements.items()}
-    dims = map_over_dims((lambda dim: einexpr.array_api.dimension.DimensionReplacement(replacees[dim], dim) if dim in replacees else dim), dims, enumerate_dimension_replacement_path_mode='original')
-    return dims
-
+        dims = (
+            *dims[:i_ellipsis],
+            *(einexpr.array_api.dimension.AbsorbableDimension() for _ in range(i_ellipsis, len(existing_dims) - (len(dims) - i_ellipsis))),
+            *dims[i_ellipsis + 1:]
+        )
+        assert len(dims) == len(existing_dims)
+        return dims
+    else:
+        shared_concrete_dims = concrete_dims & set(existing_dims)
+        nonconcrete_dims = [dim for dim in dims if dim not in shared_concrete_dims]
+        nonconcrete_existing_dims = [dim for dim in existing_dims if dim not in shared_concrete_dims]
+        # Bind dimensions
+        existing_dim_replacement_object_by_new_dim = {}
+        new_dim_overwrite_by_new_dim = {}
+        for new_dim, existing_dim in zip(nonconcrete_dims, nonconcrete_existing_dims):
+            if isinstance(new_dim, einexpr.array_api.dimension.NamedDimension) and isinstance(existing_dim, einexpr.array_api.dimension.NamedDimension):
+                raise einexpr.exceptions.InternalError()
+            elif isinstance(new_dim, einexpr.array_api.dimension.NamedDimension):
+                existing_dim_replacement_object_by_new_dim[new_dim] = existing_dim
+            elif isinstance(existing_dim, einexpr.array_api.dimension.NamedDimension):
+                new_dim_overwrite_by_new_dim[new_dim] = existing_dim
+            else:
+                raise einexpr.exceptions.InternalError()
+        # Replace dimensions
+        dims = map_over_dims((lambda dim: einexpr.array_api.dimension.DimensionReplacement(existing_dim_replacement_object_by_new_dim[dim], dim) if dim in existing_dim_replacement_object_by_new_dim else dim), dims, enumerate_dimension_replacement_path_mode='original')
+        dims = map_over_dims((lambda dim: new_dim_overwrite_by_new_dim[dim] if dim in new_dim_overwrite_by_new_dim else dim), dims, enumerate_dimension_replacement_path_mode='original')
+        # Check that there are no duplicate
+        all_original_dims = list(iter_dims(ignore_replacements(dims)))
+        if len(set(all_original_dims)) != len(all_original_dims):
+            raise einexpr.exceptions.InternalError("Duplicate dimensions in reshape before replacements.")
+        all_dims_after_replacements = list(iter_dims(apply_replacements(dims)))
+        if len(set(all_dims_after_replacements)) != len(all_dims_after_replacements):
+            raise einexpr.exceptions.InternalError("Duplicate dimensions in reshape after replacements.")
+        return dims
 
 def dims_equivalent(dims1: einexpr.array_api.dimension.Dimensions, dims2: einexpr.array_api.dimension.Dimensions, ignore_missing_sizes: bool = True) -> bool:
     """
@@ -551,6 +616,8 @@ def ignore_replacements(dims: D) -> D:
     elif isinstance(dims, (tuple, einexpr.array_api.dimension.DimensionTuple)):
         return einexpr.array_api.dimension.DimensionTuple(ignore_replacements(dim) for dim in dims)
     elif isinstance(dims, einexpr.array_api.dimension.Dimension):
+        return dims
+    elif dims is ...:
         return dims
     else:
         raise ValueError(f"Unexpected value {dims}.")
