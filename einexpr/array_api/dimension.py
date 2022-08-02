@@ -76,6 +76,28 @@ def UniqueDimension():
 
 
 @dataclass(frozen=True, eq=False)
+class AbsorbableDimension(Dimension):
+    """
+    A dimension that binds readily with other dimensions, regardless of their name.
+    """
+    
+    size: PositiveInt = field(default=None)
+
+    @property
+    def id(self) -> str:
+        return str(id(self))
+    
+    def __str__(self):
+        return "*"
+    
+    def __eq__(self, other: object) -> bool:
+        return self is other
+    
+    def __hash__(self) -> int:
+        return hash(id(self))
+
+
+@dataclass(frozen=True, eq=False)
 class PositionalDimension(Dimension):
     """
     A dimension that is bound to a position in the tensor.

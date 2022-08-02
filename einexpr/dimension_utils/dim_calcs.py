@@ -284,7 +284,9 @@ def dims_to_shape(dims: D) -> Tuple[int, ...]:
     """
     Converts a dimensions object into a shape tuple.
     """
-    return tuple(compute_total_size(dim) for dim in dims)
+    sizes = tuple(tuple(compute_total_size(dim) for dim in dims))
+    assert all(size is not None for size in sizes)
+    return sizes
 
 
 def map_over_dims(
@@ -460,7 +462,7 @@ def process_dims_declaration(dims_raw: Union[str, Tuple, None], shape: Tuple[int
     """
     if dims_raw is None:
         # Use full tuple of positional dimensions
-        dims_raw = (einexpr.array_api.dimension.PositionalDimension(i, size) for i, size in enumerate(shape))
+        dims_raw = tuple(einexpr.array_api.dimension.PositionalDimension(i, size) for i, size in enumerate(shape, start=-len(shape)))
     elif not isinstance(dims_raw, (str, tuple, list, einexpr.array_api.dimension.DimensionTuple)):
         raise ValueError(f"Unexpected value {dims_raw}.")
     dims = parse_dims(dims_raw)
@@ -504,44 +506,24 @@ def process_dims_reshape(dims_raw: Union[str, Tuple], existing_dims: einexpr.arr
     # NOTE: to keeps things simple for now, we don't allow complex reshaping (involving the modification of compound dimensions) when an ellipsis is present.
     #       This should be fixed in the future.
     if ... in dims:
+        raise einexpr.exceptions.InternalError("Ellipsis is not yet supported.")
         if not concrete_dims <= set(existing_dims):
             raise einexpr.exceptions.InternalError(f"einexpr does not yet support reshaping to a dimension that in the set of the existing dimensions. Existing dimensions: {existing_dims}, reshape dimensions: {dims}")
         # Replace ellipsis with absorbing dimensions for the remaining dimensions
         i_ellipsis = dims.index(...)
         dims = (
             *dims[:i_ellipsis],
-            *(einexpr.array_api.dimension.AbsorbableDimension() for _ in range(i_ellipsis, len(existing_dims) - (len(dims) - i_ellipsis))),
+            *(einexpr.array_api.dimension.AbsorbableDimension() for _ in range(i_ellipsis, len(existing_dims) - (len(dims) - i_ellipsis - 1))),
             *dims[i_ellipsis + 1:]
         )
         assert len(dims) == len(existing_dims)
-        return dims
-    else:
-        shared_concrete_dims = concrete_dims & set(existing_dims)
-        nonconcrete_dims = [dim for dim in dims if dim not in shared_concrete_dims]
-        nonconcrete_existing_dims = [dim for dim in existing_dims if dim not in shared_concrete_dims]
-        # Bind dimensions
-        existing_dim_replacement_object_by_new_dim = {}
-        new_dim_overwrite_by_new_dim = {}
-        for new_dim, existing_dim in zip(nonconcrete_dims, nonconcrete_existing_dims):
-            if isinstance(new_dim, einexpr.array_api.dimension.NamedDimension) and isinstance(existing_dim, einexpr.array_api.dimension.NamedDimension):
-                raise einexpr.exceptions.InternalError()
-            elif isinstance(new_dim, einexpr.array_api.dimension.NamedDimension):
-                existing_dim_replacement_object_by_new_dim[new_dim] = existing_dim
-            elif isinstance(existing_dim, einexpr.array_api.dimension.NamedDimension):
-                new_dim_overwrite_by_new_dim[new_dim] = existing_dim
-            else:
-                raise einexpr.exceptions.InternalError()
-        # Replace dimensions
-        dims = map_over_dims((lambda dim: einexpr.array_api.dimension.DimensionReplacement(existing_dim_replacement_object_by_new_dim[dim], dim) if dim in existing_dim_replacement_object_by_new_dim else dim), dims, enumerate_dimension_replacement_path_mode='original')
-        dims = map_over_dims((lambda dim: new_dim_overwrite_by_new_dim[dim] if dim in new_dim_overwrite_by_new_dim else dim), dims, enumerate_dimension_replacement_path_mode='original')
-        # Check that there are no duplicate
-        all_original_dims = list(iter_dims(ignore_replacements(dims)))
-        if len(set(all_original_dims)) != len(all_original_dims):
-            raise einexpr.exceptions.InternalError("Duplicate dimensions in reshape before replacements.")
-        all_dims_after_replacements = list(iter_dims(apply_replacements(dims)))
-        if len(set(all_dims_after_replacements)) != len(all_dims_after_replacements):
-            raise einexpr.exceptions.InternalError("Duplicate dimensions in reshape after replacements.")
-        return dims
+    dims = propogate_sizes(dims, gather_sizes(existing_dims))
+    # Bind positional dimensions
+    replacements = get_positional_dim_replacements((ignore_replacements(dims), existing_dims))
+    replacees = {named_dim: pos_dim for pos_dim, named_dim in replacements.items()}
+    dims = map_over_dims((lambda dim: einexpr.array_api.dimension.DimensionReplacement(replacees[dim], dim) if dim in replacees else dim), dims, enumerate_dimension_replacement_path_mode='original')
+    assert not any(isinstance(dim, einexpr.array_api.dimension.AbsorbableDimension) for dim in iter_dims(dims, enumerate_dimension_replacement_has_position="both"))
+    return dims
 
 def dims_equivalent(dims1: einexpr.array_api.dimension.Dimensions, dims2: einexpr.array_api.dimension.Dimensions, ignore_missing_sizes: bool = True) -> bool:
     """
@@ -691,15 +673,31 @@ def get_positional_dim_replacements(dimss: Tuple[einexpr.array_api.dimension.Dim
     """
     Infer the names of positional arguments.
     """
+    # Replace all absorbable dimensions by positional dimensions.
+    positional_to_absorbable = {}
+    _dimss = []
+    for dims in dimss:
+        _dims = []
+        for i, dim in enumerate(dims, start=-len(dims)):
+            if isinstance(dim, einexpr.array_api.dimension.AbsorbableDimension):
+                pos_dim = einexpr.array_api.dimension.PositionalDimension(i)
+                positional_to_absorbable[pos_dim] = dim
+                _dims.append(pos_dim)
+            else:
+                _dims.append(dim)
+        _dimss.append(_dims)
+    dimss = _dimss
     positional_dims = {}
     for dims in dimss:
-        for dim in iter_dims(dims):
-            if isinstance(dim, einexpr.array_api.dimension.PositionalDimension):
-                if dim.id in positional_dims:
-                    if positional_dims[dim.id] != dim:
-                        raise ValueError(f"Positional dimensions conflict: {positional_dims[dim.id]!r} and {dim!r}.")
+        for i, dim in enumerate(dims, start=-len(dims)):
+            if isinstance(dim, (einexpr.array_api.dimension.PositionalDimension)):
+                if isinstance(dim, einexpr.array_api.dimension.PositionalDimension) and dim.position != i:
+                    raise ValueError(f"Positional dimension {dim} has position {dim.position} but should have position {i}.")
+                if i in positional_dims:
+                    if positional_dims[dim.position] != dim:
+                        raise ValueError(f"Positional or Absorbable dimensions conflict: {positional_dims[i]!r} and {dim!r}.")
                 else:
-                    positional_dims[dim.id] = dim
+                    positional_dims[i] = dim
     replacements = {}
     for dim in positional_dims.values():
         for dims in dimss:
@@ -724,10 +722,15 @@ def get_positional_dim_replacements(dimss: Tuple[einexpr.array_api.dimension.Dim
                         if pos_dim_size != replacement_dim_size:
                             raise ValueError(f"Dimension sizes conflict: {dim!r} and {dims[dim.position]!r}.")
                     replacements[dim] = dims[dim.position]
-                elif isinstance(dims[dim.position], einexpr.array_api.dimension.PositionalDimension):
+                elif isinstance(dims[dim.position], (einexpr.array_api.dimension.PositionalDimension, einexpr.array_api.dimension.AbsorbableDimension)):
                     pass
                 else:
                     raise ValueError(f"Unexpected value {dims[dim.position]!r}.")
+    # Reverse the replacement of positional dimensions that we did at the start of the function.
+    for positional, absorbable in positional_to_absorbable.items():
+        if positional in replacements:
+            replacements[absorbable] = replacements[positional]
+            del replacements[positional]
     return replacements
 
 
