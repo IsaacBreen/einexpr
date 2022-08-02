@@ -97,7 +97,7 @@ class SingleArgumentMultipleDimensionReduction:
     def validate_args(args, kwargs):
         # TODO:
         # - Check that axes are in the array
-        # - raise error when there are duplicate axes, esp of different types (einexpr.array_api.dimension.Dimension, int, and negative int)
+        # - raise error when there are duplicate axes, esp of different types (einexpr.array_api.dimension.AtomicDimension, int, and negative int)
         assert isinstance(args, (list, tuple))
         assert isinstance(kwargs, dict)
         # assert all(isinstance(arg, (einexpr.einarray, int, float)) for arg in args)
@@ -111,7 +111,7 @@ class SingleArgumentMultipleDimensionReduction:
         axis = kwargs.get('axis')
         if axis is None:
             axis = tuple(range(len(get_dims(args[0]))))
-        elif isinstance(axis, (einexpr.array_api.dimension.Dimension, int)):
+        elif isinstance(axis, (einexpr.array_api.dimension.AtomicDimension, int)):
             axis = (axis,)
         elif isinstance(axis, set):
             axis = tuple(axis)
@@ -177,7 +177,7 @@ class SingleArgumentSingleDimensionReduction(SingleArgumentMultipleDimensionRedu
     @staticmethod
     def validate_args(args, kwargs):
         assert 'axis' in kwargs
-        assert kwargs['axis'] is None or isinstance(kwargs['axis'], (einexpr.array_api.dimension.Dimension, int))
+        assert kwargs['axis'] is None or isinstance(kwargs['axis'], (einexpr.array_api.dimension.AtomicDimension, int))
         SingleArgumentMultipleDimensionReduction.validate_args(args, kwargs)
 
 
@@ -194,17 +194,17 @@ class Concatenation:
     def _calculate_axes(args, kwargs):
         args, kwargs = ArgumentHelper.preprocess_args(args, kwargs)
         axes = kwargs['axis']
-        if isinstance(axes, (einexpr.array_api.dimension.Dimension, int)):
+        if isinstance(axes, (einexpr.array_api.dimension.AtomicDimension, int)):
             axes = [axes] * len(args[0])
         if not isinstance(axes, (list, tuple)):
             raise ValueError("Axes must be a list or tuple")
         axes = list(axes)
         for i, (axis, arg) in enumerate(zip(axes, args[0])):
-            # If the axis is an integer, convert it to a einexpr.array_api.dimension.Dimension
+            # If the axis is an integer, convert it to a einexpr.array_api.dimension.AtomicDimension
             if isinstance(axis, int):
                 axis = get_dims(arg)[axis]
                 axes[i] = axis
-            elif not isinstance(axis, einexpr.array_api.dimension.Dimension):
+            elif not isinstance(axis, einexpr.array_api.dimension.AtomicDimension):
                 raise ValueError(f"Invalid axis {axis}")
             assert axis not in get_ambiguous_dims(arg)
         return axes

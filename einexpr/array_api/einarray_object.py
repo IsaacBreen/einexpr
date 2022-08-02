@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from ._types import (array, dtype as Dtype, device as Device, Optional, Tuple,
                      Union, Any, PyCapsule, Enum, ellipsis, NonEinArray)
-from .dimension import Dimension, PositionalDimension
+from .dimension import AtomicDimension, PositionalDimension
 
 import einexpr
 
@@ -65,10 +65,10 @@ class einarray():
         if not self.ambiguous_dims <= set(self.dims):
             raise ValueError(f"The ambiguous dimensions {self.ambiguous_dims} must be a subset of the dimensions {self.dims} passed to the constructor.")
 
-    def get_dims_unordered(self: array) -> Set[Dimension]:
+    def get_dims_unordered(self: array) -> Set[AtomicDimension]:
         return set(self.dims)
     
-    def coerce(self: array, dims: Tuple[Dimension]) -> einexpr.einarray:
+    def coerce(self: array, dims: Tuple[AtomicDimension]) -> einexpr.einarray:
         # Note that ``(j k)->n`` means 'flatten along the dimensions named ``j`` and ``k`` and name the
         # resulting dimension ``n``'.
         #
@@ -91,7 +91,7 @@ class einarray():
         final_dims = einexpr.dimension_utils.apply_replacements(instructions)
         return einexpr.einarray(raw_array, dims=final_dims)    
     
-    def isolate_dims(self: array, dims: Iterable[Dimension]) -> einexpr.einarray:
+    def isolate_dims(self: array, dims: Iterable[AtomicDimension]) -> einexpr.einarray:
         """
         Extract the dimensions in ``dims`` into the first level if they are part of a composite dimension.
         """

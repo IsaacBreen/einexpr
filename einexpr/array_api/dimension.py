@@ -26,7 +26,7 @@ class DimensionObject(ABC):
 
 
 @utils.deprecated
-class Dimension(DimensionObject):
+class AtomicDimension(DimensionObject):
     """
     Represents a single dimension of a tensor.
     """
@@ -39,7 +39,7 @@ class Dimension(DimensionObject):
 
 @utils.deprecated
 @dataclass(frozen=True, eq=True)
-class NamedDimension(Dimension):
+class NamedDimension(AtomicDimension):
     """
     A named dimension that binds eagerly to other dimensions of the same name.
     """
@@ -81,7 +81,7 @@ def UniqueDimension():
 
 @utils.deprecated
 @dataclass(frozen=True, eq=False)
-class AbsorbableDimension(Dimension):
+class AbsorbableDimension(AtomicDimension):
     """
     A dimension that binds readily with other dimensions, regardless of their name.
     """
@@ -104,7 +104,7 @@ class AbsorbableDimension(Dimension):
 
 @utils.deprecated
 @dataclass(frozen=True, eq=False)
-class PositionalDimension(Dimension):
+class PositionalDimension(AtomicDimension):
     """
     A dimension that is bound to a position in the tensor.
     """
@@ -151,7 +151,7 @@ class DimensionTuple(DimensionObject):
     A tuple of dimensions.
     """
 
-    def __init__(self, dimensions: Iterable[Dimension] = ()):
+    def __init__(self, dimensions: Iterable[AtomicDimension] = ()):
         self.dimensions = tuple(dimensions)
 
     def __str__(self):
@@ -203,7 +203,7 @@ class DimensionReplacement(DimensionObject):
     """
     size: int = field(default=None)
 
-    def __init__(self, original: Dimension, replacement: Dimension):
+    def __init__(self, original: AtomicDimension, replacement: AtomicDimension):
         self.original = original
         self.replacement = replacement
 
@@ -272,20 +272,22 @@ def dims(x):
         raise TypeError(f"Cannot parse {type(x)} as dimensions.")
 
 
+Dimensions = Sequence[AtomicDimension]
+
+
 class DimensionSpecification:
     """
     A specification of the dimensions of a tensor.
     """
 
-    def __init__(self, dimensions: 
+    def __init__(self, dimensions: Optional[Dimensions] = None, sizes: Optional[Dict[str, int]] = None):
+        self.dimensions = dimensions
+        self.sizes = sizes
 
-
-
-Dimensions = Sequence[Dimension]
 
 __all__ = [
     "DimensionObject",
-    "Dimension",
+    "AtomicDimension",
     "Dimensions",
     "NamedDimension",
     "PositionalDimension",

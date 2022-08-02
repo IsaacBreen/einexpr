@@ -23,8 +23,8 @@ D = TypeVar("D", bound=einexpr.array_api.dimension.DimensionObject)
 
 
 def get_unambiguous_broadcast_dims(
-    *dims: List[einexpr.array_api.dimension.Dimension],
-) -> Set[einexpr.array_api.dimension.Dimension]:
+    *dims: List[einexpr.array_api.dimension.AtomicDimension],
+) -> Set[einexpr.array_api.dimension.AtomicDimension]:
     scs = iter(einexpr.utils.get_all_scs_with_unique_elems(*dims))
     first_broadcasted_dims = np.array(list(next(scs)))
     unambiguous_positions = np.ones((len(first_broadcasted_dims),), dtype=bool)
@@ -36,8 +36,8 @@ def get_unambiguous_broadcast_dims(
 
 
 def get_ambiguous_broadcast_dims(
-    *dims: List[einexpr.array_api.dimension.Dimension],
-) -> Set[einexpr.array_api.dimension.Dimension]:
+    *dims: List[einexpr.array_api.dimension.AtomicDimension],
+) -> Set[einexpr.array_api.dimension.AtomicDimension]:
     scs = iter(einexpr.utils.get_all_scs_with_unique_elems(*dims))
     first_broadcasted_dims = np.array(list(next(scs)))
     ambiguous_positions = np.zeros((len(first_broadcasted_dims),), dtype=bool)
@@ -49,8 +49,8 @@ def get_ambiguous_broadcast_dims(
 
 
 def get_unique_broadcast(
-    *dims: List[einexpr.array_api.dimension.Dimension],
-) -> Set[einexpr.array_api.dimension.Dimension]:
+    *dims: List[einexpr.array_api.dimension.AtomicDimension],
+) -> Set[einexpr.array_api.dimension.AtomicDimension]:
     scs = einexpr.utils.get_all_scs_with_unique_elems(*dims)
     if len(scs) == 0:
         raise ValueError("No valid broadcast found.")
@@ -60,8 +60,8 @@ def get_unique_broadcast(
 
 
 def get_any_broadcast(
-    *dims: List[einexpr.array_api.dimension.Dimension],
-) -> Set[einexpr.array_api.dimension.Dimension]:
+    *dims: List[einexpr.array_api.dimension.AtomicDimension],
+) -> Set[einexpr.array_api.dimension.AtomicDimension]:
     """
     Use this when you need a broadcast but don't care about its uniqueness. The broadcast chosen is deterministic and depends only on the order dimensions within each argument and the order in which the arguments are passed.
     """
@@ -72,8 +72,8 @@ def get_any_broadcast(
 
 
 def get_final_aligned_dims(
-    *ein_dims: List[einexpr.array_api.dimension.Dimension],
-) -> List[einexpr.array_api.dimension.Dimension]:
+    *ein_dims: List[einexpr.array_api.dimension.AtomicDimension],
+) -> List[einexpr.array_api.dimension.AtomicDimension]:
     """
     Aligns and broadcasts the given dimensions.
     """
@@ -87,8 +87,8 @@ def get_final_aligned_dims(
 
 
 def calculate_ambiguous_final_aligned_dims(
-    *dims: List[einexpr.array_api.dimension.Dimension],
-) -> Set[einexpr.array_api.dimension.Dimension]:
+    *dims: List[einexpr.array_api.dimension.AtomicDimension],
+) -> Set[einexpr.array_api.dimension.AtomicDimension]:
     aligned_dims = get_each_aligned_dims(*dims)
     scs = list(einexpr.utils.get_all_scs_with_unique_elems(*aligned_dims))
     if len(scs) == 0:
@@ -103,8 +103,8 @@ def calculate_ambiguous_final_aligned_dims(
 
 
 def get_each_aligned_dims(
-    *ein_dims: List[einexpr.array_api.dimension.Dimension],
-) -> List[List[einexpr.array_api.dimension.Dimension]]:
+    *ein_dims: List[einexpr.array_api.dimension.AtomicDimension],
+) -> List[List[einexpr.array_api.dimension.AtomicDimension]]:
     """
     Returns a list of lists of dimensions that are aligned with eachother.
     """
@@ -113,9 +113,9 @@ def get_each_aligned_dims(
 
 
 def calculate_transexpand(
-    dims_from: List[einexpr.array_api.dimension.Dimension],
-    dims_to: List[einexpr.array_api.dimension.Dimension],
-) -> List[einexpr.array_api.dimension.Dimension]:
+    dims_from: List[einexpr.array_api.dimension.AtomicDimension],
+    dims_to: List[einexpr.array_api.dimension.AtomicDimension],
+) -> List[einexpr.array_api.dimension.AtomicDimension]:
     """
     Returns lists of the transpositions and expansions required to align to given dimensions. Broadcast dimensions - those
     that will need to be expanded - are represented by None.
@@ -131,13 +131,13 @@ class TreeToReshapeDimension(Transformer):
     def root_dims(self, dim: D) -> D:
         return dim
 
-    def replacable_dim(self, value) -> Union[einexpr.array_api.dimension.Dimension, einexpr.array_api.dimension.DimensionTuple]:
+    def replacable_dim(self, value) -> Union[einexpr.array_api.dimension.AtomicDimension, einexpr.array_api.dimension.DimensionTuple]:
         return value
         
     def dim_replacement(self, original, replacement) -> einexpr.array_api.dimension.DimensionReplacement:
         return einexpr.array_api.dimension.DimensionReplacement(original, replacement)
 
-    def irreplacable_dim(self, value) -> Union[einexpr.array_api.dimension.Dimension, einexpr.array_api.dimension.DimensionTuple]:
+    def irreplacable_dim(self, value) -> Union[einexpr.array_api.dimension.AtomicDimension, einexpr.array_api.dimension.DimensionTuple]:
         if isinstance(value, str):
             return value
         elif isinstance(value, tuple):
@@ -228,7 +228,7 @@ def parse_dims(dims_raw: Union[str, Tuple]) -> Tuple:
             return einexpr.array_api.dimension.DimensionReplacement(
                 helper(dims_raw.original), helper(dims_raw.replacement)
             )
-        elif isinstance(dims_raw, einexpr.array_api.dimension.Dimension):
+        elif isinstance(dims_raw, einexpr.array_api.dimension.AtomicDimension):
             return dims_raw
         elif dims_raw is Ellipsis:
             return dims_raw
@@ -245,7 +245,7 @@ def parse_dims(dims_raw: Union[str, Tuple]) -> Tuple:
     dims = helper(dims_raw)
     if isinstance(dims, einexpr.utils.ExpandSentinel):
         dims = einexpr.array_api.dimension.DimensionTuple(dims.content)
-    elif isinstance(dims_raw, str) or isinstance(dims, einexpr.array_api.dimension.Dimension):
+    elif isinstance(dims_raw, str) or isinstance(dims, einexpr.array_api.dimension.AtomicDimension):
         dims = einexpr.array_api.dimension.DimensionTuple((dims,))
     dims = propogate_sizes(dims)
     dims = helper(dims)
@@ -265,7 +265,7 @@ def compute_total_size(dims: einexpr.array_api.dimension.Dimensions) -> Optional
     """
     Returns the total dimensions size, or None if the dimensions are not known.
     """
-    if isinstance(dims, einexpr.array_api.dimension.Dimension):
+    if isinstance(dims, einexpr.array_api.dimension.AtomicDimension):
         return dims.size
     elif isinstance(dims, einexpr.array_api.dimension.DimensionReplacement):
         return compute_total_size(dims.replacement)
@@ -324,7 +324,7 @@ def map_over_dims(
             return einexpr.array_api.dimension.DimensionReplacement(original, replacement)
         elif isinstance(dim_obj, (list, set, tuple, einexpr.array_api.dimension.DimensionTuple)):
             return type(dim_obj)(_map_over_dims(dim, position + (i,)) for i, dim in enumerate(dim_obj))
-        elif isinstance(dim_obj, einexpr.array_api.dimension.Dimension):
+        elif isinstance(dim_obj, einexpr.array_api.dimension.AtomicDimension):
             return f(dim_obj, position) if enumerate_positions else f(dim_obj)
         elif isinstance(dim_obj, str):
             dim_obj = einexpr.array_api.dimension.NamedDimension(dim_obj)
@@ -343,7 +343,7 @@ def iter_dims(
     enumerate_positions: bool = False,
     enumerate_dimension_replacement_path_mode: Literal["both", "original", "replacement", "neither"] = "both",
     enumerate_dimension_replacement_has_position: bool = False
-) -> Iterator[einexpr.array_api.dimension.Dimension]:
+) -> Iterator[einexpr.array_api.dimension.AtomicDimension]:
     """
     Iterates over all dimension objects.
     """
@@ -381,7 +381,7 @@ def transform_dims_tree(tree: D) -> D:
     """
     Transforms a tree into a dimension object.
     """
-    if isinstance(tree, einexpr.array_api.dimension.Dimension):
+    if isinstance(tree, einexpr.array_api.dimension.AtomicDimension):
         return tree
     elif isinstance(tree, einexpr.array_api.dimension.DimensionReplacement):
         return einexpr.array_api.dimension.DimensionReplacement(transform_dims_tree(tree.original), transform_dims_tree(tree.replacement))
@@ -397,7 +397,7 @@ def gather_sizes(dims: einexpr.array_api.dimension.DimensionObject) -> Dict[str,
     """
     sizes = {}
     for dim in iter_dims(dims):
-        if isinstance(dim, einexpr.array_api.dimension.Dimension) and dim.size is not None:
+        if isinstance(dim, einexpr.array_api.dimension.AtomicDimension) and dim.size is not None:
             if dim.id in sizes:
                 if sizes[dim.id] != dim.size:
                     raise ValueError(f"Dimension {dim.id} has conflicting sizes: {sizes[dim.id]} and {dim.size}.")
@@ -412,7 +412,7 @@ def gather_names(dims: einexpr.array_api.dimension.DimensionObject) -> Set[str]:
     """
     names = set()
     for dim in iter_dims(dims):
-        if isinstance(dim, einexpr.array_api.dimension.Dimension):
+        if isinstance(dim, einexpr.array_api.dimension.AtomicDimension):
             names.add(dim.id)
     return names
 
@@ -422,7 +422,7 @@ def apply_sizes(dims: D, sizes: Dict[str, int], overwrite: bool = False) -> D:
     Applies a dictionary of dimension names and sizes to a dimension object, raising an error if the size is already set differently.
     """
     def helper(dims: D) -> D:
-        if isinstance(dims, einexpr.array_api.dimension.Dimension) and dims.id in sizes:
+        if isinstance(dims, einexpr.array_api.dimension.AtomicDimension) and dims.id in sizes:
             if not overwrite and dims.size is not None and dims.size != sizes[dims.id]:
                 raise einexpr.exceptions.DimensionMismatch(f"Dimension {dims.id} has different sizes: {dims.size} != {sizes[dims.id]}")
             return replace(dims, size=sizes.get(dims.id, None))
@@ -466,7 +466,7 @@ def process_dims_declaration(dims_raw: Union[str, Tuple, None], shape: Tuple[int
     elif not isinstance(dims_raw, (str, tuple, list, einexpr.array_api.dimension.DimensionTuple)):
         raise ValueError(f"Unexpected value {dims_raw}.")
     dims = parse_dims(dims_raw)
-    dim_sizes = gather_sizes(dims) | {dim.id: size for dim, size in zip(dims, shape) if isinstance(dim, einexpr.array_api.dimension.Dimension)}
+    dim_sizes = gather_sizes(dims) | {dim.id: size for dim, size in zip(dims, shape) if isinstance(dim, einexpr.array_api.dimension.AtomicDimension)}
     dims = propogate_sizes(dims, dim_sizes)
     # Expand ellipsis
     if ... in dims:
@@ -541,8 +541,8 @@ def dims_equivalent(dims1: einexpr.array_api.dimension.Dimensions, dims2: einexp
             return True
         else:
             return False
-    elif isinstance(dims1, einexpr.array_api.dimension.Dimension):
-        if isinstance(dims2, einexpr.array_api.dimension.Dimension):
+    elif isinstance(dims1, einexpr.array_api.dimension.AtomicDimension):
+        if isinstance(dims2, einexpr.array_api.dimension.AtomicDimension):
             if dims1.id != dims2.id:
                 return False
             if dims1.size is None or dims2.size is None:
@@ -597,7 +597,7 @@ def ignore_replacements(dims: D) -> D:
         return ignore_replacements(dims.original)
     elif isinstance(dims, (tuple, einexpr.array_api.dimension.DimensionTuple)):
         return einexpr.array_api.dimension.DimensionTuple(ignore_replacements(dim) for dim in dims)
-    elif isinstance(dims, einexpr.array_api.dimension.Dimension):
+    elif isinstance(dims, einexpr.array_api.dimension.AtomicDimension):
         return dims
     elif dims is ...:
         return dims
@@ -613,7 +613,7 @@ def apply_replacements(dims: D) -> D:
         return apply_replacements(dims.replacement)
     elif isinstance(dims, (tuple, einexpr.array_api.dimension.DimensionTuple)):
         return einexpr.array_api.dimension.DimensionTuple(apply_replacements(dim) for dim in dims)
-    elif isinstance(dims, einexpr.array_api.dimension.Dimension):
+    elif isinstance(dims, einexpr.array_api.dimension.AtomicDimension):
         return dims
     else:
         raise ValueError(f"Unexpected value {dims}.")
@@ -640,14 +640,14 @@ def expand_dims(dims: D) -> D:
         elif isinstance(dims, (tuple, einexpr.array_api.dimension.DimensionTuple)):
             for dim in dims:
                 yield from helper(dim)
-        elif isinstance(dims, (int, str, einexpr.array_api.dimension.Dimension)):
+        elif isinstance(dims, (int, str, einexpr.array_api.dimension.AtomicDimension)):
             yield dims
         else:
             raise ValueError(f"Unexpected value {dims}.")
     return tuple(helper(dims))
 
 
-def isolate_dim(array_dims: Tuple[einexpr.array_api.Dimension], dim: einexpr.array_api.Dimension) -> Tuple[einexpr.array_api.Dimension, einexpr.array_api.Dimension]:
+def isolate_dim(array_dims: Tuple[einexpr.array_api.AtomicDimension], dim: einexpr.array_api.AtomicDimension) -> Tuple[einexpr.array_api.AtomicDimension, einexpr.array_api.AtomicDimension]:
     """
     Extract the dimensions in ``dim`` into the first level if it is part of a composite dimension.
     """    
@@ -658,7 +658,7 @@ def isolate_dim(array_dims: Tuple[einexpr.array_api.Dimension], dim: einexpr.arr
     return einexpr.utils.deep_remove((*lhs, dim, *rhs), lambda x: x == ())
 
 
-def isolate_dims(array_dims: Tuple[einexpr.array_api.Dimension], dims: Iterable[einexpr.array_api.Dimension]) -> einexpr.array_api.einarray:
+def isolate_dims(array_dims: Tuple[einexpr.array_api.AtomicDimension], dims: Iterable[einexpr.array_api.AtomicDimension]) -> einexpr.array_api.einarray:
     """
     Extract the dimensions in ``dims`` into the first level if they are part of a composite dimension.
     """
