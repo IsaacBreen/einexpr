@@ -97,7 +97,7 @@ class SingleArgumentMultipleDimensionReduction:
     def validate_args(args, kwargs):
         # TODO:
         # - Check that axes are in the array
-        # - raise error when there are duplicate axes, esp of different types (einexpr.array_api.dimension.AtomicDimension, int, and negative int)
+        # - raise error when there are duplicate axes, esp of different types (einexpr.array_api.dimension._AtomicDimension, int, and negative int)
         assert isinstance(args, (list, tuple))
         assert isinstance(kwargs, dict)
         # assert all(isinstance(arg, (einexpr.einarray, int, float)) for arg in args)
@@ -111,15 +111,15 @@ class SingleArgumentMultipleDimensionReduction:
         axis = kwargs.get('axis')
         if axis is None:
             axis = tuple(range(len(get_dims(args[0]))))
-        elif isinstance(axis, (einexpr.array_api.dimension.AtomicDimension, int)):
+        elif isinstance(axis, (einexpr.array_api.dimension._AtomicDimension, int)):
             axis = (axis,)
         elif isinstance(axis, set):
             axis = tuple(axis)
         _axis = []
-        array_dims = einexpr.dimension_utils.primitivize_dims(get_dims(array))
-        # Convert all integer axes into dimension objects
-        for i, dim in enumerate(einexpr.dimension_utils.primitivize_dims(axis)):
-            if isinstance(dim, (list, tuple, str)):
+        array_dims = get_dims(array)
+        # Convert all integer axes into AtomicDimensions
+        for i, dim in enumerate(axis):
+            if isinstance(dim, (list, tuple, einexpr.array_api.dimension.AtomicDimension)):
                 _axis.append(dim)
             elif isinstance(dim, int):
                 _axis.append(array_dims[dim])
@@ -139,7 +139,6 @@ class SingleArgumentMultipleDimensionReduction:
         array: einexpr.einarray = args[0]
         named_axis = SingleArgumentMultipleDimensionReduction._calculate_named_axis(args, kwargs)
         array_dims = einexpr.dimension_utils.isolate_dims(get_dims(array), named_axis)
-        array_dims = einexpr.dimension_utils.primitivize_dims(array_dims)
         axis = tuple(array_dims.index(dim) for dim in named_axis)
         return axis
     
@@ -158,7 +157,7 @@ class SingleArgumentMultipleDimensionReduction:
         named_axis = SingleArgumentMultipleDimensionReduction._calculate_named_axis(args, kwargs)
         array: einexpr.einarray = args[0]
         array_dims = einexpr.dimension_utils.isolate_dims(get_dims(array), named_axis)
-        assert set(einexpr.dimension_utils.primitivize_dims(array_dims)) & set(named_axis) == set(named_axis), 'All dimensions in axis must be in the array'
+        assert set(array_dims) & set(named_axis) == set(named_axis), 'All dimensions in axis must be in the array'
         output_dims = tuple(dim for dim in array_dims if dim not in named_axis)
         output_dims = einexpr.dimension_utils.parse_dims(output_dims)
         sizes = einexpr.dimension_utils.gather_sizes(get_dims(array))
@@ -177,7 +176,7 @@ class SingleArgumentSingleDimensionReduction(SingleArgumentMultipleDimensionRedu
     @staticmethod
     def validate_args(args, kwargs):
         assert 'axis' in kwargs
-        assert kwargs['axis'] is None or isinstance(kwargs['axis'], (einexpr.array_api.dimension.AtomicDimension, int))
+        assert kwargs['axis'] is None or isinstance(kwargs['axis'], (einexpr.array_api.dimension._AtomicDimension, int))
         SingleArgumentMultipleDimensionReduction.validate_args(args, kwargs)
 
 
@@ -194,17 +193,17 @@ class Concatenation:
     def _calculate_axes(args, kwargs):
         args, kwargs = ArgumentHelper.preprocess_args(args, kwargs)
         axes = kwargs['axis']
-        if isinstance(axes, (einexpr.array_api.dimension.AtomicDimension, int)):
+        if isinstance(axes, (einexpr.array_api.dimension._AtomicDimension, int)):
             axes = [axes] * len(args[0])
         if not isinstance(axes, (list, tuple)):
             raise ValueError("Axes must be a list or tuple")
         axes = list(axes)
         for i, (axis, arg) in enumerate(zip(axes, args[0])):
-            # If the axis is an integer, convert it to a einexpr.array_api.dimension.AtomicDimension
+            # If the axis is an integer, convert it to a einexpr.array_api.dimension._AtomicDimension
             if isinstance(axis, int):
                 axis = get_dims(arg)[axis]
                 axes[i] = axis
-            elif not isinstance(axis, einexpr.array_api.dimension.AtomicDimension):
+            elif not isinstance(axis, einexpr.array_api.dimension._AtomicDimension):
                 raise ValueError(f"Invalid axis {axis}")
             assert axis not in get_ambiguous_dims(arg)
         return axes

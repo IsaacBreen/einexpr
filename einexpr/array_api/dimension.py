@@ -26,7 +26,7 @@ class DimensionObject(ABC):
 
 
 @utils.deprecated
-class AtomicDimension(DimensionObject):
+class _AtomicDimension(DimensionObject):
     """
     Represents a single dimension of a tensor.
     """
@@ -39,7 +39,7 @@ class AtomicDimension(DimensionObject):
 
 @utils.deprecated
 @dataclass(frozen=True, eq=True)
-class NamedDimension(AtomicDimension):
+class NamedDimension(_AtomicDimension):
     """
     A named dimension that binds eagerly to other dimensions of the same name.
     """
@@ -79,9 +79,8 @@ def UniqueDimension():
     return NamedDimension('_' + str(uuid4()).replace('-', ''))
 
 
-@utils.deprecated
 @dataclass(frozen=True, eq=False)
-class AbsorbableDimension(AtomicDimension):
+class AbsorbableDimension(_AtomicDimension):
     """
     A dimension that binds readily with other dimensions, regardless of their name.
     """
@@ -104,7 +103,7 @@ class AbsorbableDimension(AtomicDimension):
 
 @utils.deprecated
 @dataclass(frozen=True, eq=False)
-class PositionalDimension(AtomicDimension):
+class PositionalDimension(_AtomicDimension):
     """
     A dimension that is bound to a position in the tensor.
     """
@@ -151,7 +150,7 @@ class DimensionTuple(DimensionObject):
     A tuple of dimensions.
     """
 
-    def __init__(self, dimensions: Iterable[AtomicDimension] = ()):
+    def __init__(self, dimensions: Iterable[_AtomicDimension] = ()):
         self.dimensions = tuple(dimensions)
 
     def __str__(self):
@@ -203,7 +202,7 @@ class DimensionReplacement(DimensionObject):
     """
     size: int = field(default=None)
 
-    def __init__(self, original: AtomicDimension, replacement: AtomicDimension):
+    def __init__(self, original: _AtomicDimension, replacement: _AtomicDimension):
         self.original = original
         self.replacement = replacement
 
@@ -273,8 +272,8 @@ def dims(x):
 
 
 
-Dimension = AtomicDimension | Tuple['Dimension', ...]
-
+Dimension = _AtomicDimension | Tuple['Dimension', ...]
+AtomicDimension = _AtomicDimension | str
 
 class DimensionSpecification:
     """
@@ -287,6 +286,33 @@ class DimensionSpecification:
     def __init__(self, dimensions: Iterable[AtomicDimension], sizes: Dict[AtomicDimension, int]):
         self.dimensions = tuple(dimensions)
         self.sizes = sizes or {}
+        def verify_dimensions(dimensions) -> bool:
+            for dim in dimensions:
+                if isinstance(dim, tuple):
+                    if not verify_dimensions(dim):
+                        return False
+                elif not isinstance(dim, AtomicDimension):
+                    return False
+            return True
+        if not verify_dimensions(self.dimensions):
+            raise ValueError("Dimensions must be a nexted tuple of AtomicDimensions.")
+        if any(not isinstance(k, AtomicDimension) for k in self.sizes):
+            raise ValueError("Sizes must be a dictionary of AtomicDimensions or strings.")
+    
+    @property
+    def shape(self) -> Tuple[int, ...]:
+        def deep_product(value: Tuple | int) -> int:
+            if isinstance(value, AtomicDimension):
+                if value in self.sizes:
+                    return self.sizes[value]
+                else:
+                    raise ValueError(f"Size of dimension {value} not specified.")
+            else:
+                product = 1
+                for v in value:
+                    product *= deep_product(v)
+                return product
+        return tuple(deep_product(v) for v in self.dimensions)
     
     def __iter__(self):
         return iter(self.dimensions)
@@ -319,6 +345,7 @@ class DimensionSpecification:
 __all__ = [
     "DimensionObject",
     "AtomicDimension",
+    "_AtomicDimension",
     "DimensionSpecification",
     "NamedDimension",
     "PositionalDimension",
@@ -328,5 +355,6 @@ __all__ = [
     "DimensionReplacement",
     "PositionalDimensionPlaceholder",
     "dims",
+    "Dimension",
     "DimensionSpecification",
 ]

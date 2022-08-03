@@ -27,7 +27,7 @@ def reshape(array: RawArray, shape: Tuple[int, ...]) -> RawArray:
     return array.__array_namespace__().reshape(array, shape)
 
 
-def align_to_dims(a: 'einexpr.einarray', dims: Tuple[einexpr.array_api.dimension.DimensionSpecification]) -> RawArray:
+def align_to_dimspec(a: 'einexpr.einarray', dims: einexpr.array_api.dimension.DimensionSpecification) -> RawArray:
     """
     Aligns the given arrays to the given dimensions, collapses along dimensions that appear in the input array but not the ``dims`` argument, and expands along dimensions that the input array does not have.
     """
@@ -48,27 +48,27 @@ def align_to_dims(a: 'einexpr.einarray', dims: Tuple[einexpr.array_api.dimension
         #
         raw_array = einexpr.dimension_utils.get_raw(a)
         # 1. Fully expand the raw array
-        current_dims = einexpr.dimension_utils.get_dims(a)
-        expanded_current_dims = einexpr.dimension_utils.expand_dims(current_dims)
-        expanded_shape = einexpr.dimension_utils.dims_to_shape(expanded_current_dims)
+        current_dimspec = einexpr.dimension_utils.get_dims(a)
+        expanded_current_dimspec = einexpr.dimension_utils.expand_dims(current_dimspec)
+        expanded_shape = einexpr.dimension_utils.dimspec_to_shape(expanded_current_dimspec)
         raw_array = reshape(raw_array, expanded_shape)
         assert raw_array.shape == expanded_shape
         # 2. Fully expand the output dimensions
         expanded_new_dims = einexpr.dimension_utils.expand_dims(dims)
         # 3. Collapse along dimensions that are not in the output dimensions
-        dims_to_collapse = set(expanded_current_dims) - set(expanded_new_dims)
-        raw_array = einexpr.sum(einexpr.einarray(raw_array, dims=expanded_current_dims), axis=dims_to_collapse).a
-        collapsed_expanded_current_dims = tuple(dim for dim in expanded_current_dims if dim not in dims_to_collapse)
+        dims_to_collapse = set(expanded_current_dimspec) - set(expanded_new_dims)
+        raw_array = einexpr.sum(einexpr.einarray(raw_array, dims=expanded_current_dimspec), axis=dims_to_collapse).a
+        collapsed_expanded_current_dimspec = tuple(dim for dim in expanded_current_dimspec if dim not in dims_to_collapse)
         # 4 & 5. Permute the dimensions of the raw array and create a new dimension in one go
-        transexpand = einexpr.dimension_utils.calculate_transexpand(collapsed_expanded_current_dims, expanded_new_dims)
+        transexpand = einexpr.dimension_utils.calculate_transexpand(collapsed_expanded_current_dimspec, expanded_new_dims)
         raw_array = apply_transexpand(raw_array, transexpand)
         # 6. Combine as required
-        final_shape = einexpr.dimension_utils.dims_to_shape(dims)
+        final_shape = einexpr.dimension_utils.dimspec_to_shape(dims)
         raw_array = reshape(raw_array, final_shape)
         return raw_array
 
 
-def align_arrays(*arrays: 'einexpr.einarray', return_output_dims: bool = False) -> Union[List[einexpr.types.NonEinArray], Tuple[List[einexpr.types.NonEinArray], List['einexpr.array_api.dimension.AtomicDimension']]]:
+def align_arrays(*arrays: 'einexpr.einarray', return_output_dims: bool = False) -> Union[List[einexpr.types.NonEinArray], Tuple[List[einexpr.types.NonEinArray], List['einexpr.array_api.dimension._AtomicDimension']]]:
     """
     Aligns the given arrays to common dimensions.
     """

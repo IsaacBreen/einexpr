@@ -3,6 +3,8 @@ import collections
 from dataclasses import dataclass, field
 
 import functools
+import itertools
+from collections.abc import Iterable, Iterator
 import inspect
 import warnings
 from collections import Counter
@@ -61,6 +63,7 @@ def deprecated(item, /, *, message=None):
             elif isinstance(method, staticmethod):
                 setattr(DeprecatedClass, name, staticmethod(deprecated(message=message)(method.__func__)))
             
+        DeprecatedClass.__deprecated__ = True
         return DeprecatedClass
     elif callable(item):
         @functools.wraps(item)
@@ -356,3 +359,43 @@ def split_at(tree, position):
     else:
         lhs, rhs = split_at(tree[position[0]], position[1:])
         return (*tree[:position[0]], lhs), (rhs, *tree[position[0]+1:])
+
+
+def deep_iter(iterable: Iterable):
+    """
+    Iterate over a tree of Python objects.
+    """
+    yield iterable
+    if isinstance(iterable, dict):
+        yield from deep_iter(iterable.items())
+    elif isinstance(iterable, Iterable):
+        for item in iterable:
+            if item is iterable:
+                # Avoid infinite recursion for iterables that yield themselves (e.g. strings of length 1)
+                pass
+            else:
+                if isinstance(item, Iterable):
+                    yield from deep_iter(item)
+
+
+def undeprecated(func):
+    """
+    Validate that the inputs and outputs of a function are not deprecated.
+    """
+    def wrapper(*args, **kwargs):
+        for arg in deep_iter(args):
+            if hasattr(arg, '__deprecated__') and arg.__deprecated__:
+                raise ValueError(f'Argument {arg} is deprecated')
+        for kw, arg in kwargs.items():
+            if hasattr(arg, '__deprecated__') and arg.__deprecated__:
+                raise ValueError(f'Keyword argument {kw}={arg} is deprecated')
+        output = func(*args, **kwargs)
+        if isinstance(output, Iterator):
+            output, output_tee = itertools.tee(output)
+        else:
+            output_tee = output
+        for output_item in deep_iter(output_tee):
+            if hasattr(output_item, '__deprecated__') and output_item.__deprecated__:
+                raise ValueError(f'Output {output_item} is deprecated')
+        return output
+    return wrapper

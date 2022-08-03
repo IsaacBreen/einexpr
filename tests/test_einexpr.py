@@ -17,7 +17,7 @@ import pytest
 
 pp = pprint.PrettyPrinter(indent=4)
 
-N_TRIALS_MULTIPLIER = 10
+N_TRIALS_MULTIPLIER = 100
 TOLERANCE = 1e-12
 DEFAULT_DTYPE = npa.float64
 
