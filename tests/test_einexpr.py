@@ -546,6 +546,9 @@ def test_positional_dims(X):
     assert (X*Z).dims.dimensions == ('i', 'j')
 
 
+# TODO: This is a terrible hack and should be fixed. To see why, try the following:
+# print(AbsorbingDimensionMatcher() == einexpr.array_api.dimension.AbsorbingDimension())  # True
+# print(einexpr.array_api.dimension.AbsorbingDimension() == AbsorbingDimensionMatcher())  # False
 class AbsorbingDimensionMatcher:
     def __eq__(self, other):
         return isinstance(other, einexpr.AbsorbingDimension)
@@ -562,7 +565,7 @@ def test_positional_dims_and_rename(X):
 def test_positional_dims_and_ellipsis_and_rename(X):
     X = einexpr.einarray(X)
 
-    assert X['... _->n'].dims.dimensions == ('_', 'n')
+    assert (AbsorbingDimensionMatcher(), 'n') == X['... _->n'].dims.dimensions
 
 
 def test_first_class_dims(X):
