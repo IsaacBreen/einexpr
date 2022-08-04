@@ -400,7 +400,7 @@ def deprecated_guard(func):
     """
     Validate that the inputs and outputs of a function are not deprecated.
     """
-    def wrapper(*args, **kwargs):
+    def deprecated_guard_wrapper(*args, **kwargs):
         for arg in deep_iter(args, dict_mode='both', yield_iterables=True):
             if hasattr(arg, '__deprecated__') and arg.__deprecated__:
                 raise ValueError(f'Argument {arg} is deprecated')
@@ -416,4 +416,4 @@ def deprecated_guard(func):
             if hasattr(output_item, '__deprecated__') and output_item.__deprecated__:
                 raise ValueError(f'Output {output_item} is deprecated')
         return output
-    return wrapper
+    return deprecated_guard_wrapper

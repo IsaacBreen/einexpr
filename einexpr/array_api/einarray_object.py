@@ -46,7 +46,8 @@ class einarray():
             # Convert the array to the backend specified by the backend argument.
             self.a = einexpr.backends.get_array_api_backend(backend).asarray(self.a)
         # DIMS
-        self.dims = einexpr.dimension_utils.process_dims_declaration(self.dims, self.a.shape)
+        if not isinstance(self.dims, einexpr.array_api.dimension.DimensionSpecification):
+            self.dims = einexpr.dimension_utils.process_dims_declaration(self.dims, self.a.shape)
         if einexpr.dimension_utils.is_dimensionless(self.a):
             if len(self.dims) != 0:
                 raise ValueError(dims, "If the input is a scalar, the dimensions must be empty.")
@@ -102,7 +103,7 @@ class einarray():
         # Put the raw array into an einarray with the replacement dimensions.
         _, dims_after_replacements = einexpr.dimension_utils.resolve_positional_dims((dims_before_replacements, dims_after_replacements))
         dimspec_after_replacements = dimspec_before_replacements.with_dimensions(dims_after_replacements)
-        return einexpr.einarray(raw_array, dims=dimspec_after_replacements)    
+        return einexpr.einarray(raw_array, dims=dimspec_after_replacements)
     
     def isolate_dims(self: array, dims: Iterable[AtomicDimension]) -> einexpr.einarray:
         """

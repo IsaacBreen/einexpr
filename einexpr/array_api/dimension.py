@@ -113,7 +113,7 @@ class DimensionSpecification:
             raise ValueError("Each dimension in sizes must also be present in the dimension structure.")
         # Ensure the size is fully specified.
         if unsized := self.get_unsized_dims():
-            raise ValueError(f"Dimensions {unsized} are not fully specified.")
+            raise ValueError(f"Some dimension sizes, {unsized}, are not calculable from the available dimension sizes, {self.sizes}.")
     
     @property
     def shape(self) -> Tuple[int, ...]:
@@ -152,12 +152,13 @@ class DimensionSpecification:
         """
         Return the items in `self.sizes` necessary to compute the size of the given dimension.
         """
-        if dimension in self.sizes:
+        if isinstance(dimension, tuple):
+            size_components = tuple(component for dim in dimension for component in self.get_dimension_size_components(dim))
+            return self.sizes.get(dimension) if None in size_components else size_components
+        elif dimension in self.sizes:
             return (dimension,)
-        elif isinstance(dimension, tuple):
-            return tuple(component for dim in dimension for component in self.get_dimension_size_components(dim))
         else:
-            raise ValueError(f"Cannot compute size of dimension {dimension}.")
+            return None
 
     def compute_dimension_size(self, dimension: BaseDimension) -> int:
         """

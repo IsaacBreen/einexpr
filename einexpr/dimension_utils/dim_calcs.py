@@ -232,11 +232,10 @@ def gather_sizes(dims: einexpr.array_api.dimension.DimensionSpecification) -> Di
 
 
 @einexpr.utils.deprecated_guard
-def process_dims_declaration(dims_raw: Union[str, Tuple, None], shape: Tuple[int, ...]) -> einexpr.array_api.dimension.DimensionSpecification:
+def process_dims_declaration(dims_raw: str | Tuple[einexpr.array_api.dimension.BaseDimension, ...], shape: Tuple[int, ...]) -> einexpr.array_api.dimension.DimensionSpecification:
     """
     Processes a dimensions declaration into a dimension object.
     """
-    dims_raw = _convert_from_spec(dims_raw)
     if dims_raw is None:
         # Use full tuple of absorbing dimensions
         dims_raw = tuple(einexpr.array_api.dimension.AbsorbingDimension() for _ in shape)
