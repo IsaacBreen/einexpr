@@ -1,6 +1,6 @@
 import einexpr
 from abc import ABC, abstractmethod, abstractproperty
-from typing import Dict, Iterable, Optional, Sequence, Tuple, TypeVar, Union
+from typing import Dict, Iterable, Iterator, Optional, Sequence, Tuple, TypeVar, Union
 from typing import overload
 from dataclasses import dataclass, field
 from uuid import uuid4
@@ -10,89 +10,23 @@ import einexpr.utils as utils
 
 
 @utils.deprecated
-class DimensionObject(ABC):
-
-    @abstractmethod
-    def __init__(self, *args, **kwargs):
-        pass
-
-    @abstractmethod
-    def __str__(self):
-        pass
-
-    @abstractmethod
-    def __repr__(self):
-        pass
-
-
-@utils.deprecated
-class _AtomicDimension(DimensionObject):
+class _AtomicDimension:
     """
     Represents a single dimension of a tensor.
     """
-    size: int = field(default=None)
-    
-    @abstractproperty
-    def id(self) -> str:
-        pass
 
 
-@utils.deprecated
-@dataclass(frozen=True, eq=True)
-class NamedDimension(_AtomicDimension):
-    """
-    A named dimension that binds eagerly to other dimensions of the same name.
-    """
-    
-    name: str
-    size: int = field(default=None)
-
-    @property
-    def id(self) -> str:
-        return self.name
-
-    def with_size(self, size: int) -> "NamedDimension":
-        return NamedDimension(self.name, size)
-
-    def __str__(self):
-        return self.name
-    
-    def __eq__(self, other: object) -> bool:
-        if not isinstance(other, NamedDimension):
-            return False
-        if self.name != other.name:
-            return False
-        if self.size is not None and self.size != other.size:
-            return False
-        return True
-    
-    def __hash__(self) -> int:
-        return hash((self.name, self.size))
-
-
-@utils.deprecated
-def UniqueDimension():
-    """
-    A dimension object whose name is a UUID.
-    """
-    
-    return NamedDimension('_' + str(uuid4()).replace('-', ''))
-
-
-@dataclass(frozen=True, eq=False)
-class AbsorbableDimension(_AtomicDimension):
+class AbsorbingDimension:
     """
     A dimension that binds readily with other dimensions, regardless of their name.
     """
-    
-    size: PositiveInt = field(default=None)
-
-    @property
-    def id(self) -> str:
-        return str(id(self))
-    
+        
     def __str__(self):
         return "*"
+    
+    def __repr__(self) -> str:
+        # Represent using memory address
+        return f"<{type(self).__name__} at {id(self)}>"
     
     def __eq__(self, other: object) -> bool:
         return self is other
@@ -101,102 +35,7 @@ class AbsorbableDimension(_AtomicDimension):
         return hash(id(self))
 
 
-@utils.deprecated
-@dataclass(frozen=True, eq=False)
-class PositionalDimension(_AtomicDimension):
-    """
-    A dimension that is bound to a position in the tensor.
-    """
-
-    position: NegativeInt
-    size: Optional[PositiveInt] = field(default=None)
-    
-    def __post_init__(self):
-        if self.position >= 0:
-            raise ValueError("Position must be negative.")
-        if self.size is not None and self.size < 0:
-            raise ValueError("Size must be positive.")
-    
-    @property
-    def id(self) -> str:
-        return str(self.position)
-
-    def with_size(self, size: int) -> "NamedDimension":
-        return PositionalDimension(self.position, size)
-
-    def __str__(self) -> str:
-        return "_"
-    
-    @property
-    def name(self) -> str:
-        return str(self.position)
-    
-    def __eq__(self, other: object) -> bool:
-        if not isinstance(other, PositionalDimension):
-            return False
-        if self.position != other.position:
-            return False
-        if self.size is not None and self.size != other.size:
-            return False
-        return True
-    
-    def __hash__(self) -> int:
-        return hash((self.position, self.size))
-
-
-@utils.deprecated
-class DimensionTuple(DimensionObject):
-    """
-    A tuple of dimensions.
-    """
-
-    def __init__(self, dimensions: Iterable[_AtomicDimension] = ()):
-        self.dimensions = tuple(dimensions)
-
-    def __str__(self):
-        return '(' + " ".join(str(dimension) for dimension in self.dimensions) + ')'
-
-    def __repr__(self):
-        return f"DimensionTuple({self.dimensions})"
-
-    def __hash__(self):
-        return hash(self.__str__())
-    
-    def __eq__(self, other):
-        if not isinstance(other, DimensionTuple):
-            return False
-        return self.dimensions == other.dimensions
-    
-    def __lt__(self, other):
-        if isinstance(other, DimensionTuple):
-            return self.dimensions < other.dimensions
-        else:
-            raise TypeError(f"Cannot compare {type(other)} to DimensionTuple")
-
-    def __getitem__(self, index):
-        return self.dimensions[index]
-
-    def __len__(self):
-        return len(self.dimensions)
-
-    def __iter__(self):
-        return iter(self.dimensions)
-
-    def __contains__(self, item):
-        return item in self.dimensions
-
-    def __add__(self, other):
-        if isinstance(other, DimensionTuple):
-            return DimensionTuple(self.dimensions + other.dimensions)
-        else:
-            raise TypeError(f"Cannot add {type(other)} to DimensionTuple")
-
-    def index(self, dimension):
-        return self.dimensions.index(dimension)
-
-
-@utils.deprecated
-class DimensionReplacement(DimensionObject):
+class DimensionReplacement:
     """
     A dimension that is to be replaced by another dimension.
     """
@@ -230,79 +69,56 @@ class DimensionReplacement(DimensionObject):
         # )
 
 
-@utils.deprecated
-class PositionalDimensionPlaceholder:
-    pass
-
-
-@overload
-def dims(n: int) -> Tuple[NamedDimension, ...]:
-    ...
-
+NestedDimension = _AtomicDimension | Tuple['NestedDimension', ...]
+BaseDimension = _AtomicDimension | AbsorbingDimension | Tuple['NestedDimension', ...]  # TODO: Most usages of NestedDimension throughout this repo should actually be BaseDimension. Fix this.
+ConcreteDimension = _AtomicDimension | Tuple['ConcreteDimension', ...]
+AtomicDimension = _AtomicDimension | str
 
 @overload
-def dims(size_by_name: Dict[str, int]) -> Tuple[NamedDimension, ...]:
+def dims(n: int) -> Tuple[NestedDimension, ...]:
     ...
 
-D = TypeVar("D", bound=DimensionObject)
-@overload
-def dims(d: D) -> D:
-    ...
-
-
-@overload
-def dims(s: str) -> Union[NamedDimension, DimensionTuple]:
-    ...
 
 def dims(x):
     if isinstance(x, int):
-        return tuple(UniqueDimension() for _ in range(x))
-    elif isinstance(x, dict) and all(isinstance(k, str) for k in x):
-        return tuple(NamedDimension(k, v) for k, v in x.items())
-    elif isinstance(x, (list, tuple, DimensionObject)):
-        return einexpr.dimension_utils.parse_dims(x)
-    elif isinstance(x, str):
-        d = einexpr.dimension_utils.parse_dims(x)
-        if len(d) == 1:
-            return d[0]
-        else:
-            return d
+        return tuple(str('_' + str(uuid4()).replace('-', '')) for _ in range(x))
     else:
         raise TypeError(f"Cannot parse {type(x)} as dimensions.")
 
 
-
-Dimension = _AtomicDimension | Tuple['Dimension', ...]
-AtomicDimension = _AtomicDimension | str
-
+@dataclass(frozen=True, init=True, eq=True)
 class DimensionSpecification:
     """
     A specification of the dimensions of a tensor.
     """
     
-    dimensions: Tuple[Dimension, ...]
-    sizes: Dict[AtomicDimension, int]
+    dimensions: Tuple[NestedDimension, ...]
+    sizes: Dict[AtomicDimension, int] = field(default_factory=dict)
 
-    def __init__(self, dimensions: Iterable[AtomicDimension], sizes: Dict[AtomicDimension, int]):
-        self.dimensions = tuple(dimensions)
-        self.sizes = sizes or {}
+    def __post_init__(self):
+        super().__setattr__('dimensions', tuple(self.dimensions))
         def verify_dimensions(dimensions) -> bool:
             for dim in dimensions:
                 if isinstance(dim, tuple):
                     if not verify_dimensions(dim):
                         return False
-                elif not isinstance(dim, AtomicDimension):
+                elif not isinstance(dim, (AtomicDimension, AbsorbingDimension)):
                     return False
             return True
         if not verify_dimensions(self.dimensions):
-            raise ValueError("Dimensions must be a nexted tuple of AtomicDimensions.")
-        if any(not isinstance(k, AtomicDimension) for k in self.sizes):
-            raise ValueError("Sizes must be a dictionary of AtomicDimensions or strings.")
+            raise ValueError("Dimensions must be a nested tuple of AtomicDimensions.")
+        # if any(not isinstance(k, AtomicDimension | AbsorbingDimension) or not isinstance(v, int) for k,v in self.sizes.items()):
+        #     raise ValueError("Sizes must be a dictionary of AtomicDimensions or strings.")
+        if not all(utils.tree_contains(self.dimensions, dim) for dim in self.sizes.keys()):
+            raise ValueError("Each dimension in sizes must also be present in the dimension structure.")
+        # Ensure the size is fully specified.
+        if unsized := self.get_unsized_dims():
+            raise ValueError(f"Dimensions {unsized} are not fully specified.")
     
     @property
     def shape(self) -> Tuple[int, ...]:
         def deep_product(value: Tuple | int) -> int:
-            if isinstance(value, AtomicDimension):
+            if isinstance(value, AtomicDimension | AbsorbingDimension):
                 if value in self.sizes:
                     return self.sizes[value]
                 else:
@@ -312,7 +128,69 @@ class DimensionSpecification:
                 for v in value:
                     product *= deep_product(v)
                 return product
-        return tuple(deep_product(v) for v in self.dimensions)
+        return tuple(self.compute_dimension_size(dim) for dim in self.dimensions)
+    
+    def with_dimensions(self, dimensions: Iterable[AtomicDimension]) -> 'DimensionSpecification':
+        """
+        Return a new DimensionSpecification with this object's dimensions replaced by the given dimensions in-order. The lengths of the current and new dimensions must match. The sizes of the new dimensions are taken from the current object.
+        """
+        if isinstance(dimensions, Iterator):
+            dimensions = tuple(dimensions)
+        if len(dimensions) != len(self.dimensions):
+            raise ValueError("Dimensions must have the same length.")
+        # Replace the keys in the sizes dict with the new dimensions.
+        sizes = {}
+        for old_dim, new_dim in zip(self.dimensions, dimensions):
+            if self.can_compute_dimension_size(new_dim):
+                for dim in self.get_dimension_size_components(new_dim):
+                    sizes[dim] = self.sizes[dim]
+            else:
+                sizes[new_dim] = self.compute_dimension_size(old_dim)
+        return DimensionSpecification(dimensions, sizes)
+
+    def get_dimension_size_components(self, dimension: BaseDimension) -> Tuple[BaseDimension]:
+        """
+        Return the items in `self.sizes` necessary to compute the size of the given dimension.
+        """
+        if dimension in self.sizes:
+            return (dimension,)
+        elif isinstance(dimension, tuple):
+            return tuple(component for dim in dimension for component in self.get_dimension_size_components(dim))
+        else:
+            raise ValueError(f"Cannot compute size of dimension {dimension}.")
+
+    def compute_dimension_size(self, dimension: BaseDimension) -> int:
+        """
+        Compute the size of a dimension.
+        """
+        product = 1
+        for dim in self.get_dimension_size_components(dimension):
+            product *= self.sizes[dim]
+        return product
+    
+    def can_compute_dimension_size(self, dimension: BaseDimension) -> bool:
+        """
+        Return whether the size of a dimension can be computed.
+        """
+        if dimension in self.sizes:
+            return True
+        elif isinstance(dimension, tuple):
+            return all(self.can_compute_dimension_size(d) for d in dimension)
+        else:
+            return False
+
+    def get_unsized_dims(self) -> Tuple[AtomicDimension | AbsorbingDimension, ...]:
+        def _get_unsized_dims(dims) -> Iterator[AtomicDimension | AbsorbingDimension]:
+            if isinstance(dims, AtomicDimension | AbsorbingDimension):
+                if dims in self.sizes:
+                    return
+                else:
+                    yield dims
+            else:
+                for v in dims:
+                    if v not in self.sizes:
+                        yield from _get_unsized_dims(v)
+        return tuple(_get_unsized_dims(self.dimensions))
     
     def __iter__(self):
         return iter(self.dimensions)
@@ -326,15 +204,6 @@ class DimensionSpecification:
     def index(self, dimension):
         return self.dimensions.index(dimension)
     
-    def __hash__(self):
-        return hash((self.dimensions, tuple(self.sizes.items())))
-    
-    def __eq__(self, other):
-        return isinstance(other, DimensionSpecification) and self.dimensions == other.dimensions and self.sizes == other.sizes
-
-    def __str__(self):
-        return str(self.dimensions)
-    
     def __repr__(self):
         return f"DimensionSpecification({self.dimensions!r}, {self.sizes!r})"
     
@@ -343,18 +212,14 @@ class DimensionSpecification:
 
 
 __all__ = [
-    "DimensionObject",
     "AtomicDimension",
     "_AtomicDimension",
     "DimensionSpecification",
-    "NamedDimension",
-    "PositionalDimension",
-    "UniqueDimension",
-    "AbsorbableDimension",
-    "DimensionTuple",
+    "AbsorbingDimension",
     "DimensionReplacement",
-    "PositionalDimensionPlaceholder",
     "dims",
-    "Dimension",
+    "NestedDimension",
+    "BaseDimension",
     "DimensionSpecification",
+    "ConcreteDimension",
 ]

@@ -361,29 +361,47 @@ def split_at(tree, position):
         return (*tree[:position[0]], lhs), (rhs, *tree[position[0]+1:])
 
 
-def deep_iter(iterable: Iterable):
+def deep_iter(iterable: Iterable, /, *, dict_mode: Literal['keys', 'values', 'both'] = 'values', yield_iterables: bool = False) -> Iterator:
     """
     Iterate over a tree of Python objects.
     """
-    yield iterable
+    if yield_iterables:
+        yield iterable
     if isinstance(iterable, dict):
-        yield from deep_iter(iterable.items())
+        if dict_mode in ('keys', 'both'):
+            yield from deep_iter(iterable.keys(), dict_mode=dict_mode, yield_iterables=yield_iterables)
+        if dict_mode in ('values', 'both'):
+            yield from deep_iter(iterable.values(), dict_mode=dict_mode, yield_iterables=yield_iterables)
     elif isinstance(iterable, Iterable):
         for item in iterable:
             if item is iterable:
-                # Avoid infinite recursion for iterables that yield themselves (e.g. strings of length 1)
+                # Avoid infinite recursion for iterables that yield themselves (e.g. strings of length 1) by skipping the item
                 pass
             else:
                 if isinstance(item, Iterable):
-                    yield from deep_iter(item)
+                    yield from deep_iter(item, dict_mode=dict_mode, yield_iterables=yield_iterables)
+                else:
+                    yield item
 
 
-def undeprecated(func):
+def tree_contains(tree, item):
+    """
+    Check if an item is in a tree of Python objects.
+    """
+    if tree == item:
+        return True
+    for _item in deep_iter(tree, yield_iterables=True):
+        if _item == item:
+            return True
+    return False
+
+
+def deprecated_guard(func):
     """
     Validate that the inputs and outputs of a function are not deprecated.
     """
     def wrapper(*args, **kwargs):
-        for arg in deep_iter(args):
+        for arg in deep_iter(args, dict_mode='both', yield_iterables=True):
             if hasattr(arg, '__deprecated__') and arg.__deprecated__:
                 raise ValueError(f'Argument {arg} is deprecated')
         for kw, arg in kwargs.items():
@@ -394,7 +412,7 @@ def undeprecated(func):
             output, output_tee = itertools.tee(output)
         else:
             output_tee = output
-        for output_item in deep_iter(output_tee):
+        for output_item in deep_iter(output_tee, dict_mode='both', yield_iterables=True):
             if hasattr(output_item, '__deprecated__') and output_item.__deprecated__:
                 raise ValueError(f'Output {output_item} is deprecated')
         return output

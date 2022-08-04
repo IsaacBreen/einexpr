@@ -1,8 +1,8 @@
 from __future__ import annotations
+from types import EllipsisType
 
 from ._types import (array, dtype as Dtype, device as Device, Optional, Tuple,
                      Union, Any, PyCapsule, Enum, ellipsis, NonEinArray)
-from .dimension import _AtomicDimension, DimensionSpecification, PositionalDimension
 
 import einexpr
 
@@ -20,18 +20,18 @@ import einexpr
 class einarray():
 
     a: einexpr.types.NonEinArray
-    dims: Tuple[einexpr.array_api.dimension.DimensionTuple]
-    ambiguous_dims: Set[einexpr.array_api.dimension.DimensionObject]
+    dims: einexpr.array_api.dimension.DimensionSpecification | Tuple[einexpr.array_api.dimension.NestedDimension]
+    ambiguous_dims: Set[einexpr.array_api.dimension.NestedDimension]
     
     def __init__(
         self,
         a: Union[NonEinArray, einexpr.einarray],
         /, *,
-        dims: Optional[einexpr.array_api.dimension.DimensionSpecification | Tuple[einexpr.array_api.dimension.Dimension]] = None,
+        dims: Optional[einexpr.array_api.dimension.DimensionSpecification | Tuple[einexpr.array_api.dimension.NestedDimension]] = None,
         ambiguous_dims: Set[str] = None,
         copy: bool = True,
         backend: Optional[str] = None,
-        dim_sizes: Optional[Dict[einexpr.array_api.dimension._AtomicDimension, int]] = None,
+        dim_sizes: Optional[Dict[einexpr.array_api.dimension.AtomicDimension, int]] = None,
     ) -> None:
         if isinstance(a, einarray):
             self.a = a.a
@@ -56,9 +56,6 @@ class einarray():
             if self.a.ndim != len(self.dims) and not isinstance(self.a, einexpr.backends.PseudoRawArray):
                 if len(self.dims) == 0:
                     raise ValueError(f"The number ({self.a.ndim}) of dimensions in the array does not match the number ({len(self.dims)}) of dimensions passed to the constructor. Did you forget to pass the dimensions? e.g. `einexpr.einarray(a, dims=({', '.join('d' + str(i) for i in range(a.ndim))}))`")
-        for i, dim in enumerate(self.dims, start=-len(self.dims)):
-            if isinstance(dim, einexpr.array_api.dimension.PositionalDimension) and dim.position != i:
-                raise ValueError(f"The actual position {i} of the dimension {dim!r} in the dimension tuple {self.dims} is inconsistent with the position {dim.position} specified in the object.")
         # Check that none of the the dimensions are deprecated
         dim_sizes = dim_sizes or {}
         dim_sizes |= {dim: size for dim, size in zip(self.dims, self.a.shape)}
@@ -71,10 +68,10 @@ class einarray():
         if not self.ambiguous_dims <= set(self.dims):
             raise ValueError(f"The ambiguous dimensions {self.ambiguous_dims} must be a subset of the dimensions {self.dims} passed to the constructor.")
 
-    def get_dims_unordered(self: array) -> Set[_AtomicDimension]:
+    def get_dims_unordered(self: array) -> Set[AtomicDimension]:
         return set(self.dims)
     
-    def coerce(self: array, dims: Tuple[_AtomicDimension]) -> einexpr.einarray:
+    def coerce(self: array, dims: Tuple[AtomicDimension]) -> einexpr.einarray:
         # Note that ``(j k)->n`` means 'flatten along the dimensions named ``j`` and ``k`` and name the
         # resulting dimension ``n``'.
         #
@@ -83,21 +80,31 @@ class einarray():
         # 2. Reorder the dimensions ``i`` and ``k``.
         # 3. Combine ``i`` and ``k`` into a single dimension ``n``.
         # Prepare the 'instructions'
-        instructions = einexpr.dimension_utils.process_dims_reshape(dims, existing_dims=self.dims)
-        # Calculate the dimensions of the output array before any replacements are made.
-        final_dims_before_replacement = einexpr.dimension_utils.ignore_replacements(instructions)
+        dims = einexpr.dimension_utils.parse_dims_reshape(dims)
+        dims_before_replacements = einexpr.dimension_utils.ignore_replacements(dims)
+        dims_after_replacements = einexpr.dimension_utils.apply_replacements(dims)
+        current_dims_after_absorption, dims_before_replacements = einexpr.dimension_utils.resolve_positional_dims((self.dims.dimensions, dims_before_replacements))
+        current_dimspec_after_absorption = self.dims.with_dimensions(current_dims_after_absorption)
+        dimspec_before_replacements = einexpr.array_api.dimension.DimensionSpecification(
+            dims_before_replacements,
+            sizes={
+                dim: size for dim, size in current_dimspec_after_absorption.sizes.items()
+                if einexpr.utils.tree_contains(dims_before_replacements, dim)
+            }
+        )
         # Align the raw array to these. This performs steps 1-3 but only returns a raw array (without names).
-        raw_array: einexpr.types.NonEinArray = einexpr.backends.align_to_dimspec(self, final_dims_before_replacement)
+        raw_array: einexpr.types.NonEinArray = einexpr.backends.align_to_dimspec(self.a, current_dimspec_after_absorption, dimspec_before_replacements)
         # Put the raw array into an einarray with the replacement dimensions.
-        final_dims = einexpr.dimension_utils.apply_replacements(instructions)
-        return einexpr.einarray(raw_array, dims=final_dims)    
+        _, dims_after_replacements = einexpr.dimension_utils.resolve_positional_dims((dims_before_replacements, dims_after_replacements))
+        dimspec_after_replacements = dimspec_before_replacements.with_dimensions(dims_after_replacements)
+        return einexpr.einarray(raw_array, dims=dimspec_after_replacements)    
     
-    def isolate_dims(self: array, dims: Iterable[_AtomicDimension]) -> einexpr.einarray:
+    def isolate_dims(self: array, dims: Iterable[AtomicDimension]) -> einexpr.einarray:
         """
         Extract the dimensions in ``dims`` into the first level if they are part of a composite dimension.
         """
-        new_dims = einexpr.dimension_utils.isolate_dims(self.dims, dims)
-        if einexpr.dimension_utils.primitivize_dims(new_dims) == einexpr.dimension_utils.primitivize_dims(self.dims):
+        new_dims = einexpr.dimension_utils.isolate_dims(self.dims.dimensions, dims)
+        if new_dims == self.dims:
             return self
         return self.coerce(new_dims)
 
@@ -799,7 +806,7 @@ class einarray():
         return result
 
     # TODO: type hint is wrong
-    def __getitem__(self: array, key: Union[int, slice, ellipsis, Tuple[Union[int, slice, ellipsis], ...], array, str, einexpr.DimensionObject, Tuple[Union[str, einexpr.DimensionObject, ellipsis], ...]], /) -> array:
+    def __getitem__(self: array, key: Union[int, slice, EllipsisType, Tuple[Union[int, slice, EllipsisType], ...], array, einexpr.array_api.dimension.NestedDimension, Tuple[einexpr.array_api.dimension.NestedDimension, ...]], /) -> array:
         """
         When called with an integer, a slice, or a tuple of integers or slices, returns a new array containing the elements at the given indices.
         
@@ -809,7 +816,7 @@ class einarray():
         ----------
         self: array
             array instance.
-        key: Union[int, slice, ellipsis, Tuple[Union[int, slice, ellipsis], ...], array, str, einexpr.DimensionObject, Tuple[Union[str, einexpr.DimensionObject, ellipsis], ...]]
+        key: Union[int, slice, ellipsis, Tuple[Union[int, slice, ellipsis], ...], array, NestedDimension, Tuple[NestedDimension, ...]]
             index key.
 
         Returns

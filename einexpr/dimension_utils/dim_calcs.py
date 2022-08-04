@@ -9,7 +9,6 @@ from typing import Any, Callable, Dict, Iterable, Iterator, List, Literal, Optio
 
 import numpy as np
 from pydantic import PositiveInt
-from einexpr.array_api.dimension import NamedDimension, PositionalDimension
 
 from einexpr.utils.utils import pedantic_dict_merge
 from .exceptions import AmbiguousDimensionException
@@ -19,7 +18,7 @@ from lark import Lark, Transformer, v_args
 from dataclasses import replace
 
 
-D = TypeVar("D", bound=einexpr.array_api.dimension.DimensionObject)
+D = TypeVar("D", bound=einexpr.array_api.dimension.NestedDimension)
 
 
 def _convert_from_spec(dims):
@@ -28,23 +27,23 @@ def _convert_from_spec(dims):
     return dims
 
 
-@einexpr.utils.undeprecated
+@einexpr.utils.deprecated_guard
 def get_final_aligned_dims(
-    *ein_dims: List[einexpr.array_api.dimension._AtomicDimension],
-) -> List[einexpr.array_api.dimension._AtomicDimension]:
+    *dims: Tuple[einexpr.array_api.dimension.AtomicDimension],
+) -> Tuple[einexpr.array_api.dimension.AtomicDimension]:
     """
     Aligns and broadcasts the given dimensions.
     """
-    scs = einexpr.utils.get_all_scs_with_nonunique_elems_removed(*ein_dims)
+    scs = einexpr.utils.get_all_scs_with_nonunique_elems_removed(*dims)
     if len(scs) == 0:
         raise ValueError("No valid alignment found.")
     return next(iter(scs))
 
 
-@einexpr.utils.undeprecated
+@einexpr.utils.deprecated_guard
 def calculate_ambiguous_final_aligned_dims(
-    *dims: List[einexpr.array_api.dimension._AtomicDimension],
-) -> Set[einexpr.array_api.dimension._AtomicDimension]:
+    *dims: Tuple[einexpr.array_api.dimension.NestedDimension, ...],
+) -> Set[einexpr.array_api.dimension.NestedDimension]:
     aligned_dims = get_each_aligned_dims(*dims)
     scs = list(einexpr.utils.get_all_scs_with_unique_elems(*aligned_dims))
     if len(scs) == 0:
@@ -58,21 +57,21 @@ def calculate_ambiguous_final_aligned_dims(
     return set(first_broadcasted_dims[ambiguous_positions].tolist())
 
 
-@einexpr.utils.undeprecated
+@einexpr.utils.deprecated_guard
 def get_each_aligned_dims(
-    *ein_dims: List[einexpr.array_api.dimension._AtomicDimension],
-) -> List[List[einexpr.array_api.dimension._AtomicDimension]]:
+    *ein_dims: Tuple[einexpr.array_api.dimension.NestedDimension, ...],
+) -> Tuple[Tuple[einexpr.array_api.dimension.Tuple, ...], ...]:
     """
     Returns a list of lists of dimensions that are aligned with eachother.
     """
     aligned_final = get_final_aligned_dims(*ein_dims)
-    return [[dim for dim in aligned_final if dim in dims] for dims in ein_dims]
+    return tuple(tuple(dim for dim in aligned_final if dim in dims) for dims in ein_dims)
 
 
-@einexpr.utils.undeprecated
+@einexpr.utils.deprecated_guard
 def calculate_transexpand(
-    dims_from: Tuple[einexpr.array_api.dimension.Dimension, ...],
-    dims_to: Tuple[einexpr.array_api.dimension.Dimension, ...],
+    dims_from: Tuple[einexpr.array_api.dimension.NestedDimension, ...],
+    dims_to: Tuple[einexpr.array_api.dimension.NestedDimension, ...],
 ) -> Tuple[int | None, ...]:
     """
     Returns lists of the transpositions and expansions required to align to given dimensions. Broadcast dimensions - those
@@ -89,13 +88,13 @@ class TreeToReshapeDimension(Transformer):
     def root_dims(self, dim: D) -> D:
         return dim
 
-    def replacable_dim(self, value) -> einexpr.array_api.dimension.Dimension | einexpr.array_api.dimension.DimensionReplacement:
+    def replacable_dim(self, value) -> einexpr.array_api.dimension.NestedDimension | einexpr.array_api.dimension.DimensionReplacement:
         return value
         
     def dim_replacement(self, original, replacement) -> einexpr.array_api.dimension.DimensionReplacement:
         return einexpr.array_api.dimension.DimensionReplacement(original, replacement)
 
-    def irreplacable_dim(self, value) -> einexpr.array_api.dimension.Dimension:
+    def irreplacable_dim(self, value) -> einexpr.array_api.dimension.NestedDimension:
         if isinstance(value, str):
             return value
         elif isinstance(value, tuple):
@@ -103,7 +102,7 @@ class TreeToReshapeDimension(Transformer):
         else:
             raise ValueError(f"Unexpected value {value}.")
 
-    def tuple(self, expand_sentinel: einexpr.utils.ExpandSentinel) -> Tuple[einexpr.array_api.dimension.Dimension, ...]:
+    def tuple(self, expand_sentinel: einexpr.utils.ExpandSentinel) -> Tuple[einexpr.array_api.dimension.NestedDimension, ...]:
         return tuple(expand_sentinel.content)
     
     def bare_tuple(self, *dims) -> einexpr.utils.ExpandSentinel:
@@ -112,7 +111,7 @@ class TreeToReshapeDimension(Transformer):
     def ellipsis_bare_tuple(self, *dims) -> einexpr.utils.ExpandSentinel:
         return einexpr.utils.ExpandSentinel(tuple(dim for dim in dims if dim is not None))
     
-    def sequence(self, *xs) -> Tuple[einexpr.array_api.dimension.Dimension, ...]:
+    def sequence(self, *xs) -> Tuple[einexpr.array_api.dimension.NestedDimension, ...]:
         return tuple(x for x in xs if x is not None)
 
     def sep(self) -> None:
@@ -121,8 +120,8 @@ class TreeToReshapeDimension(Transformer):
     def named_dim(self, value: str) -> einexpr.array_api.dimension.AtomicDimension:
         return value
     
-    def positional_dim(self, value: str) -> einexpr.array_api.dimension.AbsorbableDimension:
-        return einexpr.array_api.dimension.AbsorbableDimension()
+    def positional_dim(self, value: str) -> einexpr.array_api.dimension.AbsorbingDimension:
+        return einexpr.array_api.dimension.AbsorbingDimension()
 
     def EMPTY(self, tree) -> str:
         return tree.value
@@ -161,8 +160,8 @@ dims_reshape_grammar = Lark(
 )
 
 
-@einexpr.utils.undeprecated
-def parse_dims(dims_raw: einexpr.array_api.dimension.Dimension) -> Tuple[einexpr.array_api.dimension.Dimension]:
+@einexpr.utils.deprecated_guard
+def parse_dims(dims_raw: einexpr.array_api.dimension.NestedDimension) -> Tuple[einexpr.array_api.dimension.NestedDimension]:
     """
     Parses a dimensions declaration string into a tree.
 
@@ -188,10 +187,10 @@ def parse_dims(dims_raw: einexpr.array_api.dimension.Dimension) -> Tuple[einexpr
         elif isinstance(dims_raw, str):
             tree = dims_reshape_grammar.parse(dims_raw)
             return TreeToReshapeDimension().transform(tree)
-        elif isinstance(dims_raw, einexpr.array_api.dimension.AtomicDimension | EllipsisType):
+        elif isinstance(dims_raw, einexpr.array_api.dimension.AtomicDimension | einexpr.array_api.dimension.AbsorbingDimension | EllipsisType):
             return dims_raw
         elif dims_raw is None:
-            return einexpr.array_api.dimension.AbsorbableDimension()
+            return einexpr.array_api.dimension.AbsorbingDimension()
         else:
             raise ValueError(f"Unexpected value {dims_raw}.")
     
@@ -206,7 +205,7 @@ def parse_dims(dims_raw: einexpr.array_api.dimension.Dimension) -> Tuple[einexpr
     return dims
 
 
-@einexpr.utils.undeprecated
+@einexpr.utils.deprecated_guard
 def parse_dims_reshape(dims_raw: Union[str, Tuple]) -> Tuple:
     """
     Parses a dimensions reshape string into a tree.
@@ -214,7 +213,7 @@ def parse_dims_reshape(dims_raw: Union[str, Tuple]) -> Tuple:
     return parse_dims(dims_raw)
 
 
-@einexpr.utils.undeprecated
+@einexpr.utils.deprecated_guard
 def dimspec_to_shape(dimspec: einexpr.array_api.dimension.DimensionSpecification) -> Tuple[int, ...]:
     """
     Converts a dimension specification into a shape tuple.
@@ -222,143 +221,17 @@ def dimspec_to_shape(dimspec: einexpr.array_api.dimension.DimensionSpecification
     return dimspec.shape
 
 
-@einexpr.utils.undeprecated
-def map_over_dims(
-    f: Callable[einexpr.array_api.dimension.DimensionObject, einexpr.array_api.dimension.DimensionObject],
-    dim_obj: D, strict: bool = True,
-    enumerate_positions: bool = False,
-    enumerate_dimension_replacement_path_mode: Literal["both", "original", "replacement", "neither"] = "both",
-    enumerate_dimension_replacement_has_position: bool = False
-)-> D:
-    """
-    Maps a function over all dimension objects.
-    """
-    def _map_over_dims(dim_obj, position):
-        if isinstance(dim_obj, einexpr.array_api.dimension.DimensionReplacement):
-            original = dim_obj.original
-            replacement = dim_obj.replacement
-            if enumerate_dimension_replacement_has_position:
-                position_original = position + (0,)
-                position_replacement = position + (1,)
-            else:
-                position_original = position
-                position_replacement = position
-            match enumerate_dimension_replacement_path_mode:
-                case "both":
-                    original = _map_over_dims(original, position_original)
-                    replacement = _map_over_dims(replacement, position_replacement)
-                case "original":
-                    original = _map_over_dims(original, position_original)
-                case "replacement":
-                    replacement = _map_over_dims(replacement, position_replacement)
-                case "neither":
-                    pass
-                case _:
-                    raise ValueError(f"Unexpected value for argument enumerate_dimension_replacement_mode: {enumerate_dimension_replacement_path_mode}. Expecting one of 'both', 'original', 'replacement', or 'passthrough'.")
-            return einexpr.array_api.dimension.DimensionReplacement(original, replacement)
-        elif isinstance(dim_obj, (list, set, tuple)):
-            return type(dim_obj)(_map_over_dims(dim, position + (i,)) for i, dim in enumerate(dim_obj))
-        elif isinstance(dim_obj, einexpr.array_api.dimension.AtomicDimension):
-            return f(dim_obj, position) if enumerate_positions else f(dim_obj)
-        elif isinstance(dim_obj, einexpr.array_api.dimension.DimensionSpecification):
-            return einexpr.array_api.dimension.DimensionSpecification(tuple(_map_over_dims(dim, position + (i,)) for i, dim in enumerate(dim_obj)), sizes=dim_obj.sizes)
-        elif dim_obj is ...:
-            return dim_obj
-        elif strict:
-            raise ValueError(f"Unexpected value {dim_obj}.")
-        else:
-            return f(dim_obj, position) if enumerate_positions else f(dim_obj)
-    return _map_over_dims(dim_obj, ())
-
-
-@einexpr.utils.undeprecated
-def iter_dims(
-    dim_obj: einexpr.array_api.dimension.DimensionObject,
-    enumerate_positions: bool = False,
-    enumerate_dimension_replacement_path_mode: Literal["both", "original", "replacement", "neither"] = "both",
-    enumerate_dimension_replacement_has_position: bool = False
-) -> Iterator[einexpr.array_api.dimension._AtomicDimension]:
-    """
-    Iterates over all dimension objects.
-    """
-    def _iter_dims(dim_obj, position):
-        if isinstance(dim_obj, einexpr.array_api.dimension.DimensionReplacement):
-            if enumerate_dimension_replacement_has_position:
-                position_original = position + (0,)
-                position_replacement = position + (1,)
-            else:
-                position_original = position
-                position_replacement = position
-            yield (dim_obj, position)
-            match enumerate_dimension_replacement_path_mode:
-                case "both":
-                    yield from _iter_dims(dim_obj.original, position_original)
-                    yield from _iter_dims(dim_obj.replacement, position_replacement)
-                case "original":
-                    yield from _iter_dims(dim_obj.original, position_original)
-                case "replacement":
-                    yield from _iter_dims(dim_obj.replacement, position_replacement)
-                case "neither":
-                    pass
-                case _:
-                    raise ValueError(f"Unexpected value for argument enumerate_dimension_replacement_mode: {enumerate_dimension_replacement_path_mode}. Expecting one of 'both', 'original', 'replacement', or 'passthrough'.")
-        elif isinstance(dim_obj, (list, set, tuple, einexpr.array_api.dimension.DimensionTuple, einexpr.array_api.dimension.DimensionSpecification)):
-            yield (dim_obj, position)
-            for i, dim in enumerate(dim_obj):
-                yield from _iter_dims(dim, position + (i,))
-        else:
-            yield (dim_obj, position)
-    yield from ((dim_obj, pos) if enumerate_positions else dim_obj for dim_obj, pos in _iter_dims(dim_obj, ()))
-
-
-@einexpr.utils.undeprecated
+@einexpr.utils.deprecated_guard
 def gather_sizes(dims: einexpr.array_api.dimension.DimensionSpecification) -> Dict[str, int]:
     """
     Returns a dictionary of dimension names and sizes.
     """
-    if isinstance(dims, einexpr.array_api.dimension.DimensionSpecification):
-        return dims.sizes
-    sizes = {}
-    for dim in iter_dims(dims):
-        if isinstance(dim, einexpr.array_api.dimension._AtomicDimension) and dim.size is not None:
-            if dim.id in sizes:
-                if sizes[dim.id] != dim.size:
-                    raise ValueError(f"Dimension {dim.id} has conflicting sizes: {sizes[dim.id]} and {dim.size}.")
-            else:
-                sizes[dim.id] = dim.size
-    return sizes
+    if not isinstance(dims, einexpr.array_api.dimension.DimensionSpecification):
+        raise TypeError(f"Expected a DimensionSpecification, got {dims}.")
+    return dims.sizes
 
 
-
-@einexpr.utils.undeprecated
-def apply_sizes(dims: D, sizes: Dict[str, int], overwrite: bool = False) -> D:
-    """
-    Applies a dictionary of dimension names and sizes to a dimension object, raising an error if the size is already set differently.
-    """
-    @einexpr.utils.undeprecated
-    def helper(dims: D) -> D:
-        if isinstance(dims, einexpr.array_api.dimension._AtomicDimension) and dims.id in sizes:
-            if not overwrite and dims.size is not None and dims.size != sizes[dims.id]:
-                raise einexpr.exceptions.DimensionMismatch(f"Dimension {dims.id} has different sizes: {dims.size} != {sizes[dims.id]}")
-            return replace(dims, size=sizes.get(dims.id, None))
-        else:
-            return dims
-    return map_over_dims(helper, dims, strict=False)
-
-
-@einexpr.utils.undeprecated
-def propogate_sizes(dims: D, sizes: Optional[Dict[str, int]] = None) -> D:
-    """
-    Propogates dimension sizes throughout the dimension object, raising an error when two or more named dimensions with the same name have different sizes.
-    """
-    # Gather all named dimension sizes
-    sizes = sizes or {}
-    sizes |= gather_sizes(dims)
-    # Apply sizes
-    return apply_sizes(dims, sizes)
-
-
-@einexpr.utils.undeprecated
+@einexpr.utils.deprecated_guard
 def process_dims_declaration(dims_raw: Union[str, Tuple, None], shape: Tuple[int, ...]) -> einexpr.array_api.dimension.DimensionSpecification:
     """
     Processes a dimensions declaration into a dimension object.
@@ -370,51 +243,40 @@ def process_dims_declaration(dims_raw: Union[str, Tuple, None], shape: Tuple[int
     elif not isinstance(dims_raw, (str, tuple, list)):
         raise ValueError(f"Unexpected value {dims_raw}.")
     dims = parse_dims(dims_raw)
-    dim_sizes = gather_sizes(dims_raw)
     # Expand ellipsis
     if ... in dims:
         raise einexpr.exceptions.InternalError("Ellipsis not yet supported.")
     if len(dims) != len(shape):
         raise einexpr.exceptions.InternalError("DimensionSpecification tuple size does not match shape tuple size.")
-    dims = tuple(einexpr.array_api.dimension.PositionalDimension(i, size) if isinstance(dim, einexpr.array_api.dimension.AbsorbableDimension) else dim for i, (dim, size) in enumerate(zip(dims, shape), start=-len(shape)))
     if len(dims) != len(shape):
         raise ValueError(f"Declaration {dims_raw} has wrong number of dimensions. Expected {len(shape)}, got {len(dims)}.")
+    dim_sizes = {dim: size for dim, size in zip(dims, shape)}
     dims = einexpr.array_api.dimension.DimensionSpecification(dims, sizes=dim_sizes)
     return dims
 
 
-@einexpr.utils.undeprecated
-def process_dims_reshape(dims_raw: Union[str, Tuple], existing_dims: einexpr.array_api.dimension.DimensionSpecification) -> einexpr.array_api.dimension.DimensionSpecification:
+@einexpr.utils.deprecated_guard
+@einexpr.utils.deprecated
+def process_dims_reshape(dims_raw, existing_dimspec: einexpr.array_api.dimension.DimensionSpecification) -> Tuple[einexpr.array_api.dimension.DimensionSpecification, einexpr.array_api.dimension.DimensionSpecification]:
     """
     Processes a dimensions reshape string into a dimension object.
     """
-    if dims_raw is None:
-        return existing_dims
     dims = parse_dims_reshape(dims_raw)
-    return einexpr.array_api.dimension.DimensionSpecification(dims, sizes=existing_dims.sizes)
+    dims_before_replacements, dims_after_replacements = ignore_replacements(dims), apply_replacements(dims)
+    existing_dims_after_absorption, dims_before_replacements, dims_after_replacements = resolve_positional_dims((existing_dimspec.dimensions, dims_before_replacements, dims_after_replacements))
+    existing_dimspec_after_absorption = existing_dimspec.with_dimensions(existing_dims_after_absorption)
+    dimspec_before_replacements = einexpr.array_api.dimension.DimensionSpecification(
+        dims_before_replacements,
+        sizes={
+            dim: size for dim, size in existing_dimspec_after_absorption.sizes.items()
+            if einexpr.utils.tree_contains(dims_before_replacements, dim)
+        }
+    )
+    dimspec_after_replacements = dimspec_before_replacements.with_dimensions(dims_after_replacements)
+    return dimspec_before_replacements, dimspec_after_replacements
 
 
-@einexpr.utils.undeprecated
-def primitivize_dims(dims: einexpr.array_api.dimension.DimensionObject) -> einexpr.array_api.dimension.DimensionObject:
-    """
-    Converts a dimensions object into simple (possibly nested) tuples of strings. This is a lossy conversion.
-    """
-    dims = _convert_from_spec(dims)
-    if isinstance(dims, einexpr.array_api.dimension.DimensionReplacement):
-        return primitivize_dims(dims.replacement)
-    elif isinstance(dims, (list, tuple, einexpr.array_api.dimension.DimensionTuple)):
-        return tuple(primitivize_dims(dim) for dim in dims)
-    elif isinstance(dims, einexpr.array_api.dimension.NamedDimension):
-        return dims.id
-    elif isinstance(dims, einexpr.array_api.dimension.PositionalDimension):
-        return dims.position
-    elif isinstance(dims, (int, str)):
-        return dims
-    else:
-        raise ValueError(f"Unexpected value {dims}.")
-
-
-@einexpr.utils.undeprecated
+@einexpr.utils.deprecated_guard
 def ignore_replacements(dims: D) -> D:
     """
     Replaces all dimension replacements with their original dimensions.
@@ -425,13 +287,13 @@ def ignore_replacements(dims: D) -> D:
         return ignore_replacements(dims.original)
     elif isinstance(dims, tuple):
         return tuple(ignore_replacements(dim) for dim in dims)
-    elif isinstance(dims, einexpr.array_api.dimension.AtomicDimension | EllipsisType):
+    elif isinstance(dims, einexpr.array_api.dimension.AtomicDimension | einexpr.array_api.dimension.AbsorbingDimension | EllipsisType):
         return dims
     else:
         raise ValueError(f"Unexpected value {dims}.")
 
 
-@einexpr.utils.undeprecated
+@einexpr.utils.deprecated_guard
 def apply_replacements(dims: D) -> D:
     """
     Replaces all dimension replacements with their replacement dimensions.
@@ -440,7 +302,7 @@ def apply_replacements(dims: D) -> D:
         return apply_replacements(dims.replacement)
     elif isinstance(dims, tuple):
         return tuple(apply_replacements(dim) for dim in dims)
-    elif isinstance(dims, einexpr.array_api.dimension.AtomicDimension):
+    elif isinstance(dims, einexpr.array_api.dimension.AtomicDimension | einexpr.array_api.dimension.AbsorbingDimension):
         return dims
     elif isinstance(dims, einexpr.array_api.dimension.DimensionSpecification):
         return einexpr.array_api.dimension.DimensionSpecification(apply_replacements(dims.dimensions), sizes=dims.sizes)
@@ -448,21 +310,9 @@ def apply_replacements(dims: D) -> D:
         raise ValueError(f"Unexpected value {dims!r}.")
 
 
-@einexpr.utils.undeprecated
-def replace_dims(array: einexpr.array_api.einarray, replacements: Dict[einexpr.array_api.dimension.DimensionObject, einexpr.array_api.dimension.DimensionObject]) -> Tuple[einexpr.array_api.dimension.DimensionObject, ...]:
-    """
-    Applies a dictionary of replacements to a tuple of dimensions.
-    """
-    return einexpr.einarray(
-        array.a,
-        dims=map_over_dims(lambda dim: replacements.get(dim, dim), array.dims),
-        ambiguous_dims=map_over_dims(lambda dim: replacements.get(dim, dim), array.ambiguous_dims),
-    )
+DimTupleOrSpec = TypeVar('DimTupleOrSpec', bound=Tuple[einexpr.array_api.dimension.NestedDimension, ...] | einexpr.array_api.dimension.DimensionSpecification)
 
-
-DimTupleOrSpec = TypeVar('DimTupleOrSpec', bound=Tuple[einexpr.array_api.dimension.Dimension, ...] | einexpr.array_api.dimension.DimensionSpecification)
-
-@einexpr.utils.undeprecated
+@einexpr.utils.deprecated_guard
 def expand_dims(dims: DimTupleOrSpec) -> DimTupleOrSpec:
     """
     Expands all composite dimensions into their constituents, effectually 'flattening' the dimension tree itself.
@@ -473,7 +323,7 @@ def expand_dims(dims: DimTupleOrSpec) -> DimTupleOrSpec:
         elif isinstance(dims, tuple):
             for dim in dims:
                 yield from helper(dim)
-        elif isinstance(dims, einexpr.array_api.dimension.AtomicDimension):
+        elif isinstance(dims, einexpr.array_api.dimension.AtomicDimension | einexpr.array_api.dimension.AbsorbingDimension):
             yield dims
         else:
             raise ValueError(f"Unexpected value {dims}.")
@@ -483,115 +333,98 @@ def expand_dims(dims: DimTupleOrSpec) -> DimTupleOrSpec:
         return tuple(helper(dims))
 
 
-@einexpr.utils.undeprecated
-def isolate_dim(array_dims: Tuple[einexpr.array_api._AtomicDimension], dim: einexpr.array_api._AtomicDimension) -> Tuple[einexpr.array_api._AtomicDimension, einexpr.array_api._AtomicDimension]:
+@einexpr.utils.deprecated_guard
+def isolate_dim(array_dims: Tuple[einexpr.array_api.NestedDimension, ...], dim: einexpr.array_api.AtomicDimension) -> Tuple[einexpr.array_api.NestedDimension, ...]:
     """
     Extract the dimensions in ``dim`` into the first level if it is part of a composite dimension.
-    """    
+    """
     position = einexpr.utils.get_position(array_dims, dim)
     if position is None:
-        raise ValueError(f"Dimension {dim} is not part of the array dimensions {array_dims}.")
+        raise ValueError(f"NestedDimension {dim} is not part of the array dimensions {array_dims}.")
     lhs, rhs = einexpr.utils.split_at(array_dims, position)
     return einexpr.utils.deep_remove((*lhs, dim, *rhs), lambda x: x == ())
 
 
-@einexpr.utils.undeprecated
-def isolate_dims(array_dims: Tuple[einexpr.array_api._AtomicDimension], dims: Iterable[einexpr.array_api._AtomicDimension]) -> einexpr.array_api.einarray:
+@einexpr.utils.deprecated_guard
+def isolate_dims(array_dims: Tuple[einexpr.array_api.NestedDimension, ...], dims: Tuple[einexpr.array_api.AtomicDimension, ...]) -> Tuple[einexpr.array_api.NestedDimension, ...]:
     """
     Extract the dimensions in ``dims`` into the first level if they are part of a composite dimension.
     """
-    array_dims = einexpr.dimension_utils.primitivize_dims(array_dims)
-    dims = einexpr.dimension_utils.primitivize_dims(dims)
     for dim in dims:
         array_dims = isolate_dim(array_dims, dim)
     return array_dims
-
-
-@einexpr.utils.undeprecated
-def get_positional_dim_replacements(dimss: Tuple[einexpr.array_api.dimension.DimensionObject, ...]) -> Dict[einexpr.array_api.dimension.PositionalDimension, einexpr.array_api.dimension.NamedDimension]:
-    """
-    Infer the names of positional arguments.
-    """
-    # Replace all absorbable dimensions by positional dimensions.
-    positional_to_absorbable = {}
-    _dimss = []
-    for dims in dimss:
-        _dims = []
-        for i, dim in enumerate(dims, start=-len(dims)):
-            if isinstance(dim, einexpr.array_api.dimension.AbsorbableDimension):
-                pos_dim = einexpr.array_api.dimension.PositionalDimension(i)
-                positional_to_absorbable[pos_dim] = dim
-                _dims.append(pos_dim)
-            else:
-                _dims.append(dim)
-        _dimss.append(_dims)
-    dimss = _dimss
-    positional_dims = {}
-    for dims in dimss:
-        for i, dim in enumerate(dims, start=-len(dims)):
-            if isinstance(dim, (einexpr.array_api.dimension.PositionalDimension)):
-                if isinstance(dim, einexpr.array_api.dimension.PositionalDimension) and dim.position != i:
-                    raise ValueError(f"Positional dimension {dim} has position {dim.position} but should have position {i}.")
-                if i in positional_dims:
-                    if positional_dims[dim.position] != dim:
-                        raise ValueError(f"Positional or Absorbable dimensions conflict: {positional_dims[i]!r} and {dim!r}.")
-                else:
-                    positional_dims[i] = dim
-    replacements = {}
-    for dim in positional_dims.values():
-        for dims in dimss:
-            if len(dims) >= -dim.position:
-                if dim in replacements:
-                    if type(replacements[dim]) is type(dims[dim.position]) and replacements[dim] != dims[dim.position]:
-                        raise ValueError(f"Positional dimension conflict: {replacements[dim]!r} and {dims[dim.position]!r}.")
-                elif isinstance(dims[dim.position], einexpr.array_api.dimension.NamedDimension):
-                    if dim.size is not None and dims[dim.position].size is not None:
-                        if dim.size != dims[dim.position].size:
-                            raise ValueError(f"Dimension sizes conflict: {dim!r} and {dims[dim.position]!r}.")
-                        replacements[dim] = dims[dim.position]
-                    elif dims[dim.position].size is None:
-                        replacements[dim] = dims[dim.position].with_size(dim.size)
-                    else:
-                        replacements[dim] = dims[dim.position]
-                    replacements[dim] = dims[dim.position]
-                elif isinstance(dims[dim.position], (list, tuple, einexpr.array_api.dimension.DimensionTuple)):
-                    pos_dim_size = compute_total_size(dim)
-                    replacement_dim_size = compute_total_size(dims[dim.position])
-                    if pos_dim_size is not None and replacement_dim_size is not None:
-                        if pos_dim_size != replacement_dim_size:
-                            raise ValueError(f"Dimension sizes conflict: {dim!r} and {dims[dim.position]!r}.")
-                    replacements[dim] = dims[dim.position]
-                elif isinstance(dims[dim.position], (einexpr.array_api.dimension.PositionalDimension, einexpr.array_api.dimension.AbsorbableDimension)):
-                    pass
-                else:
-                    raise ValueError(f"Unexpected value {dims[dim.position]!r}.")
-    # Reverse the replacement of positional dimensions that we did at the start of the function.
-    for positional, absorbable in positional_to_absorbable.items():
-        if positional in replacements:
-            replacements[absorbable] = replacements[positional]
-            del replacements[positional]
-    return replacements
 
 
 def is_dimensionless(array):
     return isinstance(array, (int, float)) or einexpr.backends.conforms_to_array_api(array) and len(array.shape) == 0
 
 
-@einexpr.utils.undeprecated
-def get_dims(array):
+@einexpr.utils.deprecated_guard
+def get_dimspec(array):
     if isinstance(array, einexpr.array):
         return array.dims
     elif is_dimensionless(array):
-        return ()
+        return einexpr.array_api.dimension.DimensionSpecification((), {})
     else:
         raise TypeError(f'{array} is not a recognized einexpr array')
 
 
-@einexpr.utils.undeprecated
-def resolve_positional_dims(arrays: Tuple[einexpr.array_api.einarray, ...]) -> Tuple[einexpr.array_api.einarray, ...]:
+@overload
+def resolve_positional_dims(dimensions_tuples: Tuple[einexpr.array_api.dimension.DimensionSpecification, ...]) -> Tuple[einexpr.array_api.dimension.DimensionSpecification, ...]:
+    ...
+
+
+@overload
+def resolve_positional_dims(dimensions_tuples: Tuple[Tuple[einexpr.array_api.dimension.BaseDimension, ...], ...]) -> Tuple[Tuple[einexpr.array_api.dimension.BaseDimension, ...], ...]:
+    ...
+
+
+@einexpr.utils.deprecated_guard
+def resolve_positional_dims(dimensions_tuples):
     """
-    Resolve positional dimensions.
+    For each absorbing dimension in each dimension specification, absorb a corresponding non-absorbable dimension from another dimension specification. Dimensions are resolved in broadcast order (i.e. right-to-left).
     """
-    dimss = tuple(get_dims(array) for array in arrays)
-    replacements = get_positional_dim_replacements(dimss)
-    return tuple(replace_dims(array, replacements) if isinstance(array, einexpr.array_api.einarray) else array for array in arrays)
+    if all(isinstance(dimensions, einexpr.array_api.dimension.DimensionSpecification) for dimensions in dimensions_tuples):
+        _dimensions_tuples = resolve_positional_dims(tuple(dimspec.dimensions for dimspec in dimensions_tuples))
+        return tuple(dimspec.with_dimensions(dimensions) for dimspec, dimensions in zip(dimensions_tuples, _dimensions_tuples))
+    elif not any(isinstance(dimensions, einexpr.array_api.dimension.DimensionSpecification) for dimensions in dimensions_tuples):
+        dimensions_tuple_after_absorption = []
+        for absorbing_dimensions in dimensions_tuples:
+            # We want to match all absorbable dimensions to an absorbable dimension at the same position in (after ignoring all non-absorbable dimensions this dimension specification has in common with) the other dimension specifications.
+            i_absorbing_dims = [i for i, dim in enumerate(absorbing_dimensions) if isinstance(dim, einexpr.array_api.dimension.AbsorbingDimension)]
+            absorption_map: Dict[int, einexpr.array_api.dimension.NestedDimension] = {}
+            for dimensions_to_absorb in dimensions_tuples:
+                if dimensions_to_absorb is absorbing_dimensions:
+                    continue
+                # The dimensions of the reference dimension specification that can be absorbed into the current dimension specification are those non-absorbable dimensions in the reference dimension specification that do not appear in the current dimension specification.
+                absorbable_dims = [dim for dim in dimensions_to_absorb
+                                   if not isinstance(dim, einexpr.array_api.dimension.AbsorbingDimension)
+                                   and dim not in absorbing_dimensions]
+                for i_absorbing_dim, absorbable_dim in zip(reversed(i_absorbing_dims), reversed(absorbable_dims)):
+                    absorbing_dim = absorbing_dimensions[i_absorbing_dim]
+                    if isinstance(absorbing_dim, einexpr.array_api.dimension.AbsorbingDimension):
+                        absorption_map[i_absorbing_dim] = absorbable_dim
+                    else:
+                        # This absorbable dimension has already absorbed a dimension from another reference dimension specification. Ensure that this absorbable is identical to the one that was already absorbed.
+                        if absorbing_dim != absorbable_dim:
+                            raise ValueError(f"Conflicting candidates for absorbing dimension at position {i_absorbing_dim} in {absorbing_dimensions}: {absorbing_dim} != {absorbable_dim}")
+            # Replace all absorbing dimensions with the corresponding non-absorbing dimensions.
+            dimspec_after_absorbing = tuple(absorption_map.get(i, dim) for i, dim in enumerate(absorbing_dimensions))
+            dimensions_tuple_after_absorption.append(dimspec_after_absorbing)
+        # Absorbing dimensions should be consistent over the broadcast too. TODO: This is quite ugly. Consider integrating it into the above loop.
+        absorbing_dimensions = collections.defaultdict(einexpr.array_api.dimension.AbsorbingDimension)
+        _dimensions_tuple_after_absorption = []
+        for dimensions in dimensions_tuple_after_absorption:
+            _dimensions_reversed = []
+            absorbing_dimension_counter = 0
+            for dim in reversed(dimensions):
+                if isinstance(dim, einexpr.array_api.dimension.AbsorbingDimension):
+                    _dimensions_reversed.append(absorbing_dimensions[absorbing_dimension_counter])
+                    absorbing_dimension_counter += 1
+                else:
+                    _dimensions_reversed.append(dim)
+            _dimensions_tuple_after_absorption.append(tuple(reversed(_dimensions_reversed)))
+        dimensions_tuple_after_absorption = tuple(_dimensions_tuple_after_absorption)
+        return dimensions_tuple_after_absorption
+    else:
+        raise ValueError(f"Cannot resolve positional dimensions for {dimensions_tuples}.")

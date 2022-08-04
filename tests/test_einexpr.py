@@ -17,7 +17,7 @@ import pytest
 
 pp = pprint.PrettyPrinter(indent=4)
 
-N_TRIALS_MULTIPLIER = 100
+N_TRIALS_MULTIPLIER = 10
 TOLERANCE = 1e-12
 DEFAULT_DTYPE = npa.float64
 
@@ -350,7 +350,7 @@ def random_einexpr(expr_maker, random_expr_json):
         print(expr_json_to_str(random_expr_json))
         raise e
     out = expr[random_expr_json["out_dims"]]
-    if hasattr(out, 'dims') and einexpr.dimension_utils.primitivize_dims(out.dims) != tuple(random_expr_json["out_dims"]):
+    if hasattr(out, 'dims') and out.dims.dimensions != tuple(random_expr_json["out_dims"]):
         raise ValueError("dims and out_dims are not compatible")
     return out
 
@@ -373,7 +373,7 @@ def test_expr2():
     print(npa.matmul(x, y))
     print((x+y).coerce([], set()))
     print((x+y)[''])
-    assert len((x+y)[''].dims) == 0
+    assert len((x+y)[''].dims.dimensions) == 0
 
 
 def expr_json_to_str(expr_json):
@@ -415,7 +415,7 @@ def test_random_expr(seed, random_expr_json, random_expr_value, random_einexpr):
 def test_list_to_einarray():
     x = einexpr.einarray([1,2,3], dims='i')
     y = x+x
-    y.dims
+    y.dims.dimensions
 
 
 @pytest.mark.skip
@@ -447,7 +447,7 @@ def test_concatenate(X, Y, x, y):
     
     z = X*x
     z.a
-    assert z.dims == ('i', 'j')
+    assert z.dims.dimensions == ('i', 'j')
     
     # Concatenate X to itself along the first dimension
     z = npa.concatenate([X, X], axis=0)
@@ -496,12 +496,12 @@ def test_reshape():
 
 def test_named_axis(X):
     X = einexpr.einarray(X, dims='i j')
-    assert einexpr.dimension_utils.primitivize_dims(einexpr.sum(X, axis='i').dims) == einexpr.dimension_utils.primitivize_dims(einexpr.sum(X, axis=0).dims) == ('j',)
-    assert einexpr.dimension_utils.primitivize_dims(einexpr.sum(X, axis='j').dims) == einexpr.dimension_utils.primitivize_dims(einexpr.sum(X, axis=1).dims) == ('i',)
+    assert einexpr.sum(X, axis='i').dims.dimensions == einexpr.sum(X, axis=0).dims.dimensions == ('j',)
+    assert einexpr.sum(X, axis='j').dims.dimensions == einexpr.sum(X, axis=1).dims.dimensions == ('i',)
     
     Y = X['(i j)']
-    assert einexpr.dimension_utils.primitivize_dims(Y.dims) == (('i', 'j'),)
-    assert einexpr.dimension_utils.primitivize_dims(einexpr.sum(Y, axis='i').dims) == (('j',),)
+    assert Y.dims.dimensions == (('i', 'j'),)
+    assert einexpr.sum(Y, axis='i').dims.dimensions == (('j',),)
 
     
 def test_ellipsis(X):
@@ -517,7 +517,7 @@ def test_ellipsis(X):
 
 def test_dim_binding(X):
     X = einexpr.einarray(X)
-    assert einexpr.dimension_utils.primitivize_dims(X['i j'].dims) == ('i', 'j')
+    assert X['i j'].dims.dimensions == ('i', 'j')
     
     X = einexpr.ones((1,2,3))
     X['_ _ _']
@@ -541,65 +541,70 @@ def test_positional_dims(X):
     Z = einexpr.einarray(X, dims='i j')
     
     
-    assert len(R := (X*X).dims) == 2 and all(isinstance(dim, einexpr.dimension.PositionalDimension) for dim in R)
-    assert len(R := (X*Y).dims) == 2 and all(isinstance(dim, einexpr.dimension.PositionalDimension) for dim in R)
-    assert einexpr.dimension_utils.primitivize_dims((X*Z).dims) == ('i', 'j')
+    assert len(R := (X*X).dims.dimensions) == 2 and all(isinstance(dim, einexpr.dimension.AbsorbingDimension) for dim in R)
+    assert len(R := (X*Y).dims.dimensions) == 2 and all(isinstance(dim, einexpr.dimension.AbsorbingDimension) for dim in R)
+    assert (X*Z).dims.dimensions == ('i', 'j')
+
+
+class AbsorbingDimensionMatcher:
+    def __eq__(self, other):
+        return isinstance(other, einexpr.AbsorbingDimension)
 
 
 def test_positional_dims_and_rename(X):
     X = einexpr.einarray(X)
 
-    assert einexpr.dimension_utils.primitivize_dims(X['i _'].dims) == ('i', -1)
-    assert einexpr.dimension_utils.primitivize_dims(X['_ _->n'].dims) == (-2, 'n')
-    assert einexpr.dimension_utils.primitivize_dims(X['_->i j->n'].dims) == ('i', 'n')
+    assert ('i', AbsorbingDimensionMatcher()) == X['i _'].dims.dimensions
+    assert (AbsorbingDimensionMatcher(), 'n') == X['_ _->n'].dims.dimensions
+    assert ('i', 'n') == X['_->i j->n'].dims.dimensions
 
 
 def test_positional_dims_and_ellipsis_and_rename(X):
     X = einexpr.einarray(X)
 
-    assert einexpr.dimension_utils.primitivize_dims(X['... _->n'].dims) == ('_', 'n')
+    assert X['... _->n'].dims.dimensions == ('_', 'n')
 
 
 def test_first_class_dims(X):
     X = einexpr.einarray(X)
     Y = einexpr.einarray(X)
-    i, j = einexpr.dims(2)
-    assert einexpr.dimension_utils.primitivize_dims(X[i, j].dims) == einexpr.dimension_utils.primitivize_dims((i, j))
-    assert einexpr.dimension_utils.primitivize_dims(X[i, ...].dims[0]) == einexpr.dimension_utils.primitivize_dims(i)
-    assert einexpr.dimension_utils.primitivize_dims(X[..., j].dims[1]) == einexpr.dimension_utils.primitivize_dims(j)
+    i, j = einexpr.dims.dimensions(2)
+    assert X[i, j].dims.dimensions == (i, j)
+    assert X[i, ...].dims.dimensions[0] == i
+    assert X[..., j].dims.dimensions[1] == j
 
 
 def test_tricky_reshapes_l1():
     x = einexpr.ones((2,3,4), dims='_ _ k')
     
-    assert einexpr.dimension_utils.primitivize_dims(x['k i _'].dims) == ('k', 'i', -1)
-    assert einexpr.dimension_utils.primitivize_dims(x['k i ...'].dims) == ('k', 'i', -1)
+    assert x['k i _'].dims.dimensions == ('k', 'i', -1)
+    assert x['k i ...'].dims.dimensions == ('k', 'i', -1)
     
-    assert einexpr.dimension_utils.primitivize_dims(x['i j _'].dims) == ('i', 'j', 'k')
-    assert einexpr.dimension_utils.primitivize_dims(x['i j ...'].dims) == ('i', 'j', 'k')
+    assert x['i j _'].dims.dimensions == ('i', 'j', 'k')
+    assert x['i j ...'].dims.dimensions == ('i', 'j', 'k')
     
-    assert einexpr.dimension_utils.primitivize_dims(x['i _ _'].dims) == ('i', -2, 'k')
-    assert einexpr.dimension_utils.primitivize_dims(x['i ... _'].dims) == ('i', -2, 'k')
-    assert einexpr.dimension_utils.primitivize_dims(x['i ... j'].dims) == ('i', 'k', 'j')
+    assert x['i _ _'].dims.dimensions == ('i', -2, 'k')
+    assert x['i ... _'].dims.dimensions == ('i', -2, 'k')
+    assert x['i ... j'].dims.dimensions == ('i', 'k', 'j')
 
-    assert einexpr.dimension_utils.primitivize_dims(x['... i'].dims) == (-3, 'k', 'i')
-    assert einexpr.dimension_utils.primitivize_dims(x['i ...'].dims) == ('i', -2, 'k')
+    assert x['... i'].dims.dimensions == (-3, 'k', 'i')
+    assert x['i ...'].dims.dimensions == ('i', -2, 'k')
 
 
 def test_tricky_reshapes_l2():
     x = einexpr.ones((2,3,4), dims='i j k')
     x = x['(i j k)']
-    assert x['i ...'].dims == ('i', ('j', 'k'))
-    assert x['j ...'].dims == ('j', ('i', 'k'))
-    assert x['k ...'].dims == ('k', ('i', 'j'))
+    assert x['i ...'].dims.dimensions == ('i', ('j', 'k'))
+    assert x['j ...'].dims.dimensions == ('j', ('i', 'k'))
+    assert x['k ...'].dims.dimensions == ('k', ('i', 'j'))
     
-    assert x['... i'].dims == (('j', 'k'), 'i')
-    assert x['... j'].dims == (('i', 'k'), 'j')
-    assert x['... k'].dims == (('i', 'j'), 'k')
+    assert x['... i'].dims.dimensions == (('j', 'k'), 'i')
+    assert x['... j'].dims.dimensions == (('i', 'k'), 'j')
+    assert x['... k'].dims.dimensions == (('i', 'j'), 'k')
     
-    assert x['k ... i'].dims == ('k', ('j',), 'i')
-    assert x['k ... j'].dims == ('k', ('i',), 'j')
-    assert x['i ... j'].dims == ('i', ('k',), 'j')
+    assert x['k ... i'].dims.dimensions == ('k', ('j',), 'i')
+    assert x['k ... j'].dims.dimensions == ('k', ('i',), 'j')
+    assert x['i ... j'].dims.dimensions == ('i', ('k',), 'j')
     
     x = einexpr.ones((2,3,4,5,6,7, 8), dims='i j k l m n o p q')
     x = x['i j k (l m n) o p q']
