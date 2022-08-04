@@ -81,6 +81,11 @@ class einarray():
         # 3. Combine ``i`` and ``k`` into a single dimension ``n``.
         # Prepare the 'instructions'
         dims = einexpr.dimension_utils.parse_dims_reshape(dims)
+        # Expand ellipsis
+        if ... in dims:
+            i_ellipsis = dims.index(...)
+            len_ellipsis = len(self.dims) - (len(dims) - 1)
+            dims = dims[:i_ellipsis] + tuple(einexpr.array_api.dimension.AbsorbingDimension() for _ in range(len_ellipsis)) + dims[i_ellipsis + 1:]
         dims_before_replacements = einexpr.dimension_utils.ignore_replacements(dims)
         dims_after_replacements = einexpr.dimension_utils.apply_replacements(dims)
         current_dims_after_absorption, dims_before_replacements = einexpr.dimension_utils.resolve_positional_dims((self.dims.dimensions, dims_before_replacements))

@@ -245,7 +245,9 @@ def process_dims_declaration(dims_raw: Union[str, Tuple, None], shape: Tuple[int
     dims = parse_dims(dims_raw)
     # Expand ellipsis
     if ... in dims:
-        raise einexpr.exceptions.InternalError("Ellipsis not yet supported.")
+        i_ellipsis = dims.index(...)
+        len_ellipsis = len(shape) - (len(dims) - 1)
+        dims = dims[:i_ellipsis] + tuple(einexpr.array_api.dimension.AbsorbingDimension() for _ in range(len_ellipsis)) + dims[i_ellipsis + 1:]
     if len(dims) != len(shape):
         raise einexpr.exceptions.InternalError("DimensionSpecification tuple size does not match shape tuple size.")
     if len(dims) != len(shape):
@@ -253,27 +255,6 @@ def process_dims_declaration(dims_raw: Union[str, Tuple, None], shape: Tuple[int
     dim_sizes = {dim: size for dim, size in zip(dims, shape)}
     dims = einexpr.array_api.dimension.DimensionSpecification(dims, sizes=dim_sizes)
     return dims
-
-
-@einexpr.utils.deprecated_guard
-@einexpr.utils.deprecated
-def process_dims_reshape(dims_raw, existing_dimspec: einexpr.array_api.dimension.DimensionSpecification) -> Tuple[einexpr.array_api.dimension.DimensionSpecification, einexpr.array_api.dimension.DimensionSpecification]:
-    """
-    Processes a dimensions reshape string into a dimension object.
-    """
-    dims = parse_dims_reshape(dims_raw)
-    dims_before_replacements, dims_after_replacements = ignore_replacements(dims), apply_replacements(dims)
-    existing_dims_after_absorption, dims_before_replacements, dims_after_replacements = resolve_positional_dims((existing_dimspec.dimensions, dims_before_replacements, dims_after_replacements))
-    existing_dimspec_after_absorption = existing_dimspec.with_dimensions(existing_dims_after_absorption)
-    dimspec_before_replacements = einexpr.array_api.dimension.DimensionSpecification(
-        dims_before_replacements,
-        sizes={
-            dim: size for dim, size in existing_dimspec_after_absorption.sizes.items()
-            if einexpr.utils.tree_contains(dims_before_replacements, dim)
-        }
-    )
-    dimspec_after_replacements = dimspec_before_replacements.with_dimensions(dims_after_replacements)
-    return dimspec_before_replacements, dimspec_after_replacements
 
 
 @einexpr.utils.deprecated_guard
