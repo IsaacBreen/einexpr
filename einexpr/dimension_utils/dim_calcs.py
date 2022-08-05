@@ -282,7 +282,7 @@ def apply_replacements(dims: D) -> D:
         return apply_replacements(dims.replacement)
     elif isinstance(dims, tuple):
         return tuple(apply_replacements(dim) for dim in dims)
-    elif isinstance(dims, einexpr.array_api.dimension.AtomicDimension | einexpr.array_api.dimension.AbsorbingDimension):
+    elif isinstance(dims, einexpr.array_api.dimension.AtomicDimension | einexpr.array_api.dimension.AbsorbingDimension | EllipsisType):
         return dims
     elif isinstance(dims, einexpr.array_api.dimension.DimensionSpecification):
         return einexpr.array_api.dimension.DimensionSpecification(apply_replacements(dims.dimensions), sizes=dims.sizes)
