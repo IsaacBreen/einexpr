@@ -84,9 +84,18 @@ class einarray():
         dims = einexpr.dimension_utils.parse_dims_reshape(dims)
         # Expand ellipsis
         if ... in dims:
+            # TODO: redundant
+            dims_before_replacements = einexpr.dimension_utils.ignore_replacements(dims)
+            current_dims_after_absorption, dims_before_replacements_after_absorption = einexpr.dimension_utils.resolve_positional_dims((self.dims.dimensions, dims_before_replacements))
+            # Isolate the non-ellipsis dimensions
+            non_ellipsis_non_absorbing_dims = [dim for dim in dims_before_replacements_after_absorption if dim != ...]
+            current_dims_isolated = einexpr.dimension_utils.isolate_dims(current_dims_after_absorption, non_ellipsis_non_absorbing_dims)
+            if not set(non_ellipsis_non_absorbing_dims) <= set(current_dims_isolated):
+                raise einexpr.exceptions.InternalError(f"The dimensions {non_ellipsis_non_absorbing_dims} are not a subset of the dimensions {current_dims_isolated} of the array.")
+            # The ellipsis expands to the current dimensions after isolation that are not in the non-ellipsis dimensions
+            ellipsis_dims = [dim for dim in current_dims_isolated if dim not in non_ellipsis_non_absorbing_dims]
             i_ellipsis = dims.index(...)
-            len_ellipsis = len(self.dims) - (len(dims) - 1)
-            dims = dims[:i_ellipsis] + tuple(einexpr.array_api.dimension.AbsorbingDimension() for _ in range(len_ellipsis)) + dims[i_ellipsis + 1:]
+            dims = (*dims[:i_ellipsis], *ellipsis_dims, *dims[i_ellipsis + 1:])
         dims_before_replacements = einexpr.dimension_utils.ignore_replacements(dims)
         dims_after_replacements = einexpr.dimension_utils.apply_replacements(dims)
         current_dims_after_absorption, dims_before_replacements = einexpr.dimension_utils.resolve_positional_dims((self.dims.dimensions, dims_before_replacements))
