@@ -314,19 +314,19 @@ def expand_dims(dims: DimTupleOrSpec) -> DimTupleOrSpec:
 
 
 @einexpr.utils.deprecated_guard
-def isolate_dim(array_dims: Tuple[einexpr.array_api.NestedDimension, ...], dim: einexpr.array_api.AtomicDimension) -> Tuple[einexpr.array_api.NestedDimension, ...]:
+def isolate_dim(array_dims: Tuple[einexpr.array_api.BaseDimension, ...], dim: einexpr.array_api.dimension.BaseDimension) -> Tuple[einexpr.array_api.BaseDimension, ...]:
     """
     Extract the dimensions in ``dim`` into the first level if it is part of a composite dimension.
     """
     position = einexpr.utils.get_position(array_dims, dim)
     if position is None:
-        raise ValueError(f"NestedDimension {dim} is not part of the array dimensions {array_dims}.")
+        raise ValueError(f"Dimension {dim!r} is not part of the array dimensions {array_dims!r}.")
     lhs, rhs = einexpr.utils.split_at(array_dims, position)
     return einexpr.utils.deep_remove((*lhs, dim, *rhs), lambda x: x == ())
 
 
 @einexpr.utils.deprecated_guard
-def isolate_dims(array_dims: Tuple[einexpr.array_api.NestedDimension, ...], dims: Tuple[einexpr.array_api.AtomicDimension, ...]) -> Tuple[einexpr.array_api.NestedDimension, ...]:
+def isolate_dims(array_dims: Tuple[einexpr.array_api.BaseDimension, ...], dims: Tuple[einexpr.array_api.dimension.BaseDimension, ...]) -> Tuple[einexpr.array_api.BaseDimension, ...]:
     """
     Extract the dimensions in ``dims`` into the first level if they are part of a composite dimension.
     """
@@ -370,27 +370,53 @@ def resolve_positional_dims(dimensions_tuples):
     elif not any(isinstance(dimensions, einexpr.array_api.dimension.DimensionSpecification) for dimensions in dimensions_tuples):
         dimensions_tuple_after_absorption = []
         for absorbing_dimensions in dimensions_tuples:
-            # We want to match all absorbable dimensions to an absorbable dimension at the same position in (after ignoring all non-absorbable dimensions this dimension specification has in common with) the other dimension specifications.
+            # We want to match all absorbable dimensions to an absorbable dimension at the same position (after ignoring all non-absorbable dimensions this dimension specification has in common with) in the other dimension specifications.
             i_absorbing_dims = [i for i, dim in enumerate(absorbing_dimensions) if isinstance(dim, einexpr.array_api.dimension.AbsorbingDimension)]
+            if ... in absorbing_dimensions:
+                i_absorbing_dims_ellipsis = absorbing_dimensions.index(...) if ... in absorbing_dimensions else -1
+                i_absorbing_dims_lhs = [i for i in i_absorbing_dims if i < i_absorbing_dims_ellipsis]
+                i_absorbing_dims_rhs = [i for i in i_absorbing_dims if i > i_absorbing_dims_ellipsis]
+            else:
+                i_absorbing_dims_lhs = i_absorbing_dims
+                i_absorbing_dims_rhs = i_absorbing_dims
+            # TODO: make this dict non-overwritable
             absorption_map: Dict[int, einexpr.array_api.dimension.NestedDimension] = {}
             for dimensions_to_absorb in dimensions_tuples:
                 if dimensions_to_absorb is absorbing_dimensions:
                     continue
-                # The dimensions of the reference dimension specification that can be absorbed into the current dimension specification are those non-absorbable dimensions in the reference dimension specification that do not appear in the current dimension specification.
-                absorbable_dims = [dim for dim in dimensions_to_absorb
-                                   if not isinstance(dim, einexpr.array_api.dimension.AbsorbingDimension)
-                                   and dim not in absorbing_dimensions]
-                for i_absorbing_dim, absorbable_dim in zip(reversed(i_absorbing_dims), reversed(absorbable_dims)):
-                    absorbing_dim = absorbing_dimensions[i_absorbing_dim]
-                    if isinstance(absorbing_dim, einexpr.array_api.dimension.AbsorbingDimension):
-                        absorption_map[i_absorbing_dim] = absorbable_dim
-                    else:
-                        # This absorbable dimension has already absorbed a dimension from another reference dimension specification. Ensure that this absorbable is identical to the one that was already absorbed.
-                        if absorbing_dim != absorbable_dim:
-                            raise ValueError(f"Conflicting candidates for absorbing dimension at position {i_absorbing_dim} in {absorbing_dimensions}: {absorbing_dim} != {absorbable_dim}")
+                if ... in dimensions_to_absorb:
+                    i_dimensions_to_absorb_ellipsis = dimensions_to_absorb.index(...) if ... in dimensions_to_absorb else -1
+                    dimensions_to_absorb_lhs = dimensions_to_absorb[:i_dimensions_to_absorb_ellipsis]
+                    dimensions_to_absorb_rhs = dimensions_to_absorb[i_dimensions_to_absorb_ellipsis + 1:]
+                else:
+                    dimensions_to_absorb_lhs = dimensions_to_absorb
+                    dimensions_to_absorb_rhs = dimensions_to_absorb
+                
+                def populate_absorption_map(i_absorbing_dims, dimensions_to_absorb, absorption_map):
+                    """
+                    A helper function to populate the absorption map. -It mutates the `absorption_map` dictionary in the outer scope (very naughty 🤭).- actually let's not.
+                    """
+                    # The dimensions of the reference dimension specification that can be absorbed into the current dimension specification are those non-absorbable dimensions in the reference dimension specification that do not appear in the current dimension specification.
+                    absorbable_dims = [dim for dim in dimensions_to_absorb if dim not in absorbing_dimensions]
+                    for i_absorbing_dimension, absorbable_dimension in zip(i_absorbing_dims, absorbable_dims):
+                        absorbing_dimension = absorbing_dimensions[i_absorbing_dimension]
+                        if isinstance(absorbing_dimension, einexpr.array_api.dimension.AbsorbingDimension):
+                            if i_absorbing_dimension in absorption_map:
+                                if absorption_map[i_absorbing_dimension] != absorbable_dimension:
+                                    raise ValueError(f"Conflicting candidates for absorbing dimension at position {i_absorbing_dimension} in {absorbing_dimensions}: {absorbing_dimension} != {absorbable_dimension}")
+                            else:
+                                absorption_map[i_absorbing_dimension] = absorbable_dimension
+                        else:
+                            # This absorbable dimension has already absorbed a dimension from another reference dimension specification. Ensure that this absorbable is identical to the one that was already absorbed.
+                            if absorbing_dimension != absorbable_dimension:
+                                raise ValueError(f"Conflicting candidates for absorbing dimension at position {i_absorbing_dimension} in {absorbing_dimensions}: {absorbing_dimension} != {absorbable_dimension}")
+                    return absorption_map
+                
+                absorption_map = populate_absorption_map(i_absorbing_dims_lhs, dimensions_to_absorb_lhs, absorption_map)
+                absorption_map = populate_absorption_map(tuple(reversed(i_absorbing_dims_rhs)), tuple(reversed(dimensions_to_absorb_rhs)), absorption_map)
             # Replace all absorbing dimensions with the corresponding non-absorbing dimensions.
-            dimspec_after_absorbing = tuple(absorption_map.get(i, dim) for i, dim in enumerate(absorbing_dimensions))
-            dimensions_tuple_after_absorption.append(dimspec_after_absorbing)
+            dimensions_after_absorbing = tuple(absorption_map.get(i, dim) for i, dim in enumerate(absorbing_dimensions))
+            dimensions_tuple_after_absorption.append(dimensions_after_absorbing)
         # Absorbing dimensions should be consistent over the broadcast too. TODO: This is quite ugly. Consider integrating it into the above loop.
         absorbing_dimensions = collections.defaultdict(einexpr.array_api.dimension.AbsorbingDimension)
         _dimensions_tuple_after_absorption = []
