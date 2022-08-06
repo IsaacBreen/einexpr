@@ -19,6 +19,7 @@ T = TypeVar('T')
 
 
 def enhanced_decorator(decorator_to_enhance):
+    @functools.wraps(decorator_to_enhance)
     def enchanced_decorator(*args, **kwargs):
         if len(args) == 1 and (callable(args[0]) or isinstance(args[0], type)) and not kwargs:
             return decorator_to_enhance(args[0])
@@ -400,6 +401,7 @@ def deprecated_guard(func):
     """
     Validate that the inputs and outputs of a function are not deprecated.
     """
+    @functools.wraps(func)
     def deprecated_guard_wrapper(*args, **kwargs):
         for arg in deep_iter(args, dict_mode='both', yield_iterables=True):
             if hasattr(arg, '__deprecated__') and arg.__deprecated__:
