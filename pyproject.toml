@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "einexpr"
-version = "0.2.2"
+version = "0.3.0"
 description = ""
 authors = ["IsaacBreen <57783927+IsaacBreen@users.noreply.github.com>"]
 
