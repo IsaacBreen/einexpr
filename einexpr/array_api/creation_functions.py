@@ -2,12 +2,12 @@ from types import ModuleType
 from typing import Sequence
 
 from ._types import (List, NestedSequence, Optional, SupportsBufferProtocol, Tuple, Union, array, device, dtype)
-from .dimension import Dimensions
+from .dimension import DimensionSpecification
 
 import einexpr
 
 
-def arange(start: Union[int, float], /, stop: Optional[Union[int, float]] = None, step: Union[int, float] = 1, *, dtype: Optional[dtype] = None, device: Optional[device] = None, dims: Dimensions = None, backend: Union[ModuleType, str] = None) -> array:
+def arange(start: Union[int, float], /, stop: Optional[Union[int, float]] = None, step: Union[int, float] = 1, *, dtype: Optional[dtype] = None, device: Optional[device] = None, dims: DimensionSpecification = None, backend: Union[ModuleType, str] = None) -> array:
     """
     Returns evenly spaced values within the half-open interval ``[start, stop)`` as a one-dimensional array.
 
@@ -41,7 +41,7 @@ def arange(start: Union[int, float], /, stop: Optional[Union[int, float]] = None
         raise TypeError(f"If specified, backend must be a module or a string, not {type(backend)}")
     return einexpr.einarray(backend.arange(start, stop, step, dtype=dtype, device=device), dims=dims)
 
-def asarray(obj: Union[array, bool, int, float, complex, NestedSequence, SupportsBufferProtocol], /, *, dtype: Optional[dtype] = None, device: Optional[device] = None, copy: Optional[bool] = None, dims: Dimensions = None, backend: Union[ModuleType, str] = None) -> array:
+def asarray(obj: Union[array, bool, int, float, complex, NestedSequence, SupportsBufferProtocol], /, *, dtype: Optional[dtype] = None, device: Optional[device] = None, copy: Optional[bool] = None, dims: DimensionSpecification = None, backend: Union[ModuleType, str] = None) -> array:
     r"""
     Convert the input to an array.
 
@@ -85,7 +85,7 @@ def asarray(obj: Union[array, bool, int, float, complex, NestedSequence, Support
     """
     return einexpr.einarray(obj, dims=dims)
 
-def empty(shape: Union[int, Tuple[int, ...]], *, dtype: Optional[dtype] = None, device: Optional[device] = None, dims: Dimensions = None, backend: Union[ModuleType, str] = None) -> array:
+def empty(shape: Union[int, Tuple[int, ...]], *, dtype: Optional[dtype] = None, device: Optional[device] = None, dims: DimensionSpecification = None, backend: Union[ModuleType, str] = None) -> array:
     """
     Returns an uninitialized array having a specified `shape`.
 
@@ -111,7 +111,7 @@ def empty(shape: Union[int, Tuple[int, ...]], *, dtype: Optional[dtype] = None, 
         raise TypeError(f"If specified, backend must be a module or a string, not {type(backend)}")
     return einexpr.einarray(backend.empty(shape, dtype=dtype, device=device), dims=dims)
 
-def empty_like(x: array, /, *, dtype: Optional[dtype] = None, device: Optional[device] = None, dims: Dimensions = None, backend: Union[ModuleType, str] = None) -> array:
+def empty_like(x: array, /, *, dtype: Optional[dtype] = None, device: Optional[device] = None, dims: DimensionSpecification = None, backend: Union[ModuleType, str] = None) -> array:
     """
     Returns an uninitialized array with the same ``shape`` as an input array ``x``.
 
@@ -143,7 +143,7 @@ def empty_like(x: array, /, *, dtype: Optional[dtype] = None, device: Optional[d
     return result
 
 
-def eye(n_rows: int, n_cols: Optional[int] = None, /, *, k: int = 0, dtype: Optional[dtype] = None, device: Optional[device] = None, dims: Dimensions = None, backend: Union[ModuleType, str] = None) -> array:
+def eye(n_rows: int, n_cols: Optional[int] = None, /, *, k: int = 0, dtype: Optional[dtype] = None, device: Optional[device] = None, dims: DimensionSpecification = None, backend: Union[ModuleType, str] = None) -> array:
     """
     Returns a two-dimensional array with ones on the ``k``\th diagonal and zeros elsewhere.
 
@@ -176,7 +176,7 @@ def eye(n_rows: int, n_cols: Optional[int] = None, /, *, k: int = 0, dtype: Opti
         raise TypeError(f"If specified, backend must be a module or a string, not {type(backend)}")
     return einexpr.einarray(backend.eye(n_rows, n_cols=n_cols, k=k, dtype=dtype, device=device), dims=dims)
 
-def from_dlpack(x: object, /, dims: Dimensions = None, backend: Union[ModuleType, str] = None) -> array:
+def from_dlpack(x: object, /, dims: DimensionSpecification = None, backend: Union[ModuleType, str] = None) -> array:
     """
     Returns a new array containing the data from another (array) object with a ``__dlpack__`` method.
 
@@ -203,7 +203,7 @@ def from_dlpack(x: object, /, dims: Dimensions = None, backend: Union[ModuleType
         raise TypeError(f"If specified, backend must be a module or a string, not {type(backend)}")
     return einexpr.einarray(backend.from_dlpack(x), dims=dims)
 
-def full(shape: Union[int, Tuple[int, ...]], fill_value: Union[bool, int, float, complex], *, dtype: Optional[dtype] = None, device: Optional[device] = None, dims: Dimensions = None, backend: Union[ModuleType, str] = None) -> array:
+def full(shape: Union[int, Tuple[int, ...]], fill_value: Union[bool, int, float, complex], *, dtype: Optional[dtype] = None, device: Optional[device] = None, dims: DimensionSpecification = None, backend: Union[ModuleType, str] = None) -> array:
     """
     Returns a new array having a specified ``shape`` and filled with ``fill_value``.
 
@@ -240,7 +240,7 @@ def full(shape: Union[int, Tuple[int, ...]], fill_value: Union[bool, int, float,
         raise TypeError(f"If specified, backend must be a module or a string, not {type(backend)}")
     return einexpr.einarray(backend.full(shape, fill_value, dtype=dtype, device=device), dims=dims)
 
-def full_like(x: array, /, fill_value: Union[bool, int, float, complex], *, dtype: Optional[dtype] = None, device: Optional[device] = None, dims: Dimensions = None, backend: Union[ModuleType, str] = None) -> array:
+def full_like(x: array, /, fill_value: Union[bool, int, float, complex], *, dtype: Optional[dtype] = None, device: Optional[device] = None, dims: DimensionSpecification = None, backend: Union[ModuleType, str] = None) -> array:
     """
     Returns a new array filled with ``fill_value`` and having the same ``shape`` as an input array ``x``.
 
@@ -280,7 +280,7 @@ def full_like(x: array, /, fill_value: Union[bool, int, float, complex], *, dtyp
         ambiguous_dims=ambiguous_dims)
     return result
 
-def linspace(start: Union[int, float], stop: Union[int, float], /, num: int, *, dtype: Optional[dtype] = None, device: Optional[device] = None, endpoint: bool = True, dims: Dimensions = None, backend: Union[ModuleType, str] = None) -> array:
+def linspace(start: Union[int, float], stop: Union[int, float], /, num: int, *, dtype: Optional[dtype] = None, device: Optional[device] = None, endpoint: bool = True, dims: DimensionSpecification = None, backend: Union[ModuleType, str] = None) -> array:
     """
     Returns evenly spaced numbers over a specified interval.
 
@@ -350,7 +350,7 @@ def meshgrid(*arrays: array, indexing: str = 'xy') -> List[array]:
     """
     raise NotImplementedError
 
-def ones(shape: Union[int, Tuple[int, ...]], *, dtype: Optional[dtype] = None, device: Optional[device] = None, dims: Dimensions = None, backend: Union[ModuleType, str] = None) -> array:
+def ones(shape: Union[int, Tuple[int, ...]], *, dtype: Optional[dtype] = None, device: Optional[device] = None, dims: DimensionSpecification = None, backend: Union[ModuleType, str] = None) -> array:
     """
     Returns a new array having a specified ``shape`` and filled with ones.
 
@@ -379,7 +379,7 @@ def ones(shape: Union[int, Tuple[int, ...]], *, dtype: Optional[dtype] = None, d
         raise TypeError(f"If specified, backend must be a module or a string, not {type(backend)}")
     return einexpr.einarray(backend.ones(shape, dtype=dtype, device=device), dims=dims)
 
-def ones_like(x: array, /, *, dtype: Optional[dtype] = None, device: Optional[device] = None, dims: Dimensions = None, backend: Union[ModuleType, str] = None) -> array:
+def ones_like(x: array, /, *, dtype: Optional[dtype] = None, device: Optional[device] = None, dims: DimensionSpecification = None, backend: Union[ModuleType, str] = None) -> array:
     """
     Returns a new array filled with ones and having the same ``shape`` as an input array ``x``.
 
@@ -413,7 +413,7 @@ def ones_like(x: array, /, *, dtype: Optional[dtype] = None, device: Optional[de
         ambiguous_dims=ambiguous_dims)
     return result
 
-def tril(x: array, /, *, k: int = 0, dims: Dimensions = None, backend: Union[ModuleType, str] = None) -> array:
+def tril(x: array, /, *, k: int = 0, dims: DimensionSpecification = None, backend: Union[ModuleType, str] = None) -> array:
     """
     Returns the lower triangular part of a matrix (or a stack of matrices) ``x``.
 
@@ -448,7 +448,7 @@ def tril(x: array, /, *, k: int = 0, dims: Dimensions = None, backend: Union[Mod
         ambiguous_dims=ambiguous_dims)
     return result
 
-def triu(x: array, /, *, k: int = 0, dims: Dimensions = None, backend: Union[ModuleType, str] = None) -> array:
+def triu(x: array, /, *, k: int = 0, dims: DimensionSpecification = None, backend: Union[ModuleType, str] = None) -> array:
     """
     Returns the upper triangular part of a matrix (or a stack of matrices) ``x``.
 
@@ -483,7 +483,7 @@ def triu(x: array, /, *, k: int = 0, dims: Dimensions = None, backend: Union[Mod
         ambiguous_dims=ambiguous_dims)
     return result
 
-def zeros(shape: Union[int, Tuple[int, ...]], *, dtype: Optional[dtype] = None, device: Optional[device] = None, dims: Dimensions = None, backend: Union[ModuleType, str] = None) -> array:
+def zeros(shape: Union[int, Tuple[int, ...]], *, dtype: Optional[dtype] = None, device: Optional[device] = None, dims: DimensionSpecification = None, backend: Union[ModuleType, str] = None) -> array:
     """
     Returns a new array having a specified ``shape`` and filled with zeros.
 
@@ -509,7 +509,7 @@ def zeros(shape: Union[int, Tuple[int, ...]], *, dtype: Optional[dtype] = None, 
         raise TypeError(f"If specified, backend must be a module or a string, not {type(backend)}")
     return einexpr.einarray(backend.zeros(shape, dtype=dtype, device=device), dims=dims)    
 
-def zeros_like(x: array, /, *, dtype: Optional[dtype] = None, device: Optional[device] = None, dims: Dimensions = None, backend: Union[ModuleType, str] = None) -> array:
+def zeros_like(x: array, /, *, dtype: Optional[dtype] = None, device: Optional[device] = None, dims: DimensionSpecification = None, backend: Union[ModuleType, str] = None) -> array:
     """
     Returns a new array filled with zeros and having the same ``shape`` as an input array ``x``.
 

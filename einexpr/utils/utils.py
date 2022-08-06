@@ -3,10 +3,12 @@ import collections
 from dataclasses import dataclass, field
 
 import functools
+import itertools
+from collections.abc import Iterable, Iterator
 import inspect
 import warnings
 from collections import Counter
-from itertools import chain, combinations
+from itertools import chain, combinations, repeat, starmap
 from typing import *
 import warnings
 
@@ -16,24 +18,10 @@ import numpy as np
 T = TypeVar('T')
 
 
-def deprecated(func):
-    """This is a decorator which can be used to mark functions
-    as deprecated. It will result in a warning being emitted
-    when the function is used."""
-    @functools.wraps(func)
-    def new_func(*args, **kwargs):
-        warnings.simplefilter('always', DeprecationWarning)  # turn off filter
-        warnings.warn("Call to deprecated function {}.".format(func.__name__),
-                      category=DeprecationWarning,
-                      stacklevel=2)
-        warnings.simplefilter('default', DeprecationWarning)  # reset filter
-        return func(*args, **kwargs)
-    return new_func
-
-
 def enhanced_decorator(decorator_to_enhance):
+    @functools.wraps(decorator_to_enhance)
     def enchanced_decorator(*args, **kwargs):
-        if len(args) == 1 and callable(args[0]) and len(kwargs) == 0:
+        if len(args) == 1 and (callable(args[0]) or isinstance(args[0], type)) and not kwargs:
             return decorator_to_enhance(args[0])
         elif len(args) == 0:
             def decorator_wrapper(func):
@@ -41,8 +29,55 @@ def enhanced_decorator(decorator_to_enhance):
             return decorator_wrapper
         else:
             raise TypeError(
-                f"decorator_maker() takes either a one positional argument (the function to decorate) or zero or more keyword arguments (got positional arguments {args} and keyword arguments {kwargs}")
+                f"Enhanced decorator takes either a one positional argument (the function or class to decorate) or zero or more keyword arguments. Got positional arguments {args} and keyword arguments {kwargs}.")
     return enchanced_decorator
+
+
+@enhanced_decorator
+def deprecated(item, /, *, message=None):
+    """
+    Use this decorator to mark functions and classes as deprecated. It will emit a warning upon use of the deprecated item.
+    """
+    message = "" if message is None else ' ' + message
+    if isinstance(item, type):
+        # Warn whenever the class is instantiated or subclassed
+        class DeprecatedClass(item):
+            def __new__(cls, *args, **kwargs):
+                warnings.warn(f"Instantiation of deprecated class {item.__name__}." + message, DeprecationWarning)
+                return super().__new__(cls)
+            
+            def __init_subclass__(cls, **kwargs):
+                warnings.warn(f"Subclassing of deprecated class {item.__name__}." + message, DeprecationWarning)
+                super().__init_subclass__(**kwargs)
+                
+            def __repr__(self):
+                return f"<Deprecated {super().__repr__()}>"
+            
+            def __str__(self):
+                return super().__str__()
+                
+        # Wrap all instances of classmethod and staticmethod to emit a warning
+        # TODO: this doesn't work for some reason... 
+        for name, method in inspect.getmembers(item, inspect.isfunction):
+            if isinstance(method, classmethod):
+                setattr(DeprecatedClass, name, classmethod(deprecated(message=message)(method.__func__)))
+            elif isinstance(method, staticmethod):
+                setattr(DeprecatedClass, name, staticmethod(deprecated(message=message)(method.__func__)))
+            
+        DeprecatedClass.__deprecated__ = True
+        return DeprecatedClass
+    elif callable(item):
+        @functools.wraps(item)
+        def new_func(*args, **kwargs):
+            warnings.simplefilter('always', DeprecationWarning)  # turn off filter
+            warnings.warn(f"Call to deprecated function {item.__name__}." + message,
+                        category=DeprecationWarning,
+                        stacklevel=2)
+            warnings.simplefilter('default', DeprecationWarning)  # reset filter
+            return item(*args, **kwargs)
+    else:
+        raise TypeError(f"deprecated decorator takes either a function or class. Got argument {item} of type {type(item)}.")
+    return new_func
 
 
 def powerset(iterable, reverse: bool = False) -> Iterator[Set[Any]]:
@@ -261,6 +296,18 @@ class ExpandSentinel:
     A sentinel object that indicates that an iterable should be expanded into its parent.
     """
     content: Iterable = field(default_factory=list)
+    
+    def __iter__(self):
+        return iter(self.content)
+    
+    def __len__(self):
+        return len(self.content)
+    
+    def __getitem__(self, index):
+        return self.content[index]
+    
+    def __contains__(self, item):
+        return item in self.content
 
 
 @dataclass(frozen=True)
@@ -291,7 +338,9 @@ def deep_remove(tree: T, match_func: Callable[Any, bool]) -> T:
     """
     Remove elements from a tree of Python objects.
     """
-    return pytree_mapreduce(tree, lambda x: x, lambda x: x if not match_func(x) else RemoveSentinel())
+    def remover(item):
+        return RemoveSentinel() if match_func(item) else item
+    return pytree_mapreduce(tree, remover, remover)
 
 
 def get_position(tree, item):
@@ -304,12 +353,89 @@ def get_position(tree, item):
     return None
 
 
-def split_at(tree, position):
+def split_at(tree: Sequence, position: int):
     if len(position) == 1:
         return tree[:position[0]], tree[position[0]+1:]
     elif isinstance(tree, list):
         lhs, rhs = split_at(tree[position[0]], position[1:])
         return [*tree[:position[0]], lhs], [rhs, *tree[position[0]+1:]]
-    else:
+    elif isinstance(tree, tuple):
         lhs, rhs = split_at(tree[position[0]], position[1:])
         return (*tree[:position[0]], lhs), (rhs, *tree[position[0]+1:])
+    else:
+        raise TypeError(f'Cannot split {type(tree)} at {position}')
+
+def deep_iter(iterable: Iterable, /, *, dict_mode: Literal['keys', 'values', 'both'] = 'values', yield_iterables: bool = False) -> Iterator:
+    """
+    Iterate over a tree of Python objects.
+    """
+    if yield_iterables:
+        yield iterable
+    if isinstance(iterable, dict):
+        if dict_mode in ('keys', 'both'):
+            yield from deep_iter(iterable.keys(), dict_mode=dict_mode, yield_iterables=yield_iterables)
+        if dict_mode in ('values', 'both'):
+            yield from deep_iter(iterable.values(), dict_mode=dict_mode, yield_iterables=yield_iterables)
+    elif isinstance(iterable, Iterable):
+        for item in iterable:
+            if item is iterable:
+                # Avoid infinite recursion for iterables that yield themselves (e.g. strings of length 1) by skipping the item
+                pass
+            else:
+                if isinstance(item, Iterable):
+                    yield from deep_iter(item, dict_mode=dict_mode, yield_iterables=yield_iterables)
+                else:
+                    yield item
+
+
+def tree_contains(tree, item):
+    """
+    Check if an item is in a tree of Python objects.
+    """
+    if tree == item:
+        return True
+    for _item in deep_iter(tree, yield_iterables=True):
+        if _item == item:
+            return True
+    return False
+
+
+def deprecated_guard(func):
+    """
+    Validate that the inputs and outputs of a function are not deprecated.
+    """
+    @functools.wraps(func)
+    def deprecated_guard_wrapper(*args, **kwargs):
+        for arg in deep_iter(args, dict_mode='both', yield_iterables=True):
+            if hasattr(arg, '__deprecated__') and arg.__deprecated__:
+                raise ValueError(f'Argument {arg} is deprecated')
+        for kw, arg in kwargs.items():
+            if hasattr(arg, '__deprecated__') and arg.__deprecated__:
+                raise ValueError(f'Keyword argument {kw}={arg} is deprecated')
+        output = func(*args, **kwargs)
+        if isinstance(output, Iterator):
+            output, output_tee = itertools.tee(output)
+        else:
+            output_tee = output
+        for output_item in deep_iter(output_tee, dict_mode='both', yield_iterables=True):
+            if hasattr(output_item, '__deprecated__') and output_item.__deprecated__:
+                raise ValueError(f'Output {output_item} is deprecated')
+        return output
+    return deprecated_guard_wrapper
+
+
+class EmptySentinel:
+    """
+    A sentinel object that indicates that an iterable is empty.
+    """
+    pass
+
+
+def repeatfunc(func, times=None, *args):
+    """Repeat calls to func with specified arguments.
+
+    Example:  repeatfunc(random.random)
+    """
+    if times is None:
+        return starmap(func, repeat(args))
+    return starmap(func, repeat(args, times))
