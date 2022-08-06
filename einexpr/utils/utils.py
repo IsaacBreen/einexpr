@@ -353,16 +353,17 @@ def get_position(tree, item):
     return None
 
 
-def split_at(tree, position):
+def split_at(tree: Sequence, position: int):
     if len(position) == 1:
         return tree[:position[0]], tree[position[0]+1:]
     elif isinstance(tree, list):
         lhs, rhs = split_at(tree[position[0]], position[1:])
         return [*tree[:position[0]], lhs], [rhs, *tree[position[0]+1:]]
-    else:
+    elif isinstance(tree, tuple):
         lhs, rhs = split_at(tree[position[0]], position[1:])
         return (*tree[:position[0]], lhs), (rhs, *tree[position[0]+1:])
-
+    else:
+        raise TypeError(f'Cannot split {type(tree)} at {position}')
 
 def deep_iter(iterable: Iterable, /, *, dict_mode: Literal['keys', 'values', 'both'] = 'values', yield_iterables: bool = False) -> Iterator:
     """
