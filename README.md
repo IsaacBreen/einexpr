@@ -3,23 +3,8 @@
   <img width="460" src="docs/static/images/logo.png">
 </p>
 
-# Awaiting array API implementations ⏰ 👀
 
-
-While `einexpr` is ready for the world, it seems the Python ecosystem is not yet ready for `einexpr`.
-
-In the interest of future-readiness, `einexpr` is built with first-class support for Python array API standard-conforming libraries. Since the standard is so new, none of the major tensor libraries have finished implementing it yet.
-
-Don't worry, though; your favourite tensor library developers are almost certainly hard at work implementing it right now! Check back soon! 😁
-
-If you're super keen to experience `einexpr`, you can try it out today by installing NumPy `1.24.dev0` using:
-
-```bash
-pip install --upgrade git+https://github.com/numpy/numpy
-```
-
-
-# Introducing **einexpr**
+# Introducing einexpr
 
 <p align="center">
     <b> einexpr makes it easy to write fast, maintainable, interpretable ML code </b>
@@ -74,8 +59,23 @@ x = X[i, j] * Y[j, k]
 assert np.all(np.matmul(X, Y) == x[i, k])
 ```
 
-## Installation
+# Installation
 
 ```bash
 pip install einexpr
+```
+
+## Awaiting array API implementations ⏰ 👀
+
+
+While `einexpr` is ready for the world, it seems the Python ecosystem is not yet ready for `einexpr`.
+
+In the interest of future-readiness, `einexpr` is built with first-class support for Python array API standard-conforming libraries. Since the standard is so new, none of the major tensor libraries have finished implementing it yet.
+
+Don't worry, though; your favourite tensor library developers are almost certainly hard at work implementing it right now! Check back soon! 😁
+
+If you're super keen to experience `einexpr`, you can try it out today by installing NumPy `1.24.dev0` using:
+
+```bash
+pip install --upgrade git+https://github.com/numpy/numpy
 ```
