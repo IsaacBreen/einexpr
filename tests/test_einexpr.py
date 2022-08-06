@@ -616,3 +616,33 @@ def test_tricky_reshapes_l2():
     
     x = einexpr.ones((2,3,4,5,6,7,8,9,10), dims='i j k l m n o p q')
     x = x['i j k (l m n) o p q']
+
+
+def test_tutorial():
+    import einexpr as ei
+    import numpy as np
+
+    # Define some vectors
+    a = ei.array([1,2])
+    b = ei.array([3,4])
+    # (So far, pretty normal...)
+
+    # Dot product
+    x = a['i'] * b['i']
+    assert np.dot(a, b) == x['']
+
+    # Outer product
+    x = a['i'] * b['j']
+    assert np.all(np.outer(a, b) == x['i j'])
+
+    # Define some matrices
+    X = ei.array([[1, 2], [3, 4]])
+    Y = ei.array([[5, 6], [7, 8]])
+
+    # Flatten
+    x = X['i j']
+    assert np.all(np.reshape(X, (-1,)) == x['(i,j)'])
+
+    # Matrix-vector multiplication
+    x = X['i j'] * a['j']
+    assert np.all(np.matmul(X, a) == x['i'])
