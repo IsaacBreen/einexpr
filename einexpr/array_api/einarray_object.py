@@ -98,7 +98,16 @@ class einarray():
             dims = (*dims[:i_ellipsis], *ellipsis_dims, *dims[i_ellipsis + 1:])
         dims_before_replacements = einexpr.dimension_utils.ignore_replacements(dims)
         dims_after_replacements = einexpr.dimension_utils.apply_replacements(dims)
-        current_dims_after_absorption, dims_before_replacements = einexpr.dimension_utils.resolve_positional_dims((self.dims.dimensions, dims_before_replacements))
+        # This is arbitrary and may lead to confusing behavior. For example, what happens when we coerce from `_ _ _` to `_ _`?
+        ARBITRARY_POSITIONAL_BINDING_DIRECTION: Literal['left-to-right', 'right-to-left'] = 'left-to-right'
+        if ARBITRARY_POSITIONAL_BINDING_DIRECTION == 'left-to-right':
+            current_dims_after_absorption, dims_before_replacements = einexpr.dimension_utils.resolve_positional_dims(((..., *self.dims.dimensions), (..., *dims_before_replacements)))
+            current_dims_after_absorption, dims_after_replacements = current_dims_after_absorption[1:], dims_after_replacements[1:]
+        elif ARBITRARY_POSITIONAL_BINDING_DIRECTION == 'right-to-left':
+            current_dims_after_absorption, dims_before_replacements = einexpr.dimension_utils.resolve_positional_dims(((*self.dims.dimensions, ...), (*dims_before_replacements, ...)))
+            current_dims_after_absorption, dims_after_replacements = current_dims_after_absorption[:-1], dims_after_replacements[:-1]
+        else:
+            raise einexpr.exceptions.InternalError(f"ARBITRARY_POSITIONAL_BINDING_DIRECTION must be one of 'left-to-right' or 'right-to-left'")
         current_dimspec_after_absorption = self.dims.with_dimensions(current_dims_after_absorption)
         dimspec_before_replacements = einexpr.array_api.dimension.DimensionSpecification(
             dims_before_replacements,
