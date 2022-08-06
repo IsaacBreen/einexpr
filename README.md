@@ -3,20 +3,22 @@
   <img width="460" src="docs/static/images/logo.png">
 </p>
 
+<p align="center">
+    <b> Fast, maintainable, interpretable ML code </b>
+</p>
+
 
 # Introducing einexpr
 
-<p align="center">
-    <b> ❯❯ einexpr helps you write fast, maintainable, interpretable ML code ❮❮ </b>
-</p>
+`einexpr` brings Einstein summation notation to Python.
 
-Inspired by Einstein summation notation, `einexpr` encourages explicit dimension naming.
+Einstein summation notation encourages explicit dimension naming.
 
-Being explicit about how operations map over dimensions dramatically reduce the mental overhead of working with multi-dimensional arrays.
+Explicitly naming dimensions makes it much clearer what operations over those dimensions are actually doing. This can **dramatically reduce the mental overhead of working with multi-dimensional arrays**.
 
 ## In action
 
-The convention for specifying dimension structure is designed to be intuitive, flexible, and unambiguous.
+`einexpr
 
 ```python
 import einexpr as ei
@@ -48,15 +50,34 @@ x = X['i j'] * a['j']
 assert np.all(np.matmul(X, a) == x['i'])
 ```
 
-You can also treat dimensions as first-class objects.
+The convention for specifying dimension structure is designed to be intuitive, flexible, and unambiguous. In the above examples, the **string** inside the square brackets specifies the dimension structure.
+
+You can also pass dimensions around as **first-class objects**:
 
 ```python
-i, j = ei.dims(2) # Unnamed object
-k, l = ei.dims('k l') # Named objects
+i, j, k = ei.dims(3)
 
-# Matrix-matrix multiplication
 x = X[i, j] * Y[j, k]
 assert np.all(np.matmul(X, Y) == x[i, k])
+```
+
+You can combine strings and objects in any way you find convenient:
+
+```python
+i, j, k = ei.dims('i j k')
+
+Z = X[i, j] * Y[j, k]
+
+# Equivalent ways of flattening along j and k
+Z['i (j k)']
+Z[i,(j,k)]
+Z['i',('j','k')]
+jk = (j,k)
+Z['i', jk]
+
+# We can check that the dimensions are correct using the `dims` property
+assert Z['i (j k)'].dims == ('i', ('j', 'k'))
+...
 ```
 
 # Installation
