@@ -48,7 +48,9 @@ x = X['i j'] * a['j']
 assert np.all(np.matmul(X, a) == x['i'])
 ```
 
-The convention for specifying dimension structure is designed to be intuitive, flexible, and unambiguous. In the above examples, the **string** inside the square brackets specifies the dimension structure.
+`einexpr`'s dimension structure conventions are designed to be intuitive, flexible, and unambiguous.
+
+In the above examples, the **string** inside the square brackets specifies the dimension structure.
 
 You can also pass dimensions around as **first-class objects**:
 
@@ -59,7 +61,7 @@ x = X[i, j] * Y[j, k]
 assert np.all(np.matmul(X, Y) == x[i, k])
 ```
 
-You can combine strings and objects in any way you find convenient:
+There's no trade-off: feel free to combine strings and objects in any way that you find convenient.
 
 ```python
 i, j, k = ei.dims('i j k')
