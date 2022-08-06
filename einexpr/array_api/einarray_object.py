@@ -133,7 +133,7 @@ class einarray():
         return self.coerce(new_dims)
 
     def __array__(self: array, dtype: Optional[npt.DTypeLike] = None) -> einexpr.einarray:
-        return self.a
+        return self.a.__array__()
 
     def tracer(self: array) -> 'einarray':
         return einarray(einexpr.backends.PseudoRawArray(self.shape, self.dtype), dims=self.dims, ambiguous_dims=self.ambiguous_dims)
