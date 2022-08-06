@@ -32,6 +32,7 @@ The dimension naming convention is designed to be as intuitive, flexible, and un
 
 ```python
 import einexpr as ei
+import numpy as np
 
 # Define some vectors
 a = ei.array([1,2])
@@ -39,12 +40,12 @@ b = ei.array([3,4])
 # (So far, pretty normal...)
 
 # Dot product
-x = a['i'] + b['i']
-assert x[''] == ei.vecdot(a, b)
+x = a['i'] * b['i']
+assert np.dot(a, b) == x['']
 
 # Outer product
 x = a['i'] * b['j']
-assert x['i j'] == ei.outer(a, b)
+assert np.all(np.outer(a, b) == x['i j'])
 
 # Define some matrices
 X = ei.array([[1, 2], [3, 4]])
@@ -52,11 +53,11 @@ Y = ei.array([[5, 6], [7, 8]])
 
 # Flatten
 x = X['i j']
-assert x['(i,j)'] == ei.reshape(X, (-1,))
+assert np.all(np.reshape(X, (-1,)) == x['(i,j)'])
 
 # Matrix-vector multiplication
 x = X['i j'] * a['j']
-assert x['i'] == ei.matmul(X, a)
+assert np.all(np.matmul(X, a) == x['i'])
 ```
 
 You can also treat dimensions as first-class objects.
@@ -67,7 +68,7 @@ k, l = ei.dims('k l') # Named objects
 
 # Matrix-matrix multiplication
 x = X[i, j] * Y[j, k]
-assert x[i, k] == ei.matmul(X, Y)
+assert np.all(np.matmul(X, Y) == x[i, k])
 ```
 
 ## Installation
