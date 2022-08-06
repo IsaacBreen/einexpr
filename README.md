@@ -1,5 +1,7 @@
 <!-- Display logo centered -->
-<img src="docs/static/images/logo.png" width="300" alt="logo" style="display: block; margin-left: auto; margin-right: auto;">
+<p align="center">
+  <img width="460" src="docs/static/images/logo.png">
+</p>
 
 # Awaiting array API implementations ⏰ 👀
 
