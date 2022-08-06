@@ -1,34 +1,24 @@
-<h2 align="center"> ⏰ 👀 </h2>
+<!-- Display logo centered -->
 <p align="center">
-    <b>Awaiting array API implementations</b>
+  <img width="460" src="docs/static/images/logo.png">
+</p>
+
+<p align="center">
+    <b> Fast, maintainable, interpretable ML code </b>
 </p>
 
 
-While `einexpr` is ready for the world, it seems the Python ecosystem is not yet ready for `einexpr`.
+# Introducing einexpr
 
-In the interest of future-readiness, `einexpr` is built with first-class support for Python array API standard-conforming libraries. Since the standard is so new, none of the major tensor libraries have finished implementing it yet.
+`einexpr` brings Einstein summation notation to Python.
 
-Don't worry, though; your favourite tensor library developers are almost certainly hard at work implementing it right now! Check back soon! 😁
+Einstein summation notation encourages explicit dimension naming.
 
-If you're super keen to experience `einexpr`, you can try it out today by installing NumPy `1.24.dev0` using:
-
-```bash
-pip install --upgrade git+https://github.com/numpy/numpy
-```
-
-# einexpr
-
-<p align="center">
-    <b> einexpr makes it easy to write fast, maintainable, interpretable ML code </b>
-</p>
-
-Inspired by Einstein summation notation, `einexpr` encourages explicit dimension naming.
-
-Being explicit about how operations map over dimensions dramatically reduce the mental overhead of working with multi-dimensional arrays.
+Explicitly naming dimensions makes it much clearer what operations over those dimensions are actually doing. This can **dramatically reduce the mental overhead of working with multi-dimensional arrays**.
 
 ## In action
 
-The convention for specifying dimension structure is designed to be intuitive, flexible, and unambiguous.
+`einexpr
 
 ```python
 import einexpr as ei
@@ -60,19 +50,53 @@ x = X['i j'] * a['j']
 assert np.all(np.matmul(X, a) == x['i'])
 ```
 
-You can also treat dimensions as first-class objects.
+The convention for specifying dimension structure is designed to be intuitive, flexible, and unambiguous. In the above examples, the **string** inside the square brackets specifies the dimension structure.
+
+You can also pass dimensions around as **first-class objects**:
 
 ```python
-i, j = ei.dims(2) # Unnamed object
-k, l = ei.dims('k l') # Named objects
+i, j, k = ei.dims(3)
 
-# Matrix-matrix multiplication
 x = X[i, j] * Y[j, k]
 assert np.all(np.matmul(X, Y) == x[i, k])
 ```
 
-## Installation
+You can combine strings and objects in any way you find convenient:
+
+```python
+i, j, k = ei.dims('i j k')
+
+Z = X[i, j] * Y[j, k]
+
+# Equivalent ways of flattening along j and k
+Z['i (j k)']
+Z[i,(j,k)]
+Z['i',('j','k')]
+jk = (j,k)
+Z['i', jk]
+
+# We can check that the dimensions are correct using the `dims` property
+assert Z['i (j k)'].dims == ('i', ('j', 'k'))
+...
+```
+
+# Installation
 
 ```bash
 pip install einexpr
+```
+
+## Awaiting array API implementations ⏰ 👀
+
+
+While `einexpr` is ready for the world, it seems the Python ecosystem is not yet ready for `einexpr`.
+
+In the interest of future-readiness, `einexpr` is built with first-class support for Python array API standard-conforming libraries. Since the standard is so new, none of the major tensor libraries have finished implementing it yet.
+
+Don't worry, though; your favourite tensor library developers are almost certainly hard at work implementing it right now! Check back soon! 😁
+
+If you're super keen to experience `einexpr`, you can try it out today by installing NumPy `1.24.dev0` using:
+
+```bash
+pip install --upgrade git+https://github.com/numpy/numpy
 ```
