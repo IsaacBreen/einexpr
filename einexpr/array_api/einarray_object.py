@@ -20,7 +20,7 @@ import einexpr
 class einarray():
 
     a: einexpr.types.NonEinArray
-    dims: einexpr.array_api.dimension.DimensionSpecification | Tuple[einexpr.array_api.dimension.NestedDimension]
+    dimspec: einexpr.array_api.dimension.DimensionSpecification | Tuple[einexpr.array_api.dimension.NestedDimension]
     ambiguous_dims: Set[einexpr.array_api.dimension.NestedDimension]
     
     def __init__(
@@ -35,42 +35,42 @@ class einarray():
     ) -> None:
         if isinstance(a, einarray):
             self.a = a.a
-            self.dims = dims or a.dims
+            self.dimspec = dims or a.dimspec
             self.ambiguous_dims = a.ambiguous_dims & set(dims or [])
         else:
             self.a = a
-            self.dims = dims
+            self.dimspec = dims
             self.ambiguous_dims = ambiguous_dims or set()
         # ARRAY
         if backend is not None or not einexpr.backends.conforms_to_array_api(self.a):
             # Convert the array to the backend specified by the backend argument.
             self.a = einexpr.backends.get_array_api_backend(backend).asarray(self.a)
         # DIMS
-        if not isinstance(self.dims, einexpr.array_api.dimension.DimensionSpecification):
-            self.dims = einexpr.dimension_utils.process_dims_declaration(self.dims, self.a.shape)
+        if not isinstance(self.dimspec, einexpr.array_api.dimension.DimensionSpecification):
+            self.dimspec = einexpr.dimension_utils.process_dims_declaration(self.dimspec, self.a.shape)
         if einexpr.dimension_utils.is_dimensionless(self.a):
-            if len(self.dims) != 0:
+            if len(self.dimspec) != 0:
                 raise ValueError(dims, "If the input is a scalar, the dimensions must be empty.")
         else:
             if not einexpr.backends.conforms_to_array_api(self.a):
                 raise ValueError(f"{self.a} does not conform to the Python array API standard")
-            if self.a.ndim != len(self.dims) and not isinstance(self.a, einexpr.backends.PseudoRawArray):
-                if len(self.dims) == 0:
-                    raise ValueError(f"The number ({self.a.ndim}) of dimensions in the array does not match the number ({len(self.dims)}) of dimensions passed to the constructor. Did you forget to pass the dimensions? e.g. `einexpr.einarray(a, dims=({', '.join('d' + str(i) for i in range(a.ndim))}))`")
+            if self.a.ndim != len(self.dimspec) and not isinstance(self.a, einexpr.backends.PseudoRawArray):
+                if len(self.dimspec) == 0:
+                    raise ValueError(f"The number ({self.a.ndim}) of dimensions in the array does not match the number ({len(self.dimspec)}) of dimensions passed to the constructor. Did you forget to pass the dimensions? e.g. `einexpr.einarray(a, dims=({', '.join('d' + str(i) for i in range(a.ndim))}))`")
         # Check that none of the the dimensions are deprecated
         dim_sizes = dim_sizes or {}
-        dim_sizes |= {dim: size for dim, size in zip(self.dims, self.a.shape)}
-        if isinstance(self.dims, einexpr.array_api.dimension.DimensionSpecification):
-            dim_sizes |= self.dims.sizes
-            self.dims = einexpr.array_api.dimension.DimensionSpecification(self.dims.dimensions, dim_sizes)
+        dim_sizes |= {dim: size for dim, size in zip(self.dimspec, self.a.shape)}
+        if isinstance(self.dimspec, einexpr.array_api.dimension.DimensionSpecification):
+            dim_sizes |= self.dimspec.sizes
+            self.dimspec = einexpr.array_api.dimension.DimensionSpecification(self.dimspec.dimensions, dim_sizes)
         else:
-            self.dims = einexpr.array_api.dimension.DimensionSpecification(self.dims, dim_sizes)
+            self.dimspec = einexpr.array_api.dimension.DimensionSpecification(self.dimspec, dim_sizes)
         # AMBIGUOUS DIMS
-        if not self.ambiguous_dims <= set(self.dims):
-            raise ValueError(f"The ambiguous dimensions {self.ambiguous_dims} must be a subset of the dimensions {self.dims} passed to the constructor.")
+        if not self.ambiguous_dims <= set(self.dimspec):
+            raise ValueError(f"The ambiguous dimensions {self.ambiguous_dims} must be a subset of the dimensions {self.dimspec} passed to the constructor.")
 
     def get_dims_unordered(self: array) -> Set[AtomicDimension]:
-        return set(self.dims)
+        return set(self.dimspec)
     
     def coerce(self: array, dims: Tuple[AtomicDimension]) -> einexpr.einarray:
         # Note that ``(j k)->n`` means 'flatten along the dimensions named ``j`` and ``k`` and name the
@@ -86,7 +86,7 @@ class einarray():
         if ... in dims:
             # TODO: redundant
             dims_before_replacements = einexpr.dimension_utils.ignore_replacements(dims)
-            current_dims_after_absorption, dims_before_replacements_after_absorption = einexpr.dimension_utils.resolve_positional_dims((self.dims.dimensions, dims_before_replacements))
+            current_dims_after_absorption, dims_before_replacements_after_absorption = einexpr.dimension_utils.resolve_positional_dims((self.dimspec.dimensions, dims_before_replacements))
             # Isolate the non-ellipsis dimensions
             non_ellipsis_non_absorbing_dims = [dim for dim in dims_before_replacements_after_absorption if dim != ...]
             current_dims_isolated = einexpr.dimension_utils.isolate_dims(current_dims_after_absorption, non_ellipsis_non_absorbing_dims, split_mode='left')
@@ -101,14 +101,14 @@ class einarray():
         # This is arbitrary and may lead to confusing behavior. For example, what happens when we coerce from `_ _ _` to `_ _`?
         ARBITRARY_POSITIONAL_BINDING_DIRECTION: Literal['left-to-right', 'right-to-left'] = 'left-to-right'
         if ARBITRARY_POSITIONAL_BINDING_DIRECTION == 'left-to-right':
-            current_dims_after_absorption, dims_before_replacements = einexpr.dimension_utils.resolve_positional_dims(((..., *self.dims.dimensions), (..., *dims_before_replacements)))
+            current_dims_after_absorption, dims_before_replacements = einexpr.dimension_utils.resolve_positional_dims(((..., *self.dimspec.dimensions), (..., *dims_before_replacements)))
             current_dims_after_absorption, dims_before_replacements = current_dims_after_absorption[1:], dims_before_replacements[1:]
         elif ARBITRARY_POSITIONAL_BINDING_DIRECTION == 'right-to-left':
-            current_dims_after_absorption, dims_before_replacements = einexpr.dimension_utils.resolve_positional_dims(((*self.dims.dimensions, ...), (*dims_before_replacements, ...)))
+            current_dims_after_absorption, dims_before_replacements = einexpr.dimension_utils.resolve_positional_dims(((*self.dimspec.dimensions, ...), (*dims_before_replacements, ...)))
             current_dims_after_absorption, dims_before_replacements = current_dims_after_absorption[:-1], dims_before_replacements[:-1]
         else:
             raise einexpr.exceptions.InternalError(f"ARBITRARY_POSITIONAL_BINDING_DIRECTION must be one of 'left-to-right' or 'right-to-left'")
-        current_dimspec_after_absorption = self.dims.with_dimensions(current_dims_after_absorption)
+        current_dimspec_after_absorption = self.dimspec.with_dimensions(current_dims_after_absorption)
         dimspec_before_replacements = einexpr.array_api.dimension.DimensionSpecification(
             dims_before_replacements,
             sizes={
@@ -127,8 +127,8 @@ class einarray():
         """
         Extract the dimensions in ``dims`` into the first level if they are part of a composite dimension.
         """
-        new_dims = einexpr.dimension_utils.isolate_dims(self.dims.dimensions, dims, split_mode=split_mode)
-        if new_dims == self.dims:
+        new_dims = einexpr.dimension_utils.isolate_dims(self.dimspec.dimensions, dims, split_mode=split_mode)
+        if new_dims == self.dimspec:
             return self
         return self.coerce(new_dims)
 
@@ -136,10 +136,10 @@ class einarray():
         return self.a.__array__()
 
     def tracer(self: array) -> 'einarray':
-        return einarray(einexpr.backends.PseudoRawArray(self.shape, self.dtype), dims=self.dims, ambiguous_dims=self.ambiguous_dims)
+        return einarray(einexpr.backends.PseudoRawArray(self.shape, self.dtype), dims=self.dimspec, ambiguous_dims=self.ambiguous_dims)
 
     def __repr__(self: array) -> str:
-        return f"einarray({self.a}, dims={self.dims})".replace('\n', '\n' + ' ' * len('einarray('))
+        return f"einarray({self.a}, dims={self.dimspec})".replace('\n', '\n' + ' ' * len('einarray('))
 
     @property
     def dtype(self: array) -> Dtype:
@@ -181,7 +181,7 @@ class einarray():
             raise ValueError("The array must have at least two dimensions.")
         return einarray(
             self.a.__array_namespace__().mT,
-            dims=(*self.dims[:-2], self.dims[-1], self.dims[-2]),
+            dims=(*self.dimspec[:-2], self.dimspec[-1], self.dimspec[-2]),
             ambiguous_dims=self.ambiguous_dims)
 
     @property
@@ -254,7 +254,7 @@ class einarray():
             raise ValueError(f"The array must be two-dimensional.")
         return einarray(
             self.a.__array_namespace__().T,
-            dims=(self.dims[1], self.dims[0]),
+            dims=(self.dimspec[1], self.dimspec[0]),
             ambiguous_dims=self.ambiguous_dims)
 
     def __abs__(self: array, /) -> array:
@@ -1124,7 +1124,7 @@ class einarray():
         # if self.ndim == 0 or other.ndim == 0:
         #     raise ValueError("matmul() cannot be applied to zero-dimensional arrays.")
         # if self.ndim == 1 and other.ndim == 1:
-        #     if self.shape[0] != other.shape[0] or self.dims != other.dims:
+        #     if self.shape[0] != other.shape[0] or self.dimspec != other.dimspec:
         #         raise ValueError("matmul() cannot be applied to arrays with different shapes.")
         raise NotImplementedError()
     
@@ -2093,7 +2093,7 @@ class einarray():
         """
         return einexpr.einarray(
             self.a.to_device(device, stream=stream),
-            dims=self.dims,
+            dims=self.dimspec,
             ambiguous_dims=self.ambiguous_dims)
 
 

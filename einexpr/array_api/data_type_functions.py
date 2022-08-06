@@ -30,7 +30,7 @@ def astype(x: array, dtype: dtype, /, *, copy: bool = True) -> array:
     """
     return einexpr.einarray(
         x.a.__array_namespace__().astype(x.a, dtype, copy=copy),
-        dims=x.dims,
+        dims=x.dimspec,
         ambiguous_dims=x.ambiguous_dims)
 
 def can_cast(from_: Union[dtype, array], to: dtype, /) -> bool:

@@ -16,7 +16,7 @@ def is_dimensionless(array):
 # TODO: can safely remove the following three methods now that proprocessing is done in the einarray magic calls
 def get_dims(array):
     if isinstance(array, einexpr.array):
-        return array.dims.dimensions
+        return array.dimspec.dimensions
     elif is_dimensionless(array):
         return ()
     else:
@@ -25,7 +25,7 @@ def get_dims(array):
 
 def get_dimspec(array):
     if isinstance(array, einexpr.array):
-        return array.dims
+        return array.dimspec
     elif is_dimensionless(array):
         return einexpr.array_api.dimension.DimensionSpecification((), {})
     else:

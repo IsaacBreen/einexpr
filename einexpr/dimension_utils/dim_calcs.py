@@ -348,7 +348,7 @@ def is_dimensionless(array):
 @einexpr.utils.deprecated_guard
 def get_dimspec(array):
     if isinstance(array, einexpr.array):
-        return array.dims
+        return array.dimspec
     elif is_dimensionless(array):
         return einexpr.array_api.dimension.DimensionSpecification((), {})
     else:
