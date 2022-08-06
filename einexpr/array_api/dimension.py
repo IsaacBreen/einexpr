@@ -74,14 +74,24 @@ BaseDimension = _AtomicDimension | AbsorbingDimension | Tuple['NestedDimension',
 ConcreteDimension = _AtomicDimension | Tuple['ConcreteDimension', ...]
 AtomicDimension = _AtomicDimension | str
 
+UnparsedDimensions = ConcreteDimension
+
+
 @overload
-def dims(n: int) -> Tuple[NestedDimension, ...]:
+def dims(n: int) -> Tuple[ConcreteDimension, ...]:
     ...
 
 
-def dims(x):
+@overload
+def dims(n: UnparsedDimensions) -> Tuple[ConcreteDimension, ...]:
+    ...
+
+
+def dims(x) -> Tuple[ConcreteDimension, ...]:
     if isinstance(x, int):
         return tuple(str('_' + str(uuid4()).replace('-', '')) for _ in range(x))
+    elif isinstance(x, (str, tuple, list)):
+        return einexpr.dimension_utils.parse_dims(x)
     else:
         raise TypeError(f"Cannot parse {type(x)} as dimensions.")
 

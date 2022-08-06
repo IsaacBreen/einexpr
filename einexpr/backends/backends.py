@@ -58,5 +58,3 @@ def get_array_api_backend(name: Optional[str] = None) -> ModuleType:
     if name not in _BACKENDS:
         raise Exception(f"No array API backend with the name '{name}' found.")
     return _BACKENDS[name].load()
-
-

@@ -63,11 +63,30 @@ def resolve_absorbable_dims(arrays: Tuple[einexpr.array_api.array, ...]) -> Tupl
 
 class ArgumentHelper:
     @staticmethod
-    def preprocess_arg(arg):
+    def prepreprocess_arg(arg):
         if isinstance(arg, einexpr.array):
             return arg
         elif is_dimensionless(arg):
             return einexpr.array(arg, dims=())
+        elif einexpr.backends.conforms_to_array_api(arg):
+            return einexpr.array(arg)
+        else:
+            return arg
+            
+    @staticmethod
+    def prepreprocess_args(args, kwargs):
+        args = tuple(ArgumentHelper.prepreprocess_arg(arg) for arg in args)
+        # kwargs = {key: ArgumentHelper.prepreprocess_arg(arg) for key, arg in kwargs.items()}
+        return einexpr.backends.tracer.apply_tracer((args, kwargs))
+
+    @staticmethod
+    def preprocess_arg(arg):
+        if isinstance(arg, einexpr.array):
+            return arg
+        elif is_dimensionless(arg):
+            return arg
+        elif einexpr.backends.conforms_to_array_api(arg):
+            return einexpr.array(arg)
         else:
             return arg
             
@@ -75,10 +94,10 @@ class ArgumentHelper:
     def preprocess_args(args, kwargs):
         args = tuple(ArgumentHelper.preprocess_arg(arg) for arg in args)
         # kwargs = {key: ArgumentHelper.preprocess_arg(arg) for key, arg in kwargs.items()}
-        return einexpr.backends.tracer.apply_tracer((args, kwargs))
+        return args, kwargs
 
     def __init__(self, args, kwargs):
-        self.args, self.kwargs = ArgumentHelper.preprocess_args(args, kwargs)
+        self.args, self.kwargs = ArgumentHelper.prepreprocess_args(args, kwargs)
 
 
 class MultipleArgumentElementwise:
@@ -86,24 +105,24 @@ class MultipleArgumentElementwise:
     def validate_args(args, kwargs):
         assert isinstance(args, (list, tuple))
         assert isinstance(kwargs, dict)
-        assert all(isinstance(arg, (einexpr.einarray, int, float)) for arg in args)
+        assert all(is_dimensionless(arg) or einexpr.backends.conforms_to_array_api(arg) for arg in args)
     
     @staticmethod
     def process_args(args, kwargs):
-        # args, kwargs = ArgumentHelper.preprocess_args(args, kwargs)
+        args, kwargs = ArgumentHelper.preprocess_args(args, kwargs)
         args = resolve_absorbable_dims(args)
         raw_aligned_arrays = einexpr.backends.align_arrays(*args)
         return raw_aligned_arrays, kwargs
 
     @staticmethod
     def calculate_output_dims(args, kwargs):
-        args, kwargs = ArgumentHelper.preprocess_args(args, kwargs)
+        args, kwargs = ArgumentHelper.prepreprocess_args(args, kwargs)
         args = resolve_absorbable_dims(args)
         return einexpr.dimension_utils.get_final_aligned_dims(*(get_dims(arg) for arg in args))
     
     @staticmethod
     def calculate_output_ambiguous_dims(args, kwargs):
-        args, kwargs = ArgumentHelper.preprocess_args(args, kwargs)
+        args, kwargs = ArgumentHelper.prepreprocess_args(args, kwargs)
         args = resolve_absorbable_dims(args)
         ambiguous_dims = einexpr.dimension_utils.calculate_ambiguous_final_aligned_dims(*(get_dims(arg) for arg in args))
         ambiguous_dims |= {dim for arg in args for dim in get_ambiguous_dims(arg)}
@@ -121,9 +140,8 @@ class SingleArgumentMultipleDimensionReduction:
         # - raise error when there are duplicate axes, esp of different types (einexpr.array_api.dimension.AtomicDimension, int, and negative int)
         assert isinstance(args, (list, tuple))
         assert isinstance(kwargs, dict)
-        # assert all(isinstance(arg, (einexpr.einarray, int, float)) for arg in args)
         assert len(args) == 1
-        assert isinstance(args[0], einexpr.array)
+        assert is_dimensionless(args[0]) or einexpr.backends.conforms_to_array_api(args[0])
         assert 'axis' in kwargs
     
     @staticmethod
@@ -165,7 +183,7 @@ class SingleArgumentMultipleDimensionReduction:
     
     @staticmethod
     def process_args(args, kwargs):
-        # args, kwargs = ArgumentHelper.preprocess_args(args, kwargs)
+        args, kwargs = ArgumentHelper.preprocess_args(args, kwargs)
         named_axis = SingleArgumentMultipleDimensionReduction._calculate_named_axis(args, kwargs)
         integer_axis = SingleArgumentMultipleDimensionReduction._calculate_integer_axis(args, kwargs)
         array: einexpr.einarray = args[0].isolate_dims(named_axis)
@@ -173,7 +191,7 @@ class SingleArgumentMultipleDimensionReduction:
 
     @staticmethod
     def calculate_output_dims(args, kwargs):
-        args, kwargs = ArgumentHelper.preprocess_args(args, kwargs)
+        args, kwargs = ArgumentHelper.prepreprocess_args(args, kwargs)
         # Convert all integer axes into dimension objects
         named_axis = SingleArgumentMultipleDimensionReduction._calculate_named_axis(args, kwargs)
         array: einexpr.einarray = args[0]
@@ -188,7 +206,7 @@ class SingleArgumentMultipleDimensionReduction:
     
     @staticmethod
     def calculate_output_ambiguous_dims(args, kwargs):
-        args, kwargs = ArgumentHelper.preprocess_args(args, kwargs)
+        args, kwargs = ArgumentHelper.prepreprocess_args(args, kwargs)
         axis = SingleArgumentMultipleDimensionReduction._calculate_integer_axis(args, kwargs)
         ambiguous_out_dims = get_ambiguous_dims(args[0]) - {dim for i, dim in enumerate(get_dims(args[0])) if i in axis}
         return ambiguous_out_dims
@@ -198,7 +216,7 @@ class SingleArgumentSingleDimensionReduction(SingleArgumentMultipleDimensionRedu
     @staticmethod
     def validate_args(args, kwargs):
         assert 'axis' in kwargs
-        assert kwargs['axis'] is None or isinstance(kwargs['axis'], (einexpr.array_api.dimension.AtomicDimension, int))
+        assert kwargs['axis'] is None or isinstance(kwargs['axis'], (int, list, tuple, einexpr.array_api.dimension.AtomicDimension))
         SingleArgumentMultipleDimensionReduction.validate_args(args, kwargs)
 
 
@@ -207,13 +225,15 @@ class Concatenation:
     def validate_args(args, kwargs):
         assert isinstance(args, (list, tuple))
         assert isinstance(kwargs, dict)
-        assert isinstance(args[0], (list, tuple)) and all(isinstance(arg, einexpr.einarray) for arg in args[0])
+        assert len(args) == 1
+        assert isinstance(args[0], (list, tuple))
+        assert all(is_dimensionless(arg) or einexpr.backends.conforms_to_array_api(arg) for arg in args[0])
         if kwargs['axis'] is None:
             raise ValueError("Using ``axis=None`` (flattening concatenation) is not yet supported")
     
     @staticmethod
     def _calculate_axes(args, kwargs):
-        args, kwargs = ArgumentHelper.preprocess_args(args, kwargs)
+        args, kwargs = ArgumentHelper.prepreprocess_args(args, kwargs)
         axes = kwargs['axis']
         if isinstance(axes, (einexpr.array_api.dimension.AtomicDimension, int)):
             axes = [axes] * len(args[0])
@@ -232,7 +252,7 @@ class Concatenation:
 
     @staticmethod
     def process_args(args, kwargs):
-        # args, kwargs = ArgumentHelper.preprocess_args(args, kwargs)
+        args, kwargs = ArgumentHelper.preprocess_args(args, kwargs)
         axes = Concatenation._calculate_axes(args, kwargs)
         axis_num = get_dims(args[0][0]).index(axes[0])
         # Align the arrays. Use the shape of the first array as the template.
@@ -256,7 +276,7 @@ class Concatenation:
         
     @staticmethod
     def calculate_output_ambiguous_dims(args, kwargs):
-        args, kwargs = ArgumentHelper.preprocess_args(args, kwargs)
+        args, kwargs = ArgumentHelper.prepreprocess_args(args, kwargs)
         axes = Concatenation._calculate_axes(args, kwargs)
         ambiguous_dims = {dim for arg in args[0] for dim in get_ambiguous_dims(arg) if dim not in axes}
         for axis, arg in zip(axes[1:], args[0][1:]):
