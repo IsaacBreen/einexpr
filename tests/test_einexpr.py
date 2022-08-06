@@ -350,7 +350,7 @@ def random_einexpr(expr_maker, random_expr_json):
         print(expr_json_to_str(random_expr_json))
         raise e
     out = expr[random_expr_json["out_dims"]]
-    if hasattr(out, 'dims') and out.dimspec.dimensions != tuple(random_expr_json["out_dims"]):
+    if hasattr(out, 'dims') and out.dims != tuple(random_expr_json["out_dims"]):
         raise ValueError("dims and out_dims are not compatible")
     return out
 
@@ -373,7 +373,7 @@ def test_expr2():
     print(npa.matmul(x, y))
     print((x+y).coerce([], set()))
     print((x+y)[''])
-    assert len((x+y)[''].dimspec.dimensions) == 0
+    assert len((x+y)[''].dims) == 0
 
 
 def expr_json_to_str(expr_json):
@@ -415,7 +415,7 @@ def test_random_expr(seed, random_expr_json, random_expr_value, random_einexpr):
 def test_list_to_einarray():
     x = einexpr.einarray([1,2,3], dims='i')
     y = x+x
-    y.dimspec.dimensions
+    y.dims
 
 
 @pytest.mark.skip
@@ -447,7 +447,7 @@ def test_concatenate(X, Y, x, y):
     
     z = X*x
     z.a
-    assert z.dimspec.dimensions == ('i', 'j')
+    assert z.dims == ('i', 'j')
     
     # Concatenate X to itself along the first dimension
     z = npa.concatenate([X, X], axis=0)
@@ -485,7 +485,7 @@ def test_commonly_failed_3():
 
 def test_full_reduction(X):
     X = einexpr.einarray(X, dims='i j')
-    assert X[''].dimspec.dimensions == ()
+    assert X[''].dims == ()
     assert X[''].shape == ()
 
 # @pytest.mark.skip
@@ -501,12 +501,12 @@ def test_reshape():
 
 def test_named_axis(X):
     X = einexpr.einarray(X, dims='i j')
-    assert einexpr.sum(X, axis='i').dimspec.dimensions == einexpr.sum(X, axis=0).dimspec.dimensions == ('j',)
-    assert einexpr.sum(X, axis='j').dimspec.dimensions == einexpr.sum(X, axis=1).dimspec.dimensions == ('i',)
+    assert einexpr.sum(X, axis='i').dims == einexpr.sum(X, axis=0).dims == ('j',)
+    assert einexpr.sum(X, axis='j').dims == einexpr.sum(X, axis=1).dims == ('i',)
     
     Y = X['(i j)']
-    assert Y.dimspec.dimensions == (('i', 'j'),)
-    assert einexpr.sum(Y, axis='i').dimspec.dimensions == (('j',),)
+    assert Y.dims == (('i', 'j'),)
+    assert einexpr.sum(Y, axis='i').dims == (('j',),)
 
     
 def test_ellipsis(X):
@@ -522,7 +522,7 @@ def test_ellipsis(X):
 
 def test_dim_binding(X):
     X = einexpr.einarray(X)
-    assert X['i j'].dimspec.dimensions == ('i', 'j')
+    assert X['i j'].dims == ('i', 'j')
     
     X = einexpr.ones((1,2,3))
     X['_ _ _']
@@ -546,9 +546,9 @@ def test_positional_dims(X):
     Z = einexpr.einarray(X, dims='i j')
     
     
-    assert len(R := (X*X).dimspec.dimensions) == 2 and all(isinstance(dim, einexpr.dimension.AbsorbingDimension) for dim in R)
-    assert len(R := (X*Y).dimspec.dimensions) == 2 and all(isinstance(dim, einexpr.dimension.AbsorbingDimension) for dim in R)
-    assert (X*Z).dimspec.dimensions == ('i', 'j')
+    assert len(R := (X*X).dims) == 2 and all(isinstance(dim, einexpr.dimension.AbsorbingDimension) for dim in R)
+    assert len(R := (X*Y).dims) == 2 and all(isinstance(dim, einexpr.dimension.AbsorbingDimension) for dim in R)
+    assert (X*Z).dims == ('i', 'j')
 
 
 # TODO: This is a terrible hack and should be fixed. To see why, try the following:
@@ -562,57 +562,57 @@ class AbsorbingDimensionMatcher:
 def test_positional_dims_and_rename(X):
     X = einexpr.einarray(X)
 
-    assert ('i', AbsorbingDimensionMatcher()) == X['i _'].dimspec.dimensions
-    assert (AbsorbingDimensionMatcher(), 'n') == X['_ _->n'].dimspec.dimensions
-    assert ('i', 'n') == X['_->i j->n'].dimspec.dimensions
+    assert ('i', AbsorbingDimensionMatcher()) == X['i _'].dims
+    assert (AbsorbingDimensionMatcher(), 'n') == X['_ _->n'].dims
+    assert ('i', 'n') == X['_->i j->n'].dims
 
 
 def test_positional_dims_and_ellipsis_and_rename(X):
     X = einexpr.einarray(X)
 
-    assert (AbsorbingDimensionMatcher(), 'n') == X['... _->n'].dimspec.dimensions
+    assert (AbsorbingDimensionMatcher(), 'n') == X['... _->n'].dims
 
 
 def test_first_class_dims(X):
     X = einexpr.einarray(X)
     Y = einexpr.einarray(X)
     i, j = einexpr.dims(2)
-    assert X[i, j].dimspec.dimensions == (i, j)
-    assert X[i, ...].dimspec.dimensions[0] == i
-    assert X[..., j].dimspec.dimensions[1] == j
+    assert X[i, j].dims == (i, j)
+    assert X[i, ...].dims[0] == i
+    assert X[..., j].dims[1] == j
 
 
 def test_tricky_reshapes_l1():
     x = einexpr.ones((2,3,4), dims='_ _ k')
     
-    assert ('k', 'i', AbsorbingDimensionMatcher()) == x['k i _'].dimspec.dimensions
-    assert ('k', 'i', AbsorbingDimensionMatcher()) == x['k i ...'].dimspec.dimensions
+    assert ('k', 'i', AbsorbingDimensionMatcher()) == x['k i _'].dims
+    assert ('k', 'i', AbsorbingDimensionMatcher()) == x['k i ...'].dims
     
-    assert ('i', 'j', 'k') == x['i j _'].dimspec.dimensions
-    assert ('i', 'j', 'k') == x['i j ...'].dimspec.dimensions
+    assert ('i', 'j', 'k') == x['i j _'].dims
+    assert ('i', 'j', 'k') == x['i j ...'].dims
     
-    assert ('i', AbsorbingDimensionMatcher(), 'k') == x['i _ _'].dimspec.dimensions
-    assert ('i', AbsorbingDimensionMatcher(), 'k') == x['i ... _'].dimspec.dimensions
-    assert ('i', 'k', 'j') == x['i ... j'].dimspec.dimensions
+    assert ('i', AbsorbingDimensionMatcher(), 'k') == x['i _ _'].dims
+    assert ('i', AbsorbingDimensionMatcher(), 'k') == x['i ... _'].dims
+    assert ('i', 'k', 'j') == x['i ... j'].dims
 
-    assert (AbsorbingDimensionMatcher(), 'k', 'i') == x['... i'].dimspec.dimensions
-    assert ('i', AbsorbingDimensionMatcher(), 'k') == x['i ...'].dimspec.dimensions
+    assert (AbsorbingDimensionMatcher(), 'k', 'i') == x['... i'].dims
+    assert ('i', AbsorbingDimensionMatcher(), 'k') == x['i ...'].dims
 
 
 def test_tricky_reshapes_l2():
     x = einexpr.ones((2,3,4), dims='i j k')
     x = x['(i j k)']
-    assert ('i', ('j', 'k')) == x['i ...'].dimspec.dimensions
-    assert ('j', ('i', 'k')) == x['j ...'].dimspec.dimensions
-    assert ('k', ('i', 'j')) == x['k ...'].dimspec.dimensions
+    assert ('i', ('j', 'k')) == x['i ...'].dims
+    assert ('j', ('i', 'k')) == x['j ...'].dims
+    assert ('k', ('i', 'j')) == x['k ...'].dims
     
-    assert (('j', 'k'), 'i') == x['... i'].dimspec.dimensions
-    assert (('i', 'k'), 'j') == x['... j'].dimspec.dimensions
-    assert (('i', 'j'), 'k') == x['... k'].dimspec.dimensions
+    assert (('j', 'k'), 'i') == x['... i'].dims
+    assert (('i', 'k'), 'j') == x['... j'].dims
+    assert (('i', 'j'), 'k') == x['... k'].dims
     
-    assert ('k', ('j',), 'i') == x['k ... i'].dimspec.dimensions
-    assert ('k', ('i',), 'j') == x['k ... j'].dimspec.dimensions
-    assert ('i', ('k',), 'j') == x['i ... j'].dimspec.dimensions
+    assert ('k', ('j',), 'i') == x['k ... i'].dims
+    assert ('k', ('i',), 'j') == x['k ... j'].dims
+    assert ('i', ('k',), 'j') == x['i ... j'].dims
     
     x = einexpr.ones((2,3,4,5,6,7,8,9,10), dims='i j k l m n o p q')
     x = x['i j k (l m n) o p q']

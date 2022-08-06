@@ -62,7 +62,7 @@ class einarray():
         dim_sizes |= {dim: size for dim, size in zip(self.dimspec, self.a.shape)}
         if isinstance(self.dimspec, einexpr.array_api.dimension.DimensionSpecification):
             dim_sizes |= self.dimspec.sizes
-            self.dimspec = einexpr.array_api.dimension.DimensionSpecification(self.dimspec.dimensions, dim_sizes)
+            self.dimspec = einexpr.array_api.dimension.DimensionSpecification(self.dims, dim_sizes)
         else:
             self.dimspec = einexpr.array_api.dimension.DimensionSpecification(self.dimspec, dim_sizes)
         # AMBIGUOUS DIMS
@@ -86,7 +86,7 @@ class einarray():
         if ... in dims:
             # TODO: redundant
             dims_before_replacements = einexpr.dimension_utils.ignore_replacements(dims)
-            current_dims_after_absorption, dims_before_replacements_after_absorption = einexpr.dimension_utils.resolve_positional_dims((self.dimspec.dimensions, dims_before_replacements))
+            current_dims_after_absorption, dims_before_replacements_after_absorption = einexpr.dimension_utils.resolve_positional_dims((self.dims, dims_before_replacements))
             # Isolate the non-ellipsis dimensions
             non_ellipsis_non_absorbing_dims = [dim for dim in dims_before_replacements_after_absorption if dim != ...]
             current_dims_isolated = einexpr.dimension_utils.isolate_dims(current_dims_after_absorption, non_ellipsis_non_absorbing_dims, split_mode='left')
@@ -101,10 +101,10 @@ class einarray():
         # This is arbitrary and may lead to confusing behavior. For example, what happens when we coerce from `_ _ _` to `_ _`?
         ARBITRARY_POSITIONAL_BINDING_DIRECTION: Literal['left-to-right', 'right-to-left'] = 'left-to-right'
         if ARBITRARY_POSITIONAL_BINDING_DIRECTION == 'left-to-right':
-            current_dims_after_absorption, dims_before_replacements = einexpr.dimension_utils.resolve_positional_dims(((..., *self.dimspec.dimensions), (..., *dims_before_replacements)))
+            current_dims_after_absorption, dims_before_replacements = einexpr.dimension_utils.resolve_positional_dims(((..., *self.dims), (..., *dims_before_replacements)))
             current_dims_after_absorption, dims_before_replacements = current_dims_after_absorption[1:], dims_before_replacements[1:]
         elif ARBITRARY_POSITIONAL_BINDING_DIRECTION == 'right-to-left':
-            current_dims_after_absorption, dims_before_replacements = einexpr.dimension_utils.resolve_positional_dims(((*self.dimspec.dimensions, ...), (*dims_before_replacements, ...)))
+            current_dims_after_absorption, dims_before_replacements = einexpr.dimension_utils.resolve_positional_dims(((*self.dims, ...), (*dims_before_replacements, ...)))
             current_dims_after_absorption, dims_before_replacements = current_dims_after_absorption[:-1], dims_before_replacements[:-1]
         else:
             raise einexpr.exceptions.InternalError(f"ARBITRARY_POSITIONAL_BINDING_DIRECTION must be one of 'left-to-right' or 'right-to-left'")
@@ -127,10 +127,14 @@ class einarray():
         """
         Extract the dimensions in ``dims`` into the first level if they are part of a composite dimension.
         """
-        new_dims = einexpr.dimension_utils.isolate_dims(self.dimspec.dimensions, dims, split_mode=split_mode)
+        new_dims = einexpr.dimension_utils.isolate_dims(self.dims, dims, split_mode=split_mode)
         if new_dims == self.dimspec:
             return self
         return self.coerce(new_dims)
+    
+    @property
+    def dims(self) -> Tuple[einexpr.array_api.dimension.BaseDimension, ...]:
+        return self.dimspec.dimensions
 
     def __array__(self: array, dtype: Optional[npt.DTypeLike] = None) -> einexpr.einarray:
         return self.a.__array__()
