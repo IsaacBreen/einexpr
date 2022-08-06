@@ -8,7 +8,7 @@ from collections.abc import Iterable, Iterator
 import inspect
 import warnings
 from collections import Counter
-from itertools import chain, combinations
+from itertools import chain, combinations, repeat, starmap
 from typing import *
 import warnings
 
@@ -338,7 +338,9 @@ def deep_remove(tree: T, match_func: Callable[Any, bool]) -> T:
     """
     Remove elements from a tree of Python objects.
     """
-    return pytree_mapreduce(tree, lambda x: x, lambda x: x if not match_func(x) else RemoveSentinel())
+    def remover(item):
+        return RemoveSentinel() if match_func(item) else item
+    return pytree_mapreduce(tree, remover, remover)
 
 
 def get_position(tree, item):
