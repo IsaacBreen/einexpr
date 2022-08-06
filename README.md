@@ -91,11 +91,13 @@ pip install einexpr
 
 While `einexpr` is ready for the world, it would seem that the Python ecosystem is not yet ready for `einexpr`.
 
-`einexpr` is built with first-class support for Python array API standard-conforming libraries. The standard is rather new, and none of the major tensor libraries have finished implementing it yet.
+`einexpr` is built with first-class support for Python array API standard-conforming libraries. This means that `einexpr` will have excellent support for NumPy, PyTorch, TensorsFlow, JAX, and other array libraries.However, since standard is rather new, none of these libraries have finished implementing it yet.
 
-Don't worry, though; the devs of your favourite tensor library (e.g. [PyTorch](https://github.com/pytorch/pytorch/issues/58743)) are probably working on it right now. Check back soon!
+Don't worry, though: the devs are probably working on it right now! (e.g. [PyTorch](https://github.com/pytorch/pytorch/issues/58743)). Check back soon.
 
-If you're super keen to experience `einexpr`, you can try it out today by installing NumPy `1.24.dev0` using:
+### For the impatient
+
+If you're super keen to experience `einexpr` right this moment, you can try it out by installing NumPy `1.24.dev0`:
 
 ```bash
 pip install --upgrade git+https://github.com/numpy/numpy
