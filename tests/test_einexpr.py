@@ -619,6 +619,7 @@ def test_tricky_reshapes_l2():
 
 
 def test_tutorial():
+    # ---------------------------------- PART 1 ---------------------------------- #
     import einexpr as ei
     import numpy as np
 
@@ -646,3 +647,12 @@ def test_tutorial():
     # Matrix-vector multiplication
     x = X['i j'] * a['j']
     assert np.all(np.matmul(X, a) == x['i'])
+
+
+    # ---------------------------------- PART 2 ---------------------------------- #
+    i, j = ei.dims(2) # Unnamed object
+    k, l = ei.dims('k l') # Named objects
+
+    # Matrix-matrix multiplication
+    x = X[i, j] * Y[j, k]
+    assert np.all(np.matmul(X, Y) == x[i, k])
