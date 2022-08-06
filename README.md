@@ -10,7 +10,7 @@ In the interest of future-readiness, `einexpr` is built with first-class support
 
 Don't worry, though; your favourite tensor library developers are almost certainly hard at work implementing it right now! Check back soon! 😁
 
-If you're super keen to experience `einexpr`, you can try it out right now by installing NumPy `1.24.dev0` using:
+If you're super keen to experience `einexpr`, you can try it out today by installing NumPy `1.24.dev0` using:
 
 ```bash
 pip install --upgrade git+https://github.com/numpy/numpy
@@ -28,7 +28,7 @@ Being explicit about how operations map over dimensions dramatically reduce the 
 
 ## In action
 
-The dimension naming convention is designed to be as intuitive, flexible, and unambiguous.
+The convention for specifying dimension structure is designed to be intuitive, flexible, and unambiguous.
 
 ```python
 import einexpr as ei
@@ -41,7 +41,7 @@ b = ei.array([3,4])
 
 # Dot product
 x = a['i'] * b['i']
-assert np.dot(a, b) == x['']
+assert np.dot(a, b) == x['']  # <-- x[''] collapses (by summing) along dimensions i, turning x['i'] into a scalar
 
 # Outer product
 x = a['i'] * b['j']
