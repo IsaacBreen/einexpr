@@ -89,7 +89,7 @@ class einarray():
             current_dims_after_absorption, dims_before_replacements_after_absorption = einexpr.dimension_utils.resolve_positional_dims((self.dims.dimensions, dims_before_replacements))
             # Isolate the non-ellipsis dimensions
             non_ellipsis_non_absorbing_dims = [dim for dim in dims_before_replacements_after_absorption if dim != ...]
-            current_dims_isolated = einexpr.dimension_utils.isolate_dims(current_dims_after_absorption, non_ellipsis_non_absorbing_dims)
+            current_dims_isolated = einexpr.dimension_utils.isolate_dims(current_dims_after_absorption, non_ellipsis_non_absorbing_dims, split_mode='left')
             if not set(non_ellipsis_non_absorbing_dims) <= set(current_dims_isolated):
                 raise einexpr.exceptions.InternalError(f"The dimensions {non_ellipsis_non_absorbing_dims} are not a subset of the dimensions {current_dims_isolated} of the array.")
             # The ellipsis expands to the current dimensions after isolation that are not in the non-ellipsis dimensions
@@ -102,10 +102,10 @@ class einarray():
         ARBITRARY_POSITIONAL_BINDING_DIRECTION: Literal['left-to-right', 'right-to-left'] = 'left-to-right'
         if ARBITRARY_POSITIONAL_BINDING_DIRECTION == 'left-to-right':
             current_dims_after_absorption, dims_before_replacements = einexpr.dimension_utils.resolve_positional_dims(((..., *self.dims.dimensions), (..., *dims_before_replacements)))
-            current_dims_after_absorption, dims_after_replacements = current_dims_after_absorption[1:], dims_after_replacements[1:]
+            current_dims_after_absorption, dims_before_replacements = current_dims_after_absorption[1:], dims_before_replacements[1:]
         elif ARBITRARY_POSITIONAL_BINDING_DIRECTION == 'right-to-left':
             current_dims_after_absorption, dims_before_replacements = einexpr.dimension_utils.resolve_positional_dims(((*self.dims.dimensions, ...), (*dims_before_replacements, ...)))
-            current_dims_after_absorption, dims_after_replacements = current_dims_after_absorption[:-1], dims_after_replacements[:-1]
+            current_dims_after_absorption, dims_before_replacements = current_dims_after_absorption[:-1], dims_before_replacements[:-1]
         else:
             raise einexpr.exceptions.InternalError(f"ARBITRARY_POSITIONAL_BINDING_DIRECTION must be one of 'left-to-right' or 'right-to-left'")
         current_dimspec_after_absorption = self.dims.with_dimensions(current_dims_after_absorption)
@@ -123,11 +123,11 @@ class einarray():
         dimspec_after_replacements = dimspec_before_replacements.with_dimensions(dims_after_replacements)
         return einexpr.einarray(raw_array, dims=dimspec_after_replacements)
     
-    def isolate_dims(self: array, dims: Iterable[AtomicDimension]) -> einexpr.einarray:
+    def isolate_dims(self: array, dims: Iterable[AtomicDimension], split_mode: Literal["left", "middle", "right"] = "middle") -> einexpr.einarray:
         """
         Extract the dimensions in ``dims`` into the first level if they are part of a composite dimension.
         """
-        new_dims = einexpr.dimension_utils.isolate_dims(self.dims.dimensions, dims)
+        new_dims = einexpr.dimension_utils.isolate_dims(self.dims.dimensions, dims, split_mode=split_mode)
         if new_dims == self.dims:
             return self
         return self.coerce(new_dims)

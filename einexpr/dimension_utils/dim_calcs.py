@@ -1,9 +1,10 @@
 import collections
 import functools
+import itertools
 import operator
 from os import PRIO_PGRP
 import re
-from itertools import chain, zip_longest
+from itertools import chain, repeat, zip_longest
 from types import EllipsisType
 from typing import Any, Callable, Dict, Iterable, Iterator, List, Literal, Optional, Sequence, Set, Tuple, TypeVar, Union, overload
 
@@ -314,24 +315,29 @@ def expand_dims(dims: DimTupleOrSpec) -> DimTupleOrSpec:
 
 
 @einexpr.utils.deprecated_guard
-def isolate_dim(array_dims: Tuple[einexpr.array_api.BaseDimension, ...], dim: einexpr.array_api.dimension.BaseDimension) -> Tuple[einexpr.array_api.BaseDimension, ...]:
+def isolate_dim(array_dims: Tuple[einexpr.array_api.BaseDimension, ...], dim: einexpr.array_api.dimension.BaseDimension, split_mode: Literal['left', 'middle', 'right']) -> Tuple[einexpr.array_api.BaseDimension, ...]:
     """
     Extract the dimensions in ``dim`` into the first level if it is part of a composite dimension.
     """
     position = einexpr.utils.get_position(array_dims, dim)
     if position is None:
         raise ValueError(f"Dimension {dim!r} is not part of the array dimensions {array_dims!r}.")
-    lhs, rhs = einexpr.utils.split_at(array_dims, position)
-    return einexpr.utils.deep_remove((*lhs, dim, *rhs), lambda x: x == ())
+    if split_mode == 'middle':
+        lhs, rhs = einexpr.utils.split_at(array_dims, position)
+        return einexpr.utils.deep_remove((*lhs, dim, *rhs), lambda x: x == ())
+    elif split_mode == 'left':
+        return einexpr.utils.deep_remove((dim, *einexpr.utils.deep_remove(array_dims, lambda x: x == dim)), lambda x: x == ())
+    elif split_mode == 'right':
+        return einexpr.utils.deep_remove((*einexpr.utils.deep_remove(array_dims, dim), dim), lambda x: x == ())
 
 
 @einexpr.utils.deprecated_guard
-def isolate_dims(array_dims: Tuple[einexpr.array_api.BaseDimension, ...], dims: Tuple[einexpr.array_api.dimension.BaseDimension, ...]) -> Tuple[einexpr.array_api.BaseDimension, ...]:
+def isolate_dims(array_dims: Tuple[einexpr.array_api.BaseDimension, ...], dims: Tuple[einexpr.array_api.dimension.BaseDimension, ...], split_mode: Literal['left', 'middle', 'right'] = 'middle') -> Tuple[einexpr.array_api.BaseDimension, ...]:
     """
     Extract the dimensions in ``dims`` into the first level if they are part of a composite dimension.
     """
     for dim in dims:
-        array_dims = isolate_dim(array_dims, dim)
+        array_dims = isolate_dim(array_dims, dim, split_mode)
     return array_dims
 
 
@@ -370,72 +376,91 @@ def resolve_positional_dims(dimensions_tuples):
     elif not any(isinstance(dimensions, einexpr.array_api.dimension.DimensionSpecification) for dimensions in dimensions_tuples):
         # TODO: This function has a huge amount of redundant code.
         # Replace absorbing dimensions by `None`
-        _dimensions_tuples = tuple(tuple(None if isinstance(dim, einexpr.array_api.dimension.AbsorbingDimension) else dim for dim in dimensions) for dimensions in dimensions_tuples)
+        dimensions_tuples = tuple(tuple(None if isinstance(dim, einexpr.array_api.dimension.AbsorbingDimension) else dim for dim in dimensions) for dimensions in dimensions_tuples)
         _dimensions_tuples = []
-        for absorbing_dimensions in dimensions_tuples:
-            absorbing_dimensions = list(absorbing_dimensions)
+        for _absorbing_dimensions in dimensions_tuples:
+            absorbing_dimensions = list(_absorbing_dimensions)
             for dimensions_to_absorb in dimensions_tuples:
-                common_dimensions = set(absorbing_dimensions) & set(dimensions_to_absorb) - {..., None}
-                dimensions_to_absorb = tuple(dimension_to_absorb for dimension_to_absorb in dimensions_to_absorb if dimension_to_absorb not in common_dimensions)
-                if absorbing_dimensions is dimensions_to_absorb:
+                if _absorbing_dimensions is dimensions_to_absorb:
                     continue
                 if ... not in absorbing_dimensions and ... not in dimensions_to_absorb:
                     if len(absorbing_dimensions) != len(dimensions_to_absorb):
                         raise ValueError(f"Dimension tuples without ellipses must have the same lengths: {absorbing_dimensions!r} != {dimensions_to_absorb!r}.")
                     absorbing_dimensions = tuple(dimension_to_absorb if absorbing_dimension is None else absorbing_dimension for absorbing_dimension, dimension_to_absorb in zip(absorbing_dimensions, dimensions_to_absorb))
-                elif ... in absorbing_dimensions and ... not in dimensions_to_absorb:
-                    i_absorbing_dimensions_ellipsis = absorbing_dimensions.index(...)
-                    absorbing_dimensions_lhs = absorbing_dimensions[:i_absorbing_dimensions_ellipsis]
-                    absorbing_dimensions_rhs = absorbing_dimensions[i_absorbing_dimensions_ellipsis + 1:]
-                    for i, (absorbing_dimension, dimension_to_absorb) in enumerate(zip(absorbing_dimensions_lhs, dimensions_to_absorb)):
-                        if absorbing_dimension is None and dimension_to_absorb is not None:
-                            absorbing_dimensions[i] = dimension_to_absorb
-                        elif absorbing_dimension is not None and dimension_to_absorb is not None:
-                            if absorbing_dimension != dimension_to_absorb:
-                                raise ValueError(f"Conflicting dimensions: {absorbing_dimension!r} != {dimension_to_absorb!r}.")
-                    for i, (absorbing_dimension, dimension_to_absorb) in enumerate(reversed(list(zip(reversed(absorbing_dimensions_rhs), reversed(dimensions_to_absorb)))), start=1):
-                        if absorbing_dimension is None and dimension_to_absorb is not None:
-                            absorbing_dimensions[-i] = dimension_to_absorb
-                        elif absorbing_dimension is not None and dimension_to_absorb is not None:
-                            if absorbing_dimension != dimension_to_absorb:
-                                raise ValueError(f"Conflicting dimensions: {absorbing_dimension!r} != {dimension_to_absorb!r}.")
-                elif ... not in absorbing_dimensions and ... in dimensions_to_absorb:
-                    i_dimensions_to_absorb_ellipsis = dimensions_to_absorb.index(...)
-                    dimensions_to_absorb_lhs = dimensions_to_absorb[:i_dimensions_to_absorb_ellipsis]
-                    dimensions_to_absorb_rhs = dimensions_to_absorb[i_dimensions_to_absorb_ellipsis + 1:]
-                    for i, (absorbing_dimension, dimension_to_absorb) in enumerate(zip(absorbing_dimensions, dimensions_to_absorb_lhs)):
-                        if absorbing_dimension is None and dimension_to_absorb is not None:
-                            absorbing_dimensions[i] = dimension_to_absorb
-                        elif absorbing_dimension is not None and dimension_to_absorb is not None:
-                            if absorbing_dimension != dimension_to_absorb:
-                                raise ValueError(f"Conflicting dimensions: {absorbing_dimension!r} != {dimension_to_absorb!r}.")
-                    for i, (absorbing_dimension, dimension_to_absorb) in enumerate(reversed(list(zip(reversed(absorbing_dimensions_rhs), reversed(dimensions_to_absorb_rhs)))), start=1):
-                        if absorbing_dimension is None and dimension_to_absorb is not None:
-                            absorbing_dimensions[-i] = dimension_to_absorb
-                        elif absorbing_dimension is not None and dimension_to_absorb is not None:
-                            if absorbing_dimension != dimension_to_absorb:
-                                raise ValueError(f"Conflicting dimensions: {absorbing_dimension!r} != {dimension_to_absorb!r}.")
-                elif ... in absorbing_dimensions and ... in dimensions_to_absorb:
-                    i_absorbing_dimensions_ellipsis = absorbing_dimensions.index(...)
-                    absorbing_dimensions_lhs = absorbing_dimensions[:i_absorbing_dimensions_ellipsis]
-                    absorbing_dimensions_rhs = absorbing_dimensions[i_absorbing_dimensions_ellipsis + 1:]
-                    i_dimensions_to_absorb_ellipsis = dimensions_to_absorb.index(...)
-                    dimensions_to_absorb_lhs = dimensions_to_absorb[:i_dimensions_to_absorb_ellipsis]
-                    dimensions_to_absorb_rhs = dimensions_to_absorb[i_dimensions_to_absorb_ellipsis + 1:]
-                    for i, (absorbing_dimension, dimension_to_absorb) in enumerate(zip(absorbing_dimensions_lhs, dimensions_to_absorb_lhs)):
-                        if absorbing_dimension is None and dimension_to_absorb is not None:
-                            absorbing_dimensions[i] = dimension_to_absorb
-                        elif absorbing_dimension is not None and dimension_to_absorb is not None:
-                            if absorbing_dimension != dimension_to_absorb:
-                                raise ValueError(f"Conflicting dimensions: {absorbing_dimension!r} != {dimension_to_absorb!r}.")
-                    for i, (absorbing_dimension, dimension_to_absorb) in enumerate(reversed(list(zip(reversed(absorbing_dimensions_rhs), reversed(dimensions_to_absorb_rhs)))), start=1):
-                        if absorbing_dimension is None and dimension_to_absorb is not None:
-                            absorbing_dimensions[-i] = dimension_to_absorb
-                        elif absorbing_dimension is not None and dimension_to_absorb is not None:
-                            if absorbing_dimension != dimension_to_absorb:
-                                raise ValueError(f"Conflicting dimensions: {absorbing_dimension!r} != {dimension_to_absorb!r}.")
                 else:
-                    raise einexpr.exceptions.InternalError(f"Should never get here.")
+                    dimensions_to_absorb = tuple(dimension_to_absorb for dimension_to_absorb in dimensions_to_absorb if dimension_to_absorb is not None)
+                    common_dimensions = set(absorbing_dimensions) & set(dimensions_to_absorb) - {..., None}
+                    dimensions_to_absorb = tuple(dimension_to_absorb for dimension_to_absorb in dimensions_to_absorb if dimension_to_absorb not in common_dimensions)
+                    if ... in absorbing_dimensions and ... not in dimensions_to_absorb:
+                        i_absorbing_dimensions_ellipsis = absorbing_dimensions.index(...)
+                        absorbing_dimensions_lhs = absorbing_dimensions[:i_absorbing_dimensions_ellipsis]
+                        absorbing_dimensions_rhs = absorbing_dimensions[i_absorbing_dimensions_ellipsis + 1:]
+                        dimensions_to_absorb_lhs = iter(dimensions_to_absorb)
+                        dimensions_to_absorb_rhs = iter(reversed(dimensions_to_absorb))
+                        for i, absorbing_dimension in enumerate(absorbing_dimensions_lhs):
+                            if absorbing_dimension is None:
+                                try:
+                                    dimension_to_absorb = next(dimensions_to_absorb_rhs)
+                                except StopIteration:
+                                    # TODO: this should never be triggered here due to dimensions length requirements.
+                                    break
+                                else:
+                                    absorbing_dimensions[-i] = dimension_to_absorb
+                        for i, absorbing_dimension in enumerate(reversed(absorbing_dimensions_rhs), start=1):
+                            if absorbing_dimension is None:
+                                try:
+                                    dimension_to_absorb = next(dimensions_to_absorb_rhs)
+                                except StopIteration:
+                                    break
+                                else:
+                                    absorbing_dimensions[-i] = dimension_to_absorb
+                    elif ... not in absorbing_dimensions and ... in dimensions_to_absorb:
+                        i_dimensions_to_absorb_ellipsis = dimensions_to_absorb.index(...)
+                        absorbing_dimensions_lhs = absorbing_dimensions
+                        absorbing_dimensions_rhs = absorbing_dimensions
+                        dimensions_to_absorb_lhs = iter(dimensions_to_absorb[:i_dimensions_to_absorb_ellipsis])
+                        dimensions_to_absorb_rhs = iter(reversed(dimensions_to_absorb[i_dimensions_to_absorb_ellipsis + 1:]))
+                        for i, absorbing_dimension in enumerate(absorbing_dimensions_lhs):
+                            if absorbing_dimension is None:
+                                try:
+                                    dimension_to_absorb = next(dimensions_to_absorb_lhs)
+                                except StopIteration:
+                                    break
+                                else:
+                                    absorbing_dimensions[i] = dimension_to_absorb
+                        for i, absorbing_dimension in enumerate(reversed(absorbing_dimensions_rhs), start=1):
+                            if absorbing_dimension is None:
+                                try:
+                                    dimension_to_absorb = next(dimensions_to_absorb_rhs)
+                                except StopIteration:
+                                    break
+                                else:
+                                    absorbing_dimensions[-i] = dimension_to_absorb
+                    elif ... in absorbing_dimensions and ... in dimensions_to_absorb:
+                        i_absorbing_dimensions_ellipsis = absorbing_dimensions.index(...)
+                        absorbing_dimensions_lhs = absorbing_dimensions[:i_absorbing_dimensions_ellipsis]
+                        absorbing_dimensions_rhs = absorbing_dimensions[i_absorbing_dimensions_ellipsis + 1:]
+                        i_dimensions_to_absorb_ellipsis = dimensions_to_absorb.index(...)
+                        dimensions_to_absorb_lhs = iter(dimensions_to_absorb[:i_dimensions_to_absorb_ellipsis])
+                        dimensions_to_absorb_rhs = iter(reversed(dimensions_to_absorb[i_dimensions_to_absorb_ellipsis + 1:]))
+                        for i, absorbing_dimension in enumerate(absorbing_dimensions_lhs):
+                            if absorbing_dimension is None:
+                                try:
+                                    dimension_to_absorb = next(dimensions_to_absorb_lhs)
+                                except StopIteration:
+                                    break
+                                else:
+                                    absorbing_dimensions[i] = dimension_to_absorb
+                        for i, absorbing_dimension in enumerate(reversed(absorbing_dimensions_rhs), start=1):
+                            if absorbing_dimension is None:
+                                try:
+                                    dimension_to_absorb = next(dimensions_to_absorb_rhs)
+                                except StopIteration:
+                                    break
+                                else:
+                                    absorbing_dimensions[-i] = dimension_to_absorb
+                    else:
+                        raise einexpr.exceptions.InternalError(f"Should never get here.")
             _dimensions_tuples.append(absorbing_dimensions)
         dimensions_tuples = _dimensions_tuples
         len_dimensions = None
@@ -444,26 +469,40 @@ def resolve_positional_dims(dimensions_tuples):
                 len_dimensions = len(dimensions)
                 break
         _dimensions_tuples = []
+
         if len_dimensions is None:
-            remaining_absorbing_dimensions = collections.defaultdict(einexpr.array_api.dimension.AbsorbingDimension)
+            absorbable_dimension_generator_lhs = (einexpr.array_api.dimension.AbsorbingDimension() for _ in itertools.repeat(None))
+            absorbable_dimension_generator_rhs = (einexpr.array_api.dimension.AbsorbingDimension() for _ in itertools.repeat(None))
             for dimensions in dimensions_tuples:
                 i_ellipsis = dimensions.index(...)
-                dimensions_lhs = tuple(remaining_absorbing_dimensions[i] if dimension is None else dimension for i, dimension in enumerate(dimensions[:i_ellipsis]))
-                dimensions_rhs = tuple(remaining_absorbing_dimensions[-i] if dimension is None else dimension for i, dimension in enumerate(reversed(dimensions[i_ellipsis + 1:])))
+                absorbable_dimension_generator_lhs, absorbable_dimension_generator_instance_lhs = itertools.tee(absorbable_dimension_generator_lhs)
+                absorbable_dimension_generator_rhs, absorbable_dimension_generator_instance_rhs = itertools.tee(absorbable_dimension_generator_rhs)
+                dimensions_lhs = tuple(next(absorbable_dimension_generator_instance_lhs) if dimension is None else dimension for dimension in dimensions[:i_ellipsis])
+                dimensions_rhs = reversed(tuple(next(absorbable_dimension_generator_instance_rhs) if dimension is None else dimension for dimension in reversed(dimensions[i_ellipsis + 1:])))
                 _dimensions_tuples.append((*dimensions_lhs, ..., *dimensions_rhs))
         else:
             # TODO: Ensure the lengths of all ellipsis-containing dimensions are less than or equal to the length of the longest dimension.
             #       Might need to do this earlier.
-            remaining_absorbing_dimensions = collections.defaultdict(einexpr.array_api.dimension.AbsorbingDimension)
+            num_absorbables = next(dimensions.count(None) for dimensions in dimensions_tuples if ... not in dimensions)
+            for dimensions in dimensions_tuples:
+                if ... in dimensions:
+                    if dimensions.count(None) > num_absorbables:
+                        raise einexpr.exceptions.InternalError(f"All dimension tuples that don't contain an ellipsis must have the same number of absorbing dimensions, and this number must be greater than the number of absorbing dimensions in any of the ellipsis-containing dimension tuples. Got {dimensions.count(None)} absorbing dimensions in {dimensions}; expected less than {num_absorbables}.")
+                elif dimensions.count(None) != num_absorbables:
+                    raise einexpr.exceptions.InternalError(f"All dimension tuples that don't contain an ellipsis must have the same number of absorbing dimensions, and this number must be greater than the number of absorbing dimensions in any of the ellipsis-containing dimension tuples. Got {dimensions.count(None)} absorbing dimensions in {dimensions}; expected {num_absorbables}.")
+            absorbables = [einexpr.array_api.dimension.AbsorbingDimension() for _ in range(num_absorbables)]
             for dimensions in dimensions_tuples:
                 if ... in dimensions:
                     i_ellipsis = dimensions.index(...)
-                    dimensions_lhs = tuple(remaining_absorbing_dimensions[i] if dimension is None else dimension for i, dimension in enumerate(dimensions[:i_ellipsis]))
-                    dimensions_rhs = tuple(remaining_absorbing_dimensions[-i] if dimension is None else dimension for i, dimension in enumerate(dimensions[i_ellipsis + 1:], start=len_dimensions - i_ellipsis + 1))
-                    _dimensions_tuples.append((*dimensions_lhs, ..., *dimensions_rhs))
+                    absorbable_dimension_generator_lhs = iter(absorbables)
+                    absorbable_dimension_generator_rhs = iter(reversed(absorbables))
+                    dimensions_lhs = tuple(next(absorbable_dimension_generator_lhs) if dimension is None else dimension for dimension in dimensions[:i_ellipsis])
+                    dimensions_rhs = tuple(next(absorbable_dimension_generator_rhs) if dimension is None else dimension for dimension in dimensions[i_ellipsis + 1:])
+                    dimensions = ((*dimensions_lhs, ..., *dimensions_rhs))
                 else:
-                    dimensions = tuple(remaining_absorbing_dimensions[i] if dimension is None else dimension for i, dimension in enumerate(dimensions))
-                    _dimensions_tuples.append(dimensions)
+                    absorbable_dimension_generator = iter(absorbables)
+                    dimensions = tuple(next(absorbable_dimension_generator) if dimension is None else dimension for dimension in dimensions)
+                _dimensions_tuples.append(dimensions)
         return tuple(_dimensions_tuples)
     else:
         raise ValueError(f"Cannot resolve positional dimensions for {dimensions_tuples}.")

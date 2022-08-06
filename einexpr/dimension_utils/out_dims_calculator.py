@@ -50,7 +50,9 @@ def get_raw(array):
 
 
 def resolve_absorbable_dims(arrays: Tuple[einexpr.array_api.array, ...]) -> Tuple[einexpr.array_api.array, ...]:
-    resolved_arg_dimspecs = einexpr.dimension_utils.resolve_positional_dims(tuple(get_dimspec(array) for array in arrays))
+    resolved_arg_dimensions = einexpr.dimension_utils.resolve_positional_dims(tuple((..., *get_dims(array)) for array in arrays))
+    resolved_arg_dimensions = [dimensions[1:] for dimensions in resolved_arg_dimensions]
+    resolved_arg_dimspecs = tuple(get_dimspec(array).with_dimensions(dimensions) for array, dimensions in zip(arrays, resolved_arg_dimensions))
     return tuple(
         einexpr.einarray(get_raw(arg), dims=dimspec)
         if isinstance(arg, einexpr.array) else arg
