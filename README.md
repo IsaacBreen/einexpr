@@ -7,7 +7,7 @@
 # Introducing einexpr
 
 <p align="center">
-    <b> einexpr makes it easy to write fast, maintainable, interpretable ML code </b>
+    <b> ❯❯ einexpr helps you write fast, maintainable, interpretable ML code ❮❮ </b>
 </p>
 
 Inspired by Einstein summation notation, `einexpr` encourages explicit dimension naming.
