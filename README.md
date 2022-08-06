@@ -18,8 +18,6 @@ Explicitly naming dimensions makes it much clearer what operations over those di
 
 ## In action
 
-`einexpr
-
 ```python
 import einexpr as ei
 import numpy as np
