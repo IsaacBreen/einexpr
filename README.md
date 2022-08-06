@@ -1,3 +1,6 @@
+<!-- Display logo -->
+![einexpr logo](docs/static/images/logo.png)
+
 <h2 align="center"> ⏰ 👀 </h2>
 <p align="center">
     <b>Awaiting array API implementations</b>
