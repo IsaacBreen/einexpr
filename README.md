@@ -1,5 +1,5 @@
 <!-- Display logo -->
-![einexpr logo](docs/static/images/logo.png|width=100px)
+![einexpr logo](docs/static/images/logo.png | width=100)
 
 <h2 align="center"> ⏰ 👀 </h2>
 <p align="center">
