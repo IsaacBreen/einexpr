@@ -1,10 +1,7 @@
-<!-- Display logo -->
-![einexpr logo](docs/static/images/logo.png | width=100px)
+<!-- Display logo centered -->
+<img src="docs/static/images/logo.png" width="300" alt="logo" style="display: block; margin-left: auto; margin-right: auto;">
 
-<h2 align="center"> ⏰ 👀 </h2>
-<p align="center">
-    <b>Awaiting array API implementations</b>
-</p>
+# Awaiting array API implementations ⏰ 👀
 
 
 While `einexpr` is ready for the world, it seems the Python ecosystem is not yet ready for `einexpr`.
@@ -19,7 +16,8 @@ If you're super keen to experience `einexpr`, you can try it out today by instal
 pip install --upgrade git+https://github.com/numpy/numpy
 ```
 
-# einexpr
+
+# Introducing **einexpr**
 
 <p align="center">
     <b> einexpr makes it easy to write fast, maintainable, interpretable ML code </b>
