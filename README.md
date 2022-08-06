@@ -10,7 +10,7 @@ In the interest of future-readiness, `einexpr` is built with first-class support
 
 Don't worry, though; your favourite tensor library developers are almost certainly hard at work implementing it right now! Check back soon! 😁
 
-If you're super keen to experience `einexpr`, you can try it out right now by installing NumPy `1.24.dev0` using:
+If you're super keen to experience `einexpr`, you can try it out today by installing NumPy `1.24.dev0` using:
 
 ```bash
 pip install --upgrade git+https://github.com/numpy/numpy
