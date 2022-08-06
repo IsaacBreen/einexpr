@@ -368,69 +368,46 @@ def resolve_positional_dims(dimensions_tuples):
         _dimensions_tuples = resolve_positional_dims(tuple(dimspec.dimensions for dimspec in dimensions_tuples))
         return tuple(dimspec.with_dimensions(dimensions) for dimspec, dimensions in zip(dimensions_tuples, _dimensions_tuples))
     elif not any(isinstance(dimensions, einexpr.array_api.dimension.DimensionSpecification) for dimensions in dimensions_tuples):
-        dimensions_tuple_after_absorption = []
-        for absorbing_dimensions in dimensions_tuples:
-            # We want to match all absorbable dimensions to an absorbable dimension at the same position (after ignoring all non-absorbable dimensions this dimension specification has in common with) in the other dimension specifications.
-            i_absorbing_dims = [i for i, dim in enumerate(absorbing_dimensions) if isinstance(dim, einexpr.array_api.dimension.AbsorbingDimension)]
-            if ... in absorbing_dimensions:
-                i_absorbing_dims_ellipsis = absorbing_dimensions.index(...) if ... in absorbing_dimensions else -1
-                i_absorbing_dims_lhs = [i for i in i_absorbing_dims if i < i_absorbing_dims_ellipsis]
-                i_absorbing_dims_rhs = [i for i in i_absorbing_dims if i > i_absorbing_dims_ellipsis]
-            else:
-                i_absorbing_dims_lhs = i_absorbing_dims
-                i_absorbing_dims_rhs = i_absorbing_dims
-            # TODO: make this dict non-overwritable
-            absorption_map: Dict[int, einexpr.array_api.dimension.NestedDimension] = {}
-            for dimensions_to_absorb in dimensions_tuples:
-                if dimensions_to_absorb is absorbing_dimensions:
-                    continue
-                if ... in dimensions_to_absorb:
-                    i_dimensions_to_absorb_ellipsis = dimensions_to_absorb.index(...) if ... in dimensions_to_absorb else -1
-                    dimensions_to_absorb_lhs = dimensions_to_absorb[:i_dimensions_to_absorb_ellipsis]
-                    dimensions_to_absorb_rhs = dimensions_to_absorb[i_dimensions_to_absorb_ellipsis + 1:]
-                else:
-                    dimensions_to_absorb_lhs = dimensions_to_absorb
-                    dimensions_to_absorb_rhs = dimensions_to_absorb
+        class MaybeListWithMiddleMissing:
+            items_or_lhs_items: Tuple
+            size: Optional[int]
+            rhs_items: Optional[Tuple]
+            
+            def __init__(self, items_or_lhs_items: Tuple, size: Optional[int], rhs_items: Optional[Tuple]):
+                self.items_or_lhs_items = items_or_lhs_items
+                self.size = size
+                self.rhs_items = rhs_items
+                if self.size is None == self.rhs_items is None:
+                    raise ValueError(f"Either size or rhs_items must be specified, but not both.")
                 
-                def populate_absorption_map(i_absorbing_dims, dimensions_to_absorb, absorption_map):
-                    """
-                    A helper function to populate the absorption map. -It mutates the `absorption_map` dictionary in the outer scope (very naughty 🤭).- actually let's not.
-                    """
-                    # The dimensions of the reference dimension specification that can be absorbed into the current dimension specification are those non-absorbable dimensions in the reference dimension specification that do not appear in the current dimension specification.
-                    absorbable_dims = [dim for dim in dimensions_to_absorb if dim not in absorbing_dimensions]
-                    for i_absorbing_dimension, absorbable_dimension in zip(i_absorbing_dims, absorbable_dims):
-                        absorbing_dimension = absorbing_dimensions[i_absorbing_dimension]
-                        if isinstance(absorbing_dimension, einexpr.array_api.dimension.AbsorbingDimension):
-                            if i_absorbing_dimension in absorption_map:
-                                if absorption_map[i_absorbing_dimension] != absorbable_dimension:
-                                    raise ValueError(f"Conflicting candidates for absorbing dimension at position {i_absorbing_dimension} in {absorbing_dimensions}: {absorbing_dimension} != {absorbable_dimension}")
-                            else:
-                                absorption_map[i_absorbing_dimension] = absorbable_dimension
+            def __getitem__(self, index):
+                if size is None:
+                    if index >= 0:
+                        if index > len(self.items_or_lhs_items):
+                            raise IndexError(f"Index {index} is out of bounds for {self.items_or_lhs_items}.")
                         else:
-                            # This absorbable dimension has already absorbed a dimension from another reference dimension specification. Ensure that this absorbable is identical to the one that was already absorbed.
-                            if absorbing_dimension != absorbable_dimension:
-                                raise ValueError(f"Conflicting candidates for absorbing dimension at position {i_absorbing_dimension} in {absorbing_dimensions}: {absorbing_dimension} != {absorbable_dimension}")
-                    return absorption_map
-                
-                absorption_map = populate_absorption_map(i_absorbing_dims_lhs, dimensions_to_absorb_lhs, absorption_map)
-                absorption_map = populate_absorption_map(tuple(reversed(i_absorbing_dims_rhs)), tuple(reversed(dimensions_to_absorb_rhs)), absorption_map)
-            # Replace all absorbing dimensions with the corresponding non-absorbing dimensions.
-            dimensions_after_absorbing = tuple(absorption_map.get(i, dim) for i, dim in enumerate(absorbing_dimensions))
-            dimensions_tuple_after_absorption.append(dimensions_after_absorbing)
-        # Absorbing dimensions should be consistent over the broadcast too. TODO: This is quite ugly. Consider integrating it into the above loop.
-        absorbing_dimensions = collections.defaultdict(einexpr.array_api.dimension.AbsorbingDimension)
-        _dimensions_tuple_after_absorption = []
-        for dimensions in dimensions_tuple_after_absorption:
-            _dimensions_reversed = []
-            absorbing_dimension_counter = 0
-            for dim in reversed(dimensions):
-                if isinstance(dim, einexpr.array_api.dimension.AbsorbingDimension):
-                    _dimensions_reversed.append(absorbing_dimensions[absorbing_dimension_counter])
-                    absorbing_dimension_counter += 1
+                            return self.items_or_lhs_items[index]
+                    else:
+                        if -index > len(self.rhs_items):
+                            raise IndexError(f"Index {index} is out of bounds for {self.rhs_items}.")
+                        else:
+                            return self.rhs_items[index]
                 else:
-                    _dimensions_reversed.append(dim)
-            _dimensions_tuple_after_absorption.append(tuple(reversed(_dimensions_reversed)))
-        dimensions_tuple_after_absorption = tuple(_dimensions_tuple_after_absorption)
-        return dimensions_tuple_after_absorption
+                    return self.items_or_lhs_items[index]
+                        
+        _dimensions_without_ellispis = tuple(dimensions for dimensions in dimensions_tuples if ... not in dimensions)
+        if len(_dimensions_without_ellispis) > 0:
+            # Check that the dimensions lengths are valid.
+            max_len = len(_dimensions_without_ellispis[0])
+            for dimensions in dimensions_tuples:
+                dimensions_len = len(dimensions)
+                if ... in dimensions:
+                    dimensions_len -= 1
+                if dimensions_len > max_len:
+                    raise ValueError(f"All dimensions must have the same length (or less if ellipsis is used). Got length {dimensions_len} for {dimensions} and {max_len} for {_dimensions_without_ellispis[0]}.")
+        
+        dimensions_tuple_after_absorption = []
+        dimensions_lhs = []
+        dimensions_rhs = []
     else:
         raise ValueError(f"Cannot resolve positional dimensions for {dimensions_tuples}.")
