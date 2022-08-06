@@ -483,6 +483,11 @@ def test_commonly_failed_3():
     assert z[''].a == npa.sum(f(y.a))
 
 
+def test_full_reduction(X):
+    X = einexpr.einarray(X, dims='i j')
+    assert X[''].dims.dimensions == ()
+    assert X[''].shape == ()
+
 # @pytest.mark.skip
 def test_reshape():
     x = einexpr.einarray([[1,2,3],[4,5,6]], dims='i j')

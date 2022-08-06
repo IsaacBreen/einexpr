@@ -83,7 +83,7 @@ def calculate_transexpand(
 
 @v_args(inline=True)
 class TreeToReshapeDimension(Transformer):
-    def start(self, root_dims) -> Any:
+    def start(self, root_dims=einexpr.utils.ExpandSentinel()) -> Any:
         return root_dims
 
     def root_dims(self, dim: D) -> D:
@@ -140,7 +140,7 @@ dims_reshape_grammar = Lark(
 
         %ignore WS
 
-        start: root_dims
+        start: root_dims?
         ?root_dims: replacable_dim | ellipsis_bare_tuple{replacable_dim} | bare_tuple{replacable_dim}
         ?replacable_dim: dim | "(" replacable_dim ")" | dim_replacement | tuple{replacable_dim}
         dim_replacement: irreplacable_dim "->" irreplacable_dim
