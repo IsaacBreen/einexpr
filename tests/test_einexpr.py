@@ -609,5 +609,5 @@ def test_tricky_reshapes_l2():
     assert ('k', ('i',), 'j') == x['k ... j'].dims.dimensions
     assert ('i', ('k',), 'j') == x['i ... j'].dims.dimensions
     
-    x = einexpr.ones((2,3,4,5,6,7, 8), dims='i j k l m n o p q')
+    x = einexpr.ones((2,3,4,5,6,7,8,9,10), dims='i j k l m n o p q')
     x = x['i j k (l m n) o p q']
