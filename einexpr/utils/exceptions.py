@@ -9,3 +9,7 @@ class UnreachableError(InternalError):
 
 class DimensionMismatch(Exception):
     pass
+
+
+class AmbiguousDimensionError(Exception):
+    pass
