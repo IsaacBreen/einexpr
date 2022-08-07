@@ -78,9 +78,16 @@ assert Z['i (j k)'].dims == ('i', ('j', 'k'))
 ...
 ```
 
+There are two ways to choose which backend to use: use the `backend` keyword argument or pass an array of the desired type.
+
+```python
+ei.array([1,2,3], backend='torch')
+ei.array(torch.asarray([1,2,3]))
+```
+
 # Installation
 
-`einexpr` makes extensive use of features added recently to some of its dependencies but not yet available in the release versions, so it is recommended that you install the development versions of Numpy and Ivy for now.
+`einexpr` makes extensive use of some recent developments in the Python array scene, so it is recommended that you install the development versions of Numpy and Ivy for now.
 
 ```bash
 pip install --upgrade git+https://github.com/numpy/numpy
@@ -88,18 +95,20 @@ pip install --upgrade git+https://github.com/unifyai/ivy
 pip install einexpr
 ```
 
-## Integrations
+# Integrations
 
 **Note**: While `einexpr` is ready for the world, the Python ecosystem is not *quite* ready for `einexpr`.
 
 `einexpr` achieves wide support for array API libraries through two recent standardisation efforts: the Python array API standard and UnifyAI's Ivy.
 
-### ❤️ Array API standard
+## ❤️ Array API standard
 
 `einexpr` is built with first-class support for Python array API standard-conforming libraries. This means that `einexpr` will have excellent long-term support for NumPy, PyTorch, TensorsFlow, JAX, and other array libraries. However, since standard is rather new, none of these libraries have finished implementing it yet. Don't worry, though: the devs are probably working on it right now! (e.g. [PyTorch](https://github.com/pytorch/pytorch/issues/58743)).
 
-### ❤️ Ivy
+## ❤️ Ivy
 
 Ivy is a library that provides a unified interface to a variety of array libraries. It serves a similar purpose to the array API standard, but aims to support a much broader set of functionality and has a different approach to standardisation. It passes calls to Ivy methods into equivalent calls to methods in a variety of backends, including NumPy, PyTorch, TensorFlow, JAX, and MXNet, by converting arguments and return values to and from a commom. Like the array API standard, Ivy is still a work in progress. But, unlike the array API standard, it can be used today.
+
+## Consistency
 
 In future, it is likely that all major array libraries will support the array API standard. `einexpr` prefers to use the array API of its input array, if available. Otherwise, it defaults to Ivy. Since Ivy will also support the array API standard, there will eventually be no functional difference from the users' point of view for array API functions, so `einexpr`'s interface will be consistent across backends. In the meantime, Ivy's discrepencies with the array API standard may cause some inconsistencies in the behavior of `einexpr` between backends.
