@@ -298,7 +298,7 @@ class einarray():
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
         processed_args, processed_kwargs = helper.process_args(args, kwargs)
         result = einexpr.einarray(
-            type(self.a).__abs__(*processed_args, **processed_kwargs), 
+            type(processed_args[0]).__abs__(*processed_args, **processed_kwargs), 
             dims=out_dims, 
             ambiguous_dims=ambiguous_dims)
         return result
@@ -356,7 +356,7 @@ class einarray():
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
         processed_args, processed_kwargs = helper.process_args(args, kwargs)
         result = einexpr.einarray(
-            type(self.a).__add__(*processed_args, **processed_kwargs), 
+            type(processed_args[0]).__add__(*processed_args, **processed_kwargs), 
             dims=out_dims, 
             ambiguous_dims=ambiguous_dims)
         return result
@@ -414,7 +414,7 @@ class einarray():
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
         processed_args, processed_kwargs = helper.process_args(args, kwargs)
         result = einexpr.einarray(
-            type(self.a).__radd__(*processed_args, **processed_kwargs), 
+            type(processed_args[0]).__radd__(*processed_args, **processed_kwargs), 
             dims=out_dims, 
             ambiguous_dims=ambiguous_dims)
         return result
@@ -447,7 +447,7 @@ class einarray():
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
         processed_args, processed_kwargs = helper.process_args(args, kwargs)
         result = einexpr.einarray(
-            type(self.a).__and__(*processed_args, **processed_kwargs), 
+            type(processed_args[0]).__and__(*processed_args, **processed_kwargs), 
             dims=out_dims, 
             ambiguous_dims=ambiguous_dims)
         return result
@@ -483,7 +483,7 @@ class einarray():
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
         processed_args, processed_kwargs = helper.process_args(args, kwargs)
         result = einexpr.einarray(
-            type(self.a).__rand__(*processed_args, **processed_kwargs), 
+            type(processed_args[0]).__rand__(*processed_args, **processed_kwargs), 
             dims=out_dims, 
             ambiguous_dims=ambiguous_dims)
         return result
@@ -633,7 +633,7 @@ class einarray():
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
         processed_args, processed_kwargs = helper.process_args(args, kwargs)
         result = einexpr.einarray(
-            type(self.a).__eq__(*processed_args, **processed_kwargs), 
+            type(processed_args[0]).__eq__(*processed_args, **processed_kwargs), 
             dims=out_dims, 
             ambiguous_dims=ambiguous_dims)
         return result
@@ -721,7 +721,7 @@ class einarray():
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
         processed_args, processed_kwargs = helper.process_args(args, kwargs)
         result = einexpr.einarray(
-            type(self.a).__floordiv__(*processed_args, **processed_kwargs), 
+            type(processed_args[0]).__floordiv__(*processed_args, **processed_kwargs), 
             dims=out_dims, 
             ambiguous_dims=ambiguous_dims)
         return result
@@ -795,7 +795,7 @@ class einarray():
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
         processed_args, processed_kwargs = helper.process_args(args, kwargs)
         result = einexpr.einarray(
-            type(self.a).__rfloordiv__(*processed_args, **processed_kwargs), 
+            type(processed_args[0]).__rfloordiv__(*processed_args, **processed_kwargs), 
             dims=out_dims, 
             ambiguous_dims=ambiguous_dims)
         return result
@@ -828,7 +828,7 @@ class einarray():
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
         processed_args, processed_kwargs = helper.process_args(args, kwargs)
         result = einexpr.einarray(
-            type(self.a).__ge__(*processed_args, **processed_kwargs), 
+            type(processed_args[0]).__ge__(*processed_args, **processed_kwargs), 
             dims=out_dims, 
             ambiguous_dims=ambiguous_dims)
         return result
@@ -882,7 +882,7 @@ class einarray():
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
         processed_args, processed_kwargs = helper.process_args(args, kwargs)
         result = einexpr.einarray(
-            type(self.a).__gt__(*processed_args, **processed_kwargs), 
+            type(processed_args[0]).__gt__(*processed_args, **processed_kwargs), 
             dims=out_dims, 
             ambiguous_dims=ambiguous_dims)
         return result
@@ -948,7 +948,7 @@ class einarray():
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
         processed_args, processed_kwargs = helper.process_args(args, kwargs)
         result = einexpr.einarray(
-            type(self.a).__invert__(*processed_args, **processed_kwargs), 
+            type(processed_args[0]).__invert__(*processed_args, **processed_kwargs), 
             dims=out_dims, 
             ambiguous_dims=ambiguous_dims)
         return result
@@ -981,7 +981,7 @@ class einarray():
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
         processed_args, processed_kwargs = helper.process_args(args, kwargs)
         result = einexpr.einarray(
-            type(self.a).__le__(*processed_args, **processed_kwargs), 
+            type(processed_args[0]).__le__(*processed_args, **processed_kwargs), 
             dims=out_dims, 
             ambiguous_dims=ambiguous_dims)
         return result
@@ -1014,7 +1014,7 @@ class einarray():
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
         processed_args, processed_kwargs = helper.process_args(args, kwargs)
         result = einexpr.einarray(
-            type(self.a).__lshift__(*processed_args, **processed_kwargs), 
+            type(processed_args[0]).__lshift__(*processed_args, **processed_kwargs), 
             dims=out_dims, 
             ambiguous_dims=ambiguous_dims)
         return result
@@ -1049,7 +1049,7 @@ class einarray():
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
         processed_args, processed_kwargs = helper.process_args(args, kwargs)
         result = einexpr.einarray(
-            type(self.a).__rlshift__(*processed_args, **processed_kwargs), 
+            type(processed_args[0]).__rlshift__(*processed_args, **processed_kwargs), 
             dims=out_dims, 
             ambiguous_dims=ambiguous_dims)
         return result
@@ -1082,7 +1082,7 @@ class einarray():
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
         processed_args, processed_kwargs = helper.process_args(args, kwargs)
         result = einexpr.einarray(
-            type(self.a).__lt__(*processed_args, **processed_kwargs), 
+            type(processed_args[0]).__lt__(*processed_args, **processed_kwargs), 
             dims=out_dims, 
             ambiguous_dims=ambiguous_dims)
         return result
@@ -1233,7 +1233,7 @@ class einarray():
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
         processed_args, processed_kwargs = helper.process_args(args, kwargs)
         result = einexpr.einarray(
-            type(self.a).__mod__(*processed_args, **processed_kwargs), 
+            type(processed_args[0]).__mod__(*processed_args, **processed_kwargs), 
             dims=out_dims, 
             ambiguous_dims=ambiguous_dims)
         return result
@@ -1300,7 +1300,7 @@ class einarray():
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
         processed_args, processed_kwargs = helper.process_args(args, kwargs)
         result = einexpr.einarray(
-            type(self.a).__rmod__(*processed_args, **processed_kwargs), 
+            type(processed_args[0]).__rmod__(*processed_args, **processed_kwargs), 
             dims=out_dims, 
             ambiguous_dims=ambiguous_dims)
         return result
@@ -1351,7 +1351,7 @@ class einarray():
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
         processed_args, processed_kwargs = helper.process_args(args, kwargs)
         result = einexpr.einarray(
-            type(self.a).__mul__(*processed_args, **processed_kwargs), 
+            type(processed_args[0]).__mul__(*processed_args, **processed_kwargs), 
             dims=out_dims, 
             ambiguous_dims=ambiguous_dims)
         return result
@@ -1405,7 +1405,7 @@ class einarray():
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
         processed_args, processed_kwargs = helper.process_args(args, kwargs)
         result = einexpr.einarray(
-            type(self.a).__rmul__(*processed_args, **processed_kwargs), 
+            type(processed_args[0]).__rmul__(*processed_args, **processed_kwargs), 
             dims=out_dims, 
             ambiguous_dims=ambiguous_dims)
         return result
@@ -1438,7 +1438,7 @@ class einarray():
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
         processed_args, processed_kwargs = helper.process_args(args, kwargs)
         result = einexpr.einarray(
-            type(self.a).__ne__(*processed_args, **processed_kwargs), 
+            type(processed_args[0]).__ne__(*processed_args, **processed_kwargs), 
             dims=out_dims, 
             ambiguous_dims=ambiguous_dims)
         return result
@@ -1475,7 +1475,7 @@ class einarray():
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
         processed_args, processed_kwargs = helper.process_args(args, kwargs)
         result = einexpr.einarray(
-            type(self.a).__neg__(*processed_args, **processed_kwargs), 
+            type(processed_args[0]).__neg__(*processed_args, **processed_kwargs), 
             dims=out_dims, 
             ambiguous_dims=ambiguous_dims)
         return result
@@ -1508,7 +1508,7 @@ class einarray():
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
         processed_args, processed_kwargs = helper.process_args(args, kwargs)
         result = einexpr.einarray(
-            type(self.a).__or__(*processed_args, **processed_kwargs), 
+            type(processed_args[0]).__or__(*processed_args, **processed_kwargs), 
             dims=out_dims, 
             ambiguous_dims=ambiguous_dims)
         return result
@@ -1543,7 +1543,7 @@ class einarray():
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
         processed_args, processed_kwargs = helper.process_args(args, kwargs)
         result = einexpr.einarray(
-            type(self.a).__ror__(*processed_args, **processed_kwargs), 
+            type(processed_args[0]).__ror__(*processed_args, **processed_kwargs), 
             dims=out_dims, 
             ambiguous_dims=ambiguous_dims)
         return result
@@ -1574,7 +1574,7 @@ class einarray():
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
         processed_args, processed_kwargs = helper.process_args(args, kwargs)
         result = einexpr.einarray(
-            type(self.a).__pos__(*processed_args, **processed_kwargs), 
+            type(processed_args[0]).__pos__(*processed_args, **processed_kwargs), 
             dims=out_dims, 
             ambiguous_dims=ambiguous_dims)
         return result
@@ -1641,7 +1641,7 @@ class einarray():
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
         processed_args, processed_kwargs = helper.process_args(args, kwargs)
         result = einexpr.einarray(
-            type(self.a).__pow__(*processed_args, **processed_kwargs), 
+            type(processed_args[0]).__pow__(*processed_args, **processed_kwargs), 
             dims=out_dims, 
             ambiguous_dims=ambiguous_dims)
         return result
@@ -1710,7 +1710,7 @@ class einarray():
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
         processed_args, processed_kwargs = helper.process_args(args, kwargs)
         result = einexpr.einarray(
-            type(self.a).__rpow__(*processed_args, **processed_kwargs), 
+            type(processed_args[0]).__rpow__(*processed_args, **processed_kwargs), 
             dims=out_dims, 
             ambiguous_dims=ambiguous_dims)
         return result
@@ -1743,7 +1743,7 @@ class einarray():
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
         processed_args, processed_kwargs = helper.process_args(args, kwargs)
         result = einexpr.einarray(
-            type(self.a).__rshift__(*processed_args, **processed_kwargs), 
+            type(processed_args[0]).__rshift__(*processed_args, **processed_kwargs), 
             dims=out_dims, 
             ambiguous_dims=ambiguous_dims)
         return result
@@ -1778,7 +1778,7 @@ class einarray():
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
         processed_args, processed_kwargs = helper.process_args(args, kwargs)
         result = einexpr.einarray(
-            type(self.a).__rrshift__(*processed_args, **processed_kwargs), 
+            type(processed_args[0]).__rrshift__(*processed_args, **processed_kwargs), 
             dims=out_dims, 
             ambiguous_dims=ambiguous_dims)
         return result
@@ -1835,7 +1835,7 @@ class einarray():
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
         processed_args, processed_kwargs = helper.process_args(args, kwargs)
         result = einexpr.einarray(
-            type(self.a).__sub__(*processed_args, **processed_kwargs), 
+            type(processed_args[0]).__sub__(*processed_args, **processed_kwargs), 
             dims=out_dims, 
             ambiguous_dims=ambiguous_dims)
         return result
@@ -1868,7 +1868,7 @@ class einarray():
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
         processed_args, processed_kwargs = helper.process_args(args, kwargs)
         result = einexpr.einarray(
-            type(self.a).__rsub__(*processed_args, **processed_kwargs), 
+            type(processed_args[0]).__rsub__(*processed_args, **processed_kwargs), 
             dims=out_dims, 
             ambiguous_dims=ambiguous_dims)
         return result
@@ -1933,7 +1933,7 @@ class einarray():
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
         processed_args, processed_kwargs = helper.process_args(args, kwargs)
         result = einexpr.einarray(
-            type(self.a).__truediv__(*processed_args, **processed_kwargs), 
+            type(processed_args[0]).__truediv__(*processed_args, **processed_kwargs), 
             dims=out_dims, 
             ambiguous_dims=ambiguous_dims)
         return result
@@ -2000,7 +2000,7 @@ class einarray():
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
         processed_args, processed_kwargs = helper.process_args(args, kwargs)
         result = einexpr.einarray(
-            type(self.a).__rtruediv__(*processed_args, **processed_kwargs), 
+            type(processed_args[0]).__rtruediv__(*processed_args, **processed_kwargs), 
             dims=out_dims, 
             ambiguous_dims=ambiguous_dims)
         return result
@@ -2033,7 +2033,7 @@ class einarray():
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
         processed_args, processed_kwargs = helper.process_args(args, kwargs)
         result = einexpr.einarray(
-            type(self.a).__xor__(*processed_args, **processed_kwargs), 
+            type(processed_args[0]).__xor__(*processed_args, **processed_kwargs), 
             dims=out_dims, 
             ambiguous_dims=ambiguous_dims)
         return result
@@ -2068,7 +2068,7 @@ class einarray():
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
         processed_args, processed_kwargs = helper.process_args(args, kwargs)
         result = einexpr.einarray(
-            type(self.a).__rxor__(*processed_args, **processed_kwargs), 
+            type(processed_args[0]).__rxor__(*processed_args, **processed_kwargs), 
             dims=out_dims, 
             ambiguous_dims=ambiguous_dims)
         return result

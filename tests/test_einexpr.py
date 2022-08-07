@@ -144,9 +144,9 @@ def y():
 
 def test_pow():
     rng = np.random.default_rng(2022)
-    w = einexpr.einarray(rng.uniform(size=(4,2)), dims='b,i')
-    x = einexpr.einarray(rng.uniform(size=2), dims='i')
-    expr = w['b,i'] ** x['i']
+    w = einexpr.einarray(npa.asarray(rng.uniform(size=(4,2))), dims='b,i')
+    x = einexpr.einarray(npa.asarray(rng.uniform(size=2)), dims='i')
+    expr = w['b,i'] * x['i']
     expr = expr['']
     print(expr)
     assert np.allclose(expr, np.einsum('bi,i->', w, x), TOLERANCE)
