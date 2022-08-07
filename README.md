@@ -1,6 +1,6 @@
 <!-- Display logo centered -->
 <p align="center">
-  <img width="460" src="docs/static/images/logo-black-border-v2.png">
+  <img width="460" src="docs/static/images/logo-black-border-v3.png">
 </p>
 
 <p align="center">
