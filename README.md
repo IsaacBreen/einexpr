@@ -1,6 +1,6 @@
 <!-- Display logo centered -->
 <p align="center">
-  <img width="460" src="docs/static/images/logo-rainbow-dark.png">
+  <img width="460" src="docs/static/images/logo-fire.png">
 </p>
 
 <p align="center">
