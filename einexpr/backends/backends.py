@@ -124,6 +124,8 @@ def get_asarray(*, name: Optional[str] = None, array: Optional['RawArray' | Tupl
             if array_spec is not None and ivy_spec is not None:
                 import ivy
                 module = importlib.import_module(array_spec.name)
+                if name == 'jax':
+                    module = module.numpy.asarray
                 return lambda *args, **kwargs: module.asarray(ivy.to_native(*args, **kwargs))
         raise Exception(f"No array API backend with the name '{name}' found.")
     raise einexpr.exceptions.InternalError("This should never happen.")
