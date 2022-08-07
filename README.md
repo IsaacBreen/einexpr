@@ -12,9 +12,7 @@
 
 `einexpr` brings Einstein summation notation to Python.
 
-Einstein summation notation encourages explicit dimension naming.
-
-Explicitly naming dimensions makes it much clearer what operations over those dimensions are actually doing. This can **dramatically reduce the mental overhead of working with multi-dimensional arrays**.
+Einstein summation notation encourages explicit dimension naming and can **dramatically reduce the mental overhead of working with multi-dimensional arrays**.
 
 ## In action
 
