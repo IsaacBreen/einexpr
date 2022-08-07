@@ -88,9 +88,11 @@ pip install --upgrade git+https://github.com/unifyai/ivy
 pip install einexpr
 ```
 
-## Integration
+## Integrations
 
-While `einexpr` is ready for the world, the Python ecosystem is not *quite* ready for `einexpr`.
+**Note**: While `einexpr` is ready for the world, the Python ecosystem is not *quite* ready for `einexpr`.
+
+`einexpr` achieves wide support for array API libraries through two recent standardisation efforts: the Python array API standard and UnifyAI's Ivy.
 
 ### ❤️ Array API standard
 
