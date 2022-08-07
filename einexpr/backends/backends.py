@@ -20,7 +20,7 @@ def conforms_to_array_api(array: Any, strict: bool = False) -> bool:
     else:
         return any((
             hasattr(array, '__array_namespace__'),
-            array.__class__.__module__ in ('numpy', 'torch', 'jax', 'tensorflow', 'mxnet') # Ivy
+            array.__class__.__module__.split('.')[0] in ('numpy', 'torch', 'jax', 'tensorflow', 'mxnet', 'ivy') # Ivy
         ))
 
 
@@ -67,7 +67,7 @@ def get_array_api_backend(*, name: Optional[str] = None, array: Optional['RawArr
         if name in _BACKENDS:
             return _BACKENDS[name].load()
         else:
-            if name in ('numpy', 'torch', 'jax', 'tensorflow', 'mxnet'):
+            if name in ('numpy', 'torch', 'jax', 'tensorflow', 'mxnet', 'ivy'):
                 # Try to import Ivy using importlib
                 ivy_spec = importlib.util.find_spec("ivy")
                 if ivy_spec is not None:
@@ -78,7 +78,7 @@ def get_array_api_backend(*, name: Optional[str] = None, array: Optional['RawArr
         if isinstance(array, (tuple, list)):
             array = array[0]
         if not conforms_to_array_api(array, strict=True):
-            if array.__class__.__module__ in ('numpy', 'torch', 'jax', 'tensorflow', 'mxnet'):
+            if array.__class__.__module__.split('.')[0] in ('numpy', 'torch', 'jax', 'tensorflow', 'mxnet', 'ivy'):
                 # Try to import Ivy using importlib
                 ivy_spec = importlib.util.find_spec("ivy")
                 if ivy_spec is not None:
@@ -107,18 +107,23 @@ def get_asarray(*, name: Optional[str] = None, array: Optional['RawArray' | Tupl
         if conforms_to_array_api(array, strict=True):
             return get_array_api_backend(array=array).asarray
         elif conforms_to_array_api(array, strict=False):
-            spec = importlib.util.find_spec(array.__class__.__module__)
-            if spec is not None:
-                module = importlib.import_module(spec.name)
-                return module.asarray
+            # Try to import Ivy using importlib
+            array_spec = importlib.util.find_spec(array.__class__.__module__)
+            ivy_spec = importlib.util.find_spec("ivy")
+            if array_spec is not None and ivy_spec is not None:
+                import ivy
+                module = importlib.import_module(array_spec.name)
+                return lambda *args, **kwargs: module.asarray(ivy.to_native(*args, **kwargs))
         raise Exception(f"The given array does not conform to the array API standard.")
     elif name is not None:
         if name in _BACKENDS:
             return _BACKENDS[name].load().asarray
-        elif name in ('numpy', 'torch', 'jax', 'tensorflow', 'mxnet'):
-            spec = importlib.util.find_spec(name)
-            if spec is not None:
-                module = importlib.import_module(spec.name)
-                return module.asarray
+        elif name in ('numpy', 'torch', 'jax', 'tensorflow', 'mxnet', 'ivy'):
+            array_spec = importlib.util.find_spec(name)
+            ivy_spec = importlib.util.find_spec("ivy")
+            if array_spec is not None and ivy_spec is not None:
+                import ivy
+                module = importlib.import_module(array_spec.name)
+                return lambda *args, **kwargs: module.asarray(ivy.to_native(*args, **kwargs))
         raise Exception(f"No array API backend with the name '{name}' found.")
     raise einexpr.exceptions.InternalError("This should never happen.")

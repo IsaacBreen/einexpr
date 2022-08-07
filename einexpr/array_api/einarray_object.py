@@ -1,5 +1,5 @@
 from __future__ import annotations
-from types import EllipsisType
+from types import EllipsisType, ModuleType
 
 from ._types import (array, dtype as Dtype, device as Device, Optional, Tuple,
                      Union, Any, PyCapsule, Enum, ellipsis, NonEinArray)
@@ -44,7 +44,10 @@ class einarray():
         # ARRAY
         if backend is not None or not einexpr.backends.conforms_to_array_api(self.a):
             # Convert the array to the backend specified by the backend argument.
-            self.a = einexpr.backends.get_asarray(name=backend)(self.a)
+            if isinstance(backend, ModuleType):
+                self.a = backend.asarray(self.a)
+            else:
+                self.a = einexpr.backends.get_asarray(name=backend)(self.a)
         # DIMS
         if not isinstance(self.dimspec, einexpr.array_api.dimension.DimensionSpecification):
             self.dimspec = einexpr.dimension_utils.process_dims_declaration(self.dimspec, self.a.shape)
