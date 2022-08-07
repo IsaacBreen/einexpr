@@ -1,3 +1,4 @@
+import importlib
 from importlib.metadata import entry_points, EntryPoint
 import sys
 from collections import namedtuple
@@ -10,11 +11,17 @@ _BACKENDS = None
 _DEFAULT_BACKEND = None
 
 
-def conforms_to_array_api(array: Any):
+def conforms_to_array_api(array: Any, strict: bool = False) -> bool:
     """
     Returns True if the given array conforms to the array API.
     """
-    return hasattr(array, '__array_namespace__')
+    if strict:
+        return hasattr(array, '__array_namespace__')
+    else:
+        return any((
+            hasattr(array, '__array_namespace__'),
+            array.__class__.__module__ in ('numpy', 'torch', 'jax', 'tensorflow', 'mxnet') # Ivy
+        ))
 
 
 def _discover_array_api_entry_points() -> Dict[str, EntryPoint]:
@@ -60,8 +67,14 @@ def get_array_api_backend(*, name: Optional[str] = None, array: Optional['RawArr
     if array is not None:
         if isinstance(array, (tuple, list)):
             array = array[0]
-        if not conforms_to_array_api(array):
-            raise Exception(f"The given array does not conform to the array API.")
+        if not conforms_to_array_api(array, strict=True):
+            if array.__class__.__module__ in ('numpy', 'torch', 'jax', 'tensorflow', 'mxnet'):
+                # Try to import Ivy using importlib
+                ivy_spec = importlib.util.find_spec("ivy")
+                if ivy_spec is not None:
+                    import ivy
+                    return ivy
+            raise Exception(f"The given array does not conform to the array API standard.")
         return array.__array_namespace__()
     # Return the default array API.
     if _DEFAULT_BACKEND is None:

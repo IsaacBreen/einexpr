@@ -146,7 +146,7 @@ def test_pow():
     rng = np.random.default_rng(2022)
     w = einexpr.einarray(rng.uniform(size=(4,2)), dims='b,i')
     x = einexpr.einarray(rng.uniform(size=2), dims='i')
-    expr = w['b,i'] * x['i']
+    expr = w['b,i'] ** x['i']
     expr = expr['']
     print(expr)
     assert np.allclose(expr, np.einsum('bi,i->', w, x), TOLERANCE)
@@ -620,3 +620,9 @@ def test_tutorial():
     # Matrix-matrix multiplication
     x = X[i, j] * Y[j, k]
     assert np.all(np.matmul(X, Y) == x[i, k])
+
+
+def test_torch(X):
+    import torch
+    X = einexpr.einarray(torch.ones(X.shape, dtype=torch.float32))
+    X ** X
