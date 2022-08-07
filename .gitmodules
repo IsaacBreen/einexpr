@@ -1,0 +1,3 @@
+[submodule "tests/array-api-tests"]
+	path = tests/array-api-tests
+	url = https://github.com/data-apis/array-api-tests

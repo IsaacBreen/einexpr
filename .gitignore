@@ -1,5 +1,7 @@
+array-api
 poetry.lock
 local
+einexpr/external_apis
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
