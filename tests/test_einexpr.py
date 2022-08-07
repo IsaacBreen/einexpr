@@ -624,5 +624,8 @@ def test_tutorial():
 
 def test_torch(X):
     import torch
+    
+    assert isinstance(einexpr.ones((1,2,3), backend='torch').a, torch.Tensor)
+    
     X = einexpr.einarray(torch.ones(X.shape, dtype=torch.float32))
     X ** X

@@ -44,7 +44,7 @@ class einarray():
         # ARRAY
         if backend is not None or not einexpr.backends.conforms_to_array_api(self.a):
             # Convert the array to the backend specified by the backend argument.
-            self.a = einexpr.backends.get_array_api_backend(name=backend).asarray(self.a)
+            self.a = einexpr.backends.get_asarray(name=backend)(self.a)
         # DIMS
         if not isinstance(self.dimspec, einexpr.array_api.dimension.DimensionSpecification):
             self.dimspec = einexpr.dimension_utils.process_dims_declaration(self.dimspec, self.a.shape)
