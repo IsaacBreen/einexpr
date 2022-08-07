@@ -78,6 +78,13 @@ assert Z['i (j k)'].dims == ('i', ('j', 'k'))
 ...
 ```
 
+There are two ways to choose which backend to use: use the `backend` keyword argument or pass an array of the desired type.
+
+```python
+ei.array([1,2,3], backend='torch')
+ei.array(torch.asarray([1,2,3]))
+```
+
 # Installation
 
 `einexpr` makes extensive use of some recent developments in the Python array scene, so it is recommended that you install the development versions of Numpy and Ivy for now.
