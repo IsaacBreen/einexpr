@@ -80,7 +80,7 @@ assert Z['i (j k)'].dims == ('i', ('j', 'k'))
 
 # Installation
 
-`einexpr` makes extensive use of features added recently to some of its dependencies but not yet available in the release versions, so it is recommended that you install the development versions of Numpy and Ivy for now.
+`einexpr` makes extensive use of some recent developments in the Python array scene, so it is recommended that you install the development versions of Numpy and Ivy for now.
 
 ```bash
 pip install --upgrade git+https://github.com/numpy/numpy
