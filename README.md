@@ -101,13 +101,3 @@ While `einexpr` is ready for the world, the Python ecosystem is not *quite* read
 Ivy is a library that provides a unified interface to a variety of array libraries. It serves a similar purpose to the array API standard, but aims to support a much broader set of functionality and has a different approach to standardisation. It passes calls to Ivy methods into equivalent calls to methods in a variety of backends, including NumPy, PyTorch, TensorFlow, JAX, and MXNet, by converting arguments and return values to and from a commom. Like the array API standard, Ivy is still a work in progress. But, unlike the array API standard, it can be used today.
 
 In future, it is likely that all major array libraries will support the array API standard. `einexpr` prefers to use the array API of its input array, if available. Otherwise, it defaults to Ivy. Since Ivy will also support the array API standard, there will eventually be no functional difference from the users' point of view for array API functions, so `einexpr`'s interface will be consistent across backends. In the meantime, Ivy's discrepencies with the array API standard may cause some inconsistencies in the behavior of `einexpr` between backends.
-
-### For the impatient
-
-If you're super keen to experience `einexpr` right this moment, you can try it out with Ivy by installing the latest dev build or with the array API standard by installing NumPy `1.24.dev0`.
-
-```bash
-pip install --upgrade git+https://github.com/numpy/numpy
-pip install --upgrade git+https://github.com/unifyai/ivy
-```
-
