@@ -2,7 +2,7 @@ from importlib.metadata import entry_points, EntryPoint
 import sys
 from collections import namedtuple
 from types import ModuleType
-from typing import Any, Callable, Dict, Optional, Union
+from typing import Any, Callable, Dict, Optional, Tuple, Union
 import einexpr
 
 
@@ -45,16 +45,25 @@ def _discover_default_array_api() -> ModuleType:
         _DEFAULT_BACKEND = list(_BACKENDS.values()).pop().load()
 
 
-def get_array_api_backend(name: Optional[str] = None) -> ModuleType:
+def get_array_api_backend(*, name: Optional[str] = None, array: Optional['RawArray' | Tuple['RawArray']] = None) -> ModuleType:
     """
     Returns the array API backend with the given name.
     """
     if _BACKENDS is None:
         _discover_array_api_entry_points()
-    if name is None:
-        if _DEFAULT_BACKEND is None:
-            _discover_default_array_api()
-        return _DEFAULT_BACKEND
-    if name not in _BACKENDS:
-        raise Exception(f"No array API backend with the name '{name}' found.")
-    return _BACKENDS[name].load()
+    if sum(1 for x in [name, array] if x is not None) > 1:
+        raise ValueError("Can only specify one of name or array.")
+    if name is not None:
+        if name not in _BACKENDS:
+            raise Exception(f"No array API backend with the name '{name}' found.")
+        return _BACKENDS[name].load()
+    if array is not None:
+        if isinstance(array, (tuple, list)):
+            array = array[0]
+        if not conforms_to_array_api(array):
+            raise Exception(f"The given array does not conform to the array API.")
+        return array.__array_namespace__()
+    # Return the default array API.
+    if _DEFAULT_BACKEND is None:
+        _discover_default_array_api()
+    return _DEFAULT_BACKEND

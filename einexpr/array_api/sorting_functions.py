@@ -30,7 +30,7 @@ def argsort(x: array, /, *, axis: int = -1, descending: bool = False, stable: bo
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = helper.process_args(args, kwargs)
     result = einexpr.einarray(
-        x.a.__array_namespace__().argsort(*processed_args, **processed_kwargs), 
+        einexpr.backends.get_array_api_backend(array=x.a).argsort(*processed_args, **processed_kwargs), 
         dims=out_dims, 
         ambiguous_dims=ambiguous_dims)
     return result
@@ -63,7 +63,7 @@ def sort(x: array, /, *, axis: int = -1, descending: bool = False, stable: bool 
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = helper.process_args(args, kwargs)
     result = einexpr.einarray(
-        x.a.__array_namespace__().sort(*processed_args, **processed_kwargs), 
+        einexpr.backends.get_array_api_backend(array=x.a).sort(*processed_args, **processed_kwargs), 
         dims=out_dims, 
         ambiguous_dims=ambiguous_dims)
     return result

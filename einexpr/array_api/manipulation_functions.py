@@ -54,7 +54,19 @@ def concat(arrays: Union[Tuple[array, ...], List[array]], /, *, axis: Optional[i
         .. note::
            This specification leaves type promotion between data type families (i.e., ``intxx`` and ``floatxx``) unspecified.
     """
-    raise NotImplementedError
+    args = (arrays,)
+    kwargs = {'axis': axis}
+    helper = einexpr.dimension_utils.Concatenation
+    helper.validate_args(args, kwargs)
+    out_dims = helper.calculate_output_dims(args, kwargs)
+    ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
+    processed_args, processed_kwargs = helper.process_args(args, kwargs)
+    result = einexpr.einarray(
+        einexpr.backends.get_array_api_backend(array=arrays[0].a).concat(*processed_args, **processed_kwargs), 
+        dims=out_dims, 
+        ambiguous_dims=ambiguous_dims)
+    return result
+
 
 def expand_dims(x: array, /, *, axis: int = 0) -> array:
     """
@@ -98,7 +110,7 @@ def flip(x: array, /, *, axis: Optional[Union[int, Tuple[int, ...]]] = None) -> 
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = helper.process_args(args, kwargs)
     result = einexpr.einarray(
-        x.a.__array_namespace__().flip(*processed_args, **processed_kwargs), 
+        einexpr.backends.get_array_api_backend(array=x.a).flip(*processed_args, **processed_kwargs), 
         dims=out_dims, 
         ambiguous_dims=ambiguous_dims)
     return result

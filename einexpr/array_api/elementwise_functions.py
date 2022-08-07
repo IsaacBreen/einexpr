@@ -35,7 +35,7 @@ def abs(x: array, /) -> array:
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = helper.process_args(args, kwargs)
     result = einexpr.einarray(
-        x.a.__array_namespace__().abs(*processed_args, **processed_kwargs), 
+        einexpr.backends.get_array_api_backend(array=x.a).abs(*processed_args, **processed_kwargs), 
         dims=out_dims, 
         ambiguous_dims=ambiguous_dims)
     return result
@@ -71,7 +71,7 @@ def acos(x: array, /) -> array:
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = helper.process_args(args, kwargs)
     result = einexpr.einarray(
-        x.a.__array_namespace__().acos(*processed_args, **processed_kwargs), 
+        einexpr.backends.get_array_api_backend(array=x.a).acos(*processed_args, **processed_kwargs), 
         dims=out_dims, 
         ambiguous_dims=ambiguous_dims)
     return result
@@ -107,7 +107,7 @@ def acosh(x: array, /) -> array:
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = helper.process_args(args, kwargs)
     result = einexpr.einarray(
-        x.a.__array_namespace__().acosh(*processed_args, **processed_kwargs), 
+        einexpr.backends.get_array_api_backend(array=x.a).acosh(*processed_args, **processed_kwargs), 
         dims=out_dims, 
         ambiguous_dims=ambiguous_dims)
     return result
@@ -161,7 +161,7 @@ def add(x1: array, x2: array, /) -> array:
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = helper.process_args(args, kwargs)
     result = einexpr.einarray(
-        x1.a.__array_namespace__().add(*processed_args, **processed_kwargs), 
+        einexpr.backends.get_array_api_backend(array=x1.a)().add(*processed_args, **processed_kwargs), 
         dims=out_dims, 
         ambiguous_dims=ambiguous_dims)
     return result
@@ -198,7 +198,7 @@ def asin(x: array, /) -> array:
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = helper.process_args(args, kwargs)
     result = einexpr.einarray(
-        x.a.__array_namespace__().asin(*processed_args, **processed_kwargs), 
+        einexpr.backends.get_array_api_backend(array=x.a).asin(*processed_args, **processed_kwargs), 
         dims=out_dims, 
         ambiguous_dims=ambiguous_dims)
     return result
@@ -235,7 +235,7 @@ def asinh(x: array, /) -> array:
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = helper.process_args(args, kwargs)
     result = einexpr.einarray(
-        x.a.__array_namespace__().asinh(*processed_args, **processed_kwargs), 
+        einexpr.backends.get_array_api_backend(array=x.a).asinh(*processed_args, **processed_kwargs), 
         dims=out_dims, 
         ambiguous_dims=ambiguous_dims)
     return result
@@ -272,7 +272,7 @@ def atan(x: array, /) -> array:
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = helper.process_args(args, kwargs)
     result = einexpr.einarray(
-        x.a.__array_namespace__().atan(*processed_args, **processed_kwargs), 
+        einexpr.backends.get_array_api_backend(array=x.a).atan(*processed_args, **processed_kwargs), 
         dims=out_dims, 
         ambiguous_dims=ambiguous_dims)
     return result
@@ -337,7 +337,7 @@ def atan2(x1: array, x2: array, /) -> array:
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = helper.process_args(args, kwargs)
     result = einexpr.einarray(
-        x1.a.__array_namespace__().atan2(*processed_args, **processed_kwargs), 
+        einexpr.backends.get_array_api_backend(array=x1.a)().atan2(*processed_args, **processed_kwargs), 
         dims=out_dims, 
         ambiguous_dims=ambiguous_dims)
     return result
@@ -376,7 +376,7 @@ def atanh(x: array, /) -> array:
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = helper.process_args(args, kwargs)
     result = einexpr.einarray(
-        x.a.__array_namespace__().atanh(*processed_args, **processed_kwargs), 
+        einexpr.backends.get_array_api_backend(array=x.a).atanh(*processed_args, **processed_kwargs), 
         dims=out_dims, 
         ambiguous_dims=ambiguous_dims)
     return result
@@ -405,7 +405,7 @@ def bitwise_and(x1: array, x2: array, /) -> array:
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = helper.process_args(args, kwargs)
     result = einexpr.einarray(
-        x1.a.__array_namespace__().bitwise_and(*processed_args, **processed_kwargs), 
+        einexpr.backends.get_array_api_backend(array=x1.a)().bitwise_and(*processed_args, **processed_kwargs), 
         dims=out_dims, 
         ambiguous_dims=ambiguous_dims)
     return result
@@ -434,7 +434,7 @@ def bitwise_left_shift(x1: array, x2: array, /) -> array:
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = helper.process_args(args, kwargs)
     result = einexpr.einarray(
-        x1.a.__array_namespace__().bitwise_left_shift(*processed_args, **processed_kwargs), 
+        einexpr.backends.get_array_api_backend(array=x1.a)().bitwise_left_shift(*processed_args, **processed_kwargs), 
         dims=out_dims, 
         ambiguous_dims=ambiguous_dims)
     return result
@@ -461,7 +461,7 @@ def bitwise_invert(x: array, /) -> array:
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = helper.process_args(args, kwargs)
     result = einexpr.einarray(
-        x.a.__array_namespace__().bitwise_invert(*processed_args, **processed_kwargs), 
+        einexpr.backends.get_array_api_backend(array=x.a).bitwise_invert(*processed_args, **processed_kwargs), 
         dims=out_dims, 
         ambiguous_dims=ambiguous_dims)
     return result
@@ -490,7 +490,7 @@ def bitwise_or(x1: array, x2: array, /) -> array:
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = helper.process_args(args, kwargs)
     result = einexpr.einarray(
-        x1.a.__array_namespace__().bitwise_or(*processed_args, **processed_kwargs), 
+        einexpr.backends.get_array_api_backend(array=x1.a)().bitwise_or(*processed_args, **processed_kwargs), 
         dims=out_dims, 
         ambiguous_dims=ambiguous_dims)
     return result
@@ -522,7 +522,7 @@ def bitwise_right_shift(x1: array, x2: array, /) -> array:
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = helper.process_args(args, kwargs)
     result = einexpr.einarray(
-        x1.a.__array_namespace__().bitwise_right_shift(*processed_args, **processed_kwargs), 
+        einexpr.backends.get_array_api_backend(array=x1.a)().bitwise_right_shift(*processed_args, **processed_kwargs), 
         dims=out_dims, 
         ambiguous_dims=ambiguous_dims)
     return result
@@ -551,7 +551,7 @@ def bitwise_xor(x1: array, x2: array, /) -> array:
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = helper.process_args(args, kwargs)
     result = einexpr.einarray(
-        x1.a.__array_namespace__().bitwise_xor(*processed_args, **processed_kwargs), 
+        einexpr.backends.get_array_api_backend(array=x1.a)().bitwise_xor(*processed_args, **processed_kwargs), 
         dims=out_dims, 
         ambiguous_dims=ambiguous_dims)
     return result
@@ -590,7 +590,7 @@ def ceil(x: array, /) -> array:
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = helper.process_args(args, kwargs)
     result = einexpr.einarray(
-        x.a.__array_namespace__().ceil(*processed_args, **processed_kwargs), 
+        einexpr.backends.get_array_api_backend(array=x.a).ceil(*processed_args, **processed_kwargs), 
         dims=out_dims, 
         ambiguous_dims=ambiguous_dims)
     return result
@@ -642,7 +642,7 @@ def cos(x: array, /) -> array:
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = helper.process_args(args, kwargs)
     result = einexpr.einarray(
-        x.a.__array_namespace__().cos(*processed_args, **processed_kwargs), 
+        einexpr.backends.get_array_api_backend(array=x.a).cos(*processed_args, **processed_kwargs), 
         dims=out_dims, 
         ambiguous_dims=ambiguous_dims)
     return result
@@ -710,7 +710,7 @@ def cosh(x: array, /) -> array:
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = helper.process_args(args, kwargs)
     result = einexpr.einarray(
-        x.a.__array_namespace__().cosh(*processed_args, **processed_kwargs), 
+        einexpr.backends.get_array_api_backend(array=x.a).cosh(*processed_args, **processed_kwargs), 
         dims=out_dims, 
         ambiguous_dims=ambiguous_dims)
     return result
@@ -771,7 +771,7 @@ def divide(x1: array, x2: array, /) -> array:
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = helper.process_args(args, kwargs)
     result = einexpr.einarray(
-        x1.a.__array_namespace__().divide(*processed_args, **processed_kwargs), 
+        einexpr.backends.get_array_api_backend(array=x1.a)().divide(*processed_args, **processed_kwargs), 
         dims=out_dims, 
         ambiguous_dims=ambiguous_dims)
     return result
@@ -800,7 +800,7 @@ def equal(x1: array, x2: array, /) -> array:
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = helper.process_args(args, kwargs)
     result = einexpr.einarray(
-        x1.a.__array_namespace__().equal(*processed_args, **processed_kwargs), 
+        einexpr.backends.get_array_api_backend(array=x1.a)().equal(*processed_args, **processed_kwargs), 
         dims=out_dims, 
         ambiguous_dims=ambiguous_dims)
     return result
@@ -861,7 +861,7 @@ def exp(x: array, /) -> array:
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = helper.process_args(args, kwargs)
     result = einexpr.einarray(
-        x.a.__array_namespace__().exp(*processed_args, **processed_kwargs), 
+        einexpr.backends.get_array_api_backend(array=x.a).exp(*processed_args, **processed_kwargs), 
         dims=out_dims, 
         ambiguous_dims=ambiguous_dims)
     return result
@@ -901,7 +901,7 @@ def expm1(x: array, /) -> array:
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = helper.process_args(args, kwargs)
     result = einexpr.einarray(
-        x.a.__array_namespace__().expm1(*processed_args, **processed_kwargs), 
+        einexpr.backends.get_array_api_backend(array=x.a).expm1(*processed_args, **processed_kwargs), 
         dims=out_dims, 
         ambiguous_dims=ambiguous_dims)
     return result
@@ -940,7 +940,7 @@ def floor(x: array, /) -> array:
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = helper.process_args(args, kwargs)
     result = einexpr.einarray(
-        x.a.__array_namespace__().floor(*processed_args, **processed_kwargs), 
+        einexpr.backends.get_array_api_backend(array=x.a).floor(*processed_args, **processed_kwargs), 
         dims=out_dims, 
         ambiguous_dims=ambiguous_dims)
     return result
@@ -1008,7 +1008,7 @@ def floor_divide(x1: array, x2: array, /) -> array:
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = helper.process_args(args, kwargs)
     result = einexpr.einarray(
-        x1.a.__array_namespace__().floor_divide(*processed_args, **processed_kwargs), 
+        einexpr.backends.get_array_api_backend(array=x1.a)().floor_divide(*processed_args, **processed_kwargs), 
         dims=out_dims, 
         ambiguous_dims=ambiguous_dims)
     return result
@@ -1037,7 +1037,7 @@ def greater(x1: array, x2: array, /) -> array:
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = helper.process_args(args, kwargs)
     result = einexpr.einarray(
-        x1.a.__array_namespace__().greater(*processed_args, **processed_kwargs), 
+        einexpr.backends.get_array_api_backend(array=x1.a)().greater(*processed_args, **processed_kwargs), 
         dims=out_dims, 
         ambiguous_dims=ambiguous_dims)
     return result
@@ -1066,7 +1066,7 @@ def greater_equal(x1: array, x2: array, /) -> array:
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = helper.process_args(args, kwargs)
     result = einexpr.einarray(
-        x1.a.__array_namespace__().greater_equal(*processed_args, **processed_kwargs), 
+        einexpr.backends.get_array_api_backend(array=x1.a)().greater_equal(*processed_args, **processed_kwargs), 
         dims=out_dims, 
         ambiguous_dims=ambiguous_dims)
     return result
@@ -1093,7 +1093,7 @@ def isfinite(x: array, /) -> array:
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = helper.process_args(args, kwargs)
     result = einexpr.einarray(
-        x.a.__array_namespace__().isfinite(*processed_args, **processed_kwargs), 
+        einexpr.backends.get_array_api_backend(array=x.a).isfinite(*processed_args, **processed_kwargs), 
         dims=out_dims, 
         ambiguous_dims=ambiguous_dims)
     return result
@@ -1120,7 +1120,7 @@ def isinf(x: array, /) -> array:
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = helper.process_args(args, kwargs)
     result = einexpr.einarray(
-        x.a.__array_namespace__().isinf(*processed_args, **processed_kwargs), 
+        einexpr.backends.get_array_api_backend(array=x.a).isinf(*processed_args, **processed_kwargs), 
         dims=out_dims, 
         ambiguous_dims=ambiguous_dims)
     return result
@@ -1147,7 +1147,7 @@ def isnan(x: array, /) -> array:
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = helper.process_args(args, kwargs)
     result = einexpr.einarray(
-        x.a.__array_namespace__().isnan(*processed_args, **processed_kwargs), 
+        einexpr.backends.get_array_api_backend(array=x.a).isnan(*processed_args, **processed_kwargs), 
         dims=out_dims, 
         ambiguous_dims=ambiguous_dims)
     return result
@@ -1176,7 +1176,7 @@ def less(x1: array, x2: array, /) -> array:
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = helper.process_args(args, kwargs)
     result = einexpr.einarray(
-        x1.a.__array_namespace__().less(*processed_args, **processed_kwargs), 
+        einexpr.backends.get_array_api_backend(array=x1.a)().less(*processed_args, **processed_kwargs), 
         dims=out_dims, 
         ambiguous_dims=ambiguous_dims)
     return result
@@ -1205,7 +1205,7 @@ def less_equal(x1: array, x2: array, /) -> array:
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = helper.process_args(args, kwargs)
     result = einexpr.einarray(
-        x1.a.__array_namespace__().less_equal(*processed_args, **processed_kwargs), 
+        einexpr.backends.get_array_api_backend(array=x1.a)().less_equal(*processed_args, **processed_kwargs), 
         dims=out_dims, 
         ambiguous_dims=ambiguous_dims)
     return result
@@ -1242,7 +1242,7 @@ def log(x: array, /) -> array:
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = helper.process_args(args, kwargs)
     result = einexpr.einarray(
-        x.a.__array_namespace__().log(*processed_args, **processed_kwargs), 
+        einexpr.backends.get_array_api_backend(array=x.a).log(*processed_args, **processed_kwargs), 
         dims=out_dims, 
         ambiguous_dims=ambiguous_dims)
     return result
@@ -1283,7 +1283,7 @@ def log1p(x: array, /) -> array:
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = helper.process_args(args, kwargs)
     result = einexpr.einarray(
-        x.a.__array_namespace__().log1p(*processed_args, **processed_kwargs), 
+        einexpr.backends.get_array_api_backend(array=x.a).log1p(*processed_args, **processed_kwargs), 
         dims=out_dims, 
         ambiguous_dims=ambiguous_dims)
     return result
@@ -1320,7 +1320,7 @@ def log2(x: array, /) -> array:
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = helper.process_args(args, kwargs)
     result = einexpr.einarray(
-        x.a.__array_namespace__().log2(*processed_args, **processed_kwargs), 
+        einexpr.backends.get_array_api_backend(array=x.a).log2(*processed_args, **processed_kwargs), 
         dims=out_dims, 
         ambiguous_dims=ambiguous_dims)
     return result
@@ -1357,7 +1357,7 @@ def log10(x: array, /) -> array:
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = helper.process_args(args, kwargs)
     result = einexpr.einarray(
-        x.a.__array_namespace__().log10(*processed_args, **processed_kwargs), 
+        einexpr.backends.get_array_api_backend(array=x.a).log10(*processed_args, **processed_kwargs), 
         dims=out_dims, 
         ambiguous_dims=ambiguous_dims)
     return result
@@ -1394,7 +1394,7 @@ def logaddexp(x1: array, x2: array, /) -> array:
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = helper.process_args(args, kwargs)
     result = einexpr.einarray(
-        x1.a.__array_namespace__().logaddexp(*processed_args, **processed_kwargs), 
+        einexpr.backends.get_array_api_backend(array=x1.a)().logaddexp(*processed_args, **processed_kwargs), 
         dims=out_dims, 
         ambiguous_dims=ambiguous_dims)
     return result
@@ -1426,7 +1426,7 @@ def logical_and(x1: array, x2: array, /) -> array:
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = helper.process_args(args, kwargs)
     result = einexpr.einarray(
-        x1.a.__array_namespace__().logical_and(*processed_args, **processed_kwargs), 
+        einexpr.backends.get_array_api_backend(array=x1.a)().logical_and(*processed_args, **processed_kwargs), 
         dims=out_dims, 
         ambiguous_dims=ambiguous_dims)
     return result
@@ -1456,7 +1456,7 @@ def logical_not(x: array, /) -> array:
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = helper.process_args(args, kwargs)
     result = einexpr.einarray(
-        x.a.__array_namespace__().logical_not(*processed_args, **processed_kwargs), 
+        einexpr.backends.get_array_api_backend(array=x.a).logical_not(*processed_args, **processed_kwargs), 
         dims=out_dims, 
         ambiguous_dims=ambiguous_dims)
     return result
@@ -1488,7 +1488,7 @@ def logical_or(x1: array, x2: array, /) -> array:
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = helper.process_args(args, kwargs)
     result = einexpr.einarray(
-        x1.a.__array_namespace__().logical_or(*processed_args, **processed_kwargs), 
+        einexpr.backends.get_array_api_backend(array=x1.a)().logical_or(*processed_args, **processed_kwargs), 
         dims=out_dims, 
         ambiguous_dims=ambiguous_dims)
     return result
@@ -1520,7 +1520,7 @@ def logical_xor(x1: array, x2: array, /) -> array:
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = helper.process_args(args, kwargs)
     result = einexpr.einarray(
-        x1.a.__array_namespace__().logical_xor(*processed_args, **processed_kwargs), 
+        einexpr.backends.get_array_api_backend(array=x1.a)().logical_xor(*processed_args, **processed_kwargs), 
         dims=out_dims, 
         ambiguous_dims=ambiguous_dims)
     return result
@@ -1566,7 +1566,7 @@ def multiply(x1: array, x2: array, /) -> array:
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = helper.process_args(args, kwargs)
     result = einexpr.einarray(
-        x1.a.__array_namespace__().multiply(*processed_args, **processed_kwargs), 
+        einexpr.backends.get_array_api_backend(array=x1.a)().multiply(*processed_args, **processed_kwargs), 
         dims=out_dims, 
         ambiguous_dims=ambiguous_dims)
     return result
@@ -1599,7 +1599,7 @@ def negative(x: array, /) -> array:
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = helper.process_args(args, kwargs)
     result = einexpr.einarray(
-        x.a.__array_namespace__().negative(*processed_args, **processed_kwargs), 
+        einexpr.backends.get_array_api_backend(array=x.a).negative(*processed_args, **processed_kwargs), 
         dims=out_dims, 
         ambiguous_dims=ambiguous_dims)
     return result
@@ -1628,7 +1628,7 @@ def not_equal(x1: array, x2: array, /) -> array:
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = helper.process_args(args, kwargs)
     result = einexpr.einarray(
-        x1.a.__array_namespace__().not_equal(*processed_args, **processed_kwargs), 
+        einexpr.backends.get_array_api_backend(array=x1.a)().not_equal(*processed_args, **processed_kwargs), 
         dims=out_dims, 
         ambiguous_dims=ambiguous_dims)
     return result
@@ -1655,7 +1655,7 @@ def positive(x: array, /) -> array:
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = helper.process_args(args, kwargs)
     result = einexpr.einarray(
-        x.a.__array_namespace__().positive(*processed_args, **processed_kwargs), 
+        einexpr.backends.get_array_api_backend(array=x.a).positive(*processed_args, **processed_kwargs), 
         dims=out_dims, 
         ambiguous_dims=ambiguous_dims)
     return result
@@ -1718,7 +1718,7 @@ def pow(x1: array, x2: array, /) -> array:
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = helper.process_args(args, kwargs)
     result = einexpr.einarray(
-        x1.a.__array_namespace__().pow(*processed_args, **processed_kwargs), 
+        einexpr.backends.get_array_api_backend(array=x1.a)().pow(*processed_args, **processed_kwargs), 
         dims=out_dims, 
         ambiguous_dims=ambiguous_dims)
     return result
@@ -1781,7 +1781,7 @@ def remainder(x1: array, x2: array, /) -> array:
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = helper.process_args(args, kwargs)
     result = einexpr.einarray(
-        x1.a.__array_namespace__().remainder(*processed_args, **processed_kwargs), 
+        einexpr.backends.get_array_api_backend(array=x1.a)().remainder(*processed_args, **processed_kwargs), 
         dims=out_dims, 
         ambiguous_dims=ambiguous_dims)
     return result
@@ -1829,7 +1829,7 @@ def round(x: array, /) -> array:
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = helper.process_args(args, kwargs)
     result = einexpr.einarray(
-        x.a.__array_namespace__().round(*processed_args, **processed_kwargs), 
+        einexpr.backends.get_array_api_backend(array=x.a).round(*processed_args, **processed_kwargs), 
         dims=out_dims, 
         ambiguous_dims=ambiguous_dims)
     return result
@@ -1862,7 +1862,7 @@ def sign(x: array, /) -> array:
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = helper.process_args(args, kwargs)
     result = einexpr.einarray(
-        x.a.__array_namespace__().sign(*processed_args, **processed_kwargs), 
+        einexpr.backends.get_array_api_backend(array=x.a).sign(*processed_args, **processed_kwargs), 
         dims=out_dims, 
         ambiguous_dims=ambiguous_dims)
     return result
@@ -1913,7 +1913,7 @@ def sin(x: array, /) -> array:
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = helper.process_args(args, kwargs)
     result = einexpr.einarray(
-        x.a.__array_namespace__().sin(*processed_args, **processed_kwargs), 
+        einexpr.backends.get_array_api_backend(array=x.a).sin(*processed_args, **processed_kwargs), 
         dims=out_dims, 
         ambiguous_dims=ambiguous_dims)
     return result
@@ -1981,7 +1981,7 @@ def sinh(x: array, /) -> array:
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = helper.process_args(args, kwargs)
     result = einexpr.einarray(
-        x.a.__array_namespace__().sinh(*processed_args, **processed_kwargs), 
+        einexpr.backends.get_array_api_backend(array=x.a).sinh(*processed_args, **processed_kwargs), 
         dims=out_dims, 
         ambiguous_dims=ambiguous_dims)
     return result
@@ -2008,7 +2008,7 @@ def square(x: array, /) -> array:
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = helper.process_args(args, kwargs)
     result = einexpr.einarray(
-        x.a.__array_namespace__().square(*processed_args, **processed_kwargs), 
+        einexpr.backends.get_array_api_backend(array=x.a).square(*processed_args, **processed_kwargs), 
         dims=out_dims, 
         ambiguous_dims=ambiguous_dims)
     return result
@@ -2045,7 +2045,7 @@ def sqrt(x: array, /) -> array:
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = helper.process_args(args, kwargs)
     result = einexpr.einarray(
-        x.a.__array_namespace__().sqrt(*processed_args, **processed_kwargs), 
+        einexpr.backends.get_array_api_backend(array=x.a).sqrt(*processed_args, **processed_kwargs), 
         dims=out_dims, 
         ambiguous_dims=ambiguous_dims)
     return result
@@ -2074,7 +2074,7 @@ def subtract(x1: array, x2: array, /) -> array:
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = helper.process_args(args, kwargs)
     result = einexpr.einarray(
-        x1.a.__array_namespace__().subtract(*processed_args, **processed_kwargs), 
+        einexpr.backends.get_array_api_backend(array=x1.a)().subtract(*processed_args, **processed_kwargs), 
         dims=out_dims, 
         ambiguous_dims=ambiguous_dims)
     return result
@@ -2110,7 +2110,7 @@ def tan(x: array, /) -> array:
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = helper.process_args(args, kwargs)
     result = einexpr.einarray(
-        x.a.__array_namespace__().tan(*processed_args, **processed_kwargs), 
+        einexpr.backends.get_array_api_backend(array=x.a).tan(*processed_args, **processed_kwargs), 
         dims=out_dims, 
         ambiguous_dims=ambiguous_dims)
     return result
@@ -2147,7 +2147,7 @@ def tanh(x: array, /) -> array:
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = helper.process_args(args, kwargs)
     result = einexpr.einarray(
-        x.a.__array_namespace__().tanh(*processed_args, **processed_kwargs), 
+        einexpr.backends.get_array_api_backend(array=x.a).tanh(*processed_args, **processed_kwargs), 
         dims=out_dims, 
         ambiguous_dims=ambiguous_dims)
     return result
@@ -2186,7 +2186,7 @@ def trunc(x: array, /) -> array:
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = helper.process_args(args, kwargs)
     result = einexpr.einarray(
-        x.a.__array_namespace__().trunc(*processed_args, **processed_kwargs), 
+        einexpr.backends.get_array_api_backend(array=x.a).trunc(*processed_args, **processed_kwargs), 
         dims=out_dims, 
         ambiguous_dims=ambiguous_dims)
     return result

@@ -17,14 +17,14 @@ def apply_transexpand(array: RawArray, transexpansion: List[int]) -> RawArray:
     else:
         transposition = [i for i in transexpansion if i is not None]
         expansion = tuple(None if i is None else slice(None) for i in transexpansion)
-        return array.__array_namespace__().permute_dims(array, transposition)[expansion]
+        return einexpr.backends.get_array_api_backend(array=array).permute_dims(array, transposition)[expansion]
 
 
 def reshape(array: RawArray, shape: Tuple[int, ...]) -> RawArray:
     """
     Reshape the given array to the given shape.
     """
-    return array.__array_namespace__().reshape(array, shape)
+    return einexpr.backends.get_array_api_backend(array=array).reshape(array, shape)
 
 
 def align_to_dimspec(

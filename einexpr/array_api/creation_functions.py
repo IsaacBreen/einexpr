@@ -36,7 +36,7 @@ def arange(start: Union[int, float], /, stop: Optional[Union[int, float]] = None
     if backend is None:
         backend = einexpr.backends.get_array_api_backend()
     if isinstance(backend, str):
-        backend = einexpr.backends.get_array_api_backend(backend)
+        backend = einexpr.backends.get_array_api_backend(name=backend)
     elif not isinstance(backend, ModuleType):
         raise TypeError(f"If specified, backend must be a module or a string, not {type(backend)}")
     return einexpr.einarray(backend.arange(start, stop, step, dtype=dtype, device=device), dims=dims)
@@ -106,7 +106,7 @@ def empty(shape: Union[int, Tuple[int, ...]], *, dtype: Optional[dtype] = None, 
     if backend is None:
         backend = einexpr.backends.get_array_api_backend()
     if isinstance(backend, str):
-        backend = einexpr.backends.get_array_api_backend(backend)
+        backend = einexpr.backends.get_array_api_backend(name=backend)
     elif not isinstance(backend, ModuleType):
         raise TypeError(f"If specified, backend must be a module or a string, not {type(backend)}")
     return einexpr.einarray(backend.empty(shape, dtype=dtype, device=device), dims=dims)
@@ -137,7 +137,7 @@ def empty_like(x: array, /, *, dtype: Optional[dtype] = None, device: Optional[d
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = helper.process_args(args, kwargs)
     result = einexpr.einarray(
-        x.a.__array_namespace__().full_like(*processed_args, **processed_kwargs), 
+        einexpr.backends.get_array_api_backend(array=x.a).full_like(*processed_args, **processed_kwargs), 
         dims=out_dims, 
         ambiguous_dims=ambiguous_dims)
     return result
@@ -171,7 +171,7 @@ def eye(n_rows: int, n_cols: Optional[int] = None, /, *, k: int = 0, dtype: Opti
     if backend is None:
         backend = einexpr.backends.get_array_api_backend()
     if isinstance(backend, str):
-        backend = einexpr.backends.get_array_api_backend(backend)
+        backend = einexpr.backends.get_array_api_backend(name=backend)
     elif not isinstance(backend, ModuleType):
         raise TypeError(f"If specified, backend must be a module or a string, not {type(backend)}")
     return einexpr.einarray(backend.eye(n_rows, n_cols=n_cols, k=k, dtype=dtype, device=device), dims=dims)
@@ -198,7 +198,7 @@ def from_dlpack(x: object, /, dims: DimensionSpecification = None, backend: Unio
     if backend is None:
         backend = einexpr.backends.get_array_api_backend()
     if isinstance(backend, str):
-        backend = einexpr.backends.get_array_api_backend(backend)
+        backend = einexpr.backends.get_array_api_backend(name=backend)
     elif not isinstance(backend, ModuleType):
         raise TypeError(f"If specified, backend must be a module or a string, not {type(backend)}")
     return einexpr.einarray(backend.from_dlpack(x), dims=dims)
@@ -235,7 +235,7 @@ def full(shape: Union[int, Tuple[int, ...]], fill_value: Union[bool, int, float,
     if backend is None:
         backend = einexpr.backends.get_array_api_backend()
     if isinstance(backend, str):
-        backend = einexpr.backends.get_array_api_backend(backend)
+        backend = einexpr.backends.get_array_api_backend(name=backend)
     elif not isinstance(backend, ModuleType):
         raise TypeError(f"If specified, backend must be a module or a string, not {type(backend)}")
     return einexpr.einarray(backend.full(shape, fill_value, dtype=dtype, device=device), dims=dims)
@@ -275,7 +275,7 @@ def full_like(x: array, /, fill_value: Union[bool, int, float, complex], *, dtyp
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = helper.process_args(args, kwargs)
     result = einexpr.einarray(
-        x.a.__array_namespace__().full_like(*processed_args, **processed_kwargs), 
+        einexpr.backends.get_array_api_backend(array=x.a).full_like(*processed_args, **processed_kwargs), 
         dims=out_dims, 
         ambiguous_dims=ambiguous_dims)
     return result
@@ -318,7 +318,7 @@ def linspace(start: Union[int, float], stop: Union[int, float], /, num: int, *, 
     if backend is None:
         backend = einexpr.backends.get_array_api_backend()
     if isinstance(backend, str):
-        backend = einexpr.backends.get_array_api_backend(backend)
+        backend = einexpr.backends.get_array_api_backend(name=backend)
     elif not isinstance(backend, ModuleType):
         raise TypeError(f"If specified, backend must be a module or a string, not {type(backend)}")
     return einexpr.einarray(backend.linspace(start, stop, num, dtype=dtype, device=device, endpoint=endpoint), dims=dims)
@@ -374,7 +374,7 @@ def ones(shape: Union[int, Tuple[int, ...]], *, dtype: Optional[dtype] = None, d
     if backend is None:
         backend = einexpr.backends.get_array_api_backend()
     if isinstance(backend, str):
-        backend = einexpr.backends.get_array_api_backend(backend)
+        backend = einexpr.backends.get_array_api_backend(name=backend)
     elif not isinstance(backend, ModuleType):
         raise TypeError(f"If specified, backend must be a module or a string, not {type(backend)}")
     return einexpr.einarray(backend.ones(shape, dtype=dtype, device=device), dims=dims)
@@ -408,7 +408,7 @@ def ones_like(x: array, /, *, dtype: Optional[dtype] = None, device: Optional[de
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = helper.process_args(args, kwargs)
     result = einexpr.einarray(
-        x.a.__array_namespace__().ones_like(*processed_args, **processed_kwargs), 
+        einexpr.backends.get_array_api_backend(array=x.a).ones_like(*processed_args, **processed_kwargs), 
         dims=out_dims, 
         ambiguous_dims=ambiguous_dims)
     return result
@@ -443,7 +443,7 @@ def tril(x: array, /, *, k: int = 0, dims: DimensionSpecification = None, backen
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = helper.process_args(args, kwargs)
     result = einexpr.einarray(
-        x.a.__array_namespace__().tril(*processed_args, **processed_kwargs), 
+        einexpr.backends.get_array_api_backend(array=x.a).tril(*processed_args, **processed_kwargs), 
         dims=out_dims, 
         ambiguous_dims=ambiguous_dims)
     return result
@@ -478,7 +478,7 @@ def triu(x: array, /, *, k: int = 0, dims: DimensionSpecification = None, backen
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = helper.process_args(args, kwargs)
     result = einexpr.einarray(
-        x.a.__array_namespace__().triu(*processed_args, **processed_kwargs), 
+        einexpr.backends.get_array_api_backend(array=x.a).triu(*processed_args, **processed_kwargs), 
         dims=out_dims, 
         ambiguous_dims=ambiguous_dims)
     return result
@@ -504,7 +504,7 @@ def zeros(shape: Union[int, Tuple[int, ...]], *, dtype: Optional[dtype] = None, 
     if backend is None:
         backend = einexpr.backends.get_array_api_backend()
     if isinstance(backend, str):
-        backend = einexpr.backends.get_array_api_backend(backend)
+        backend = einexpr.backends.get_array_api_backend(name=backend)
     elif not isinstance(backend, ModuleType):
         raise TypeError(f"If specified, backend must be a module or a string, not {type(backend)}")
     return einexpr.einarray(backend.zeros(shape, dtype=dtype, device=device), dims=dims)    
@@ -535,7 +535,7 @@ def zeros_like(x: array, /, *, dtype: Optional[dtype] = None, device: Optional[d
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = helper.process_args(args, kwargs)
     result = einexpr.einarray(
-        x.a.__array_namespace__().zeros_like(*processed_args, **processed_kwargs), 
+        einexpr.backends.get_array_api_backend(array=x.a).zeros_like(*processed_args, **processed_kwargs), 
         dims=out_dims, 
         ambiguous_dims=ambiguous_dims)
     return result

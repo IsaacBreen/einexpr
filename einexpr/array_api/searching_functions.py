@@ -28,7 +28,7 @@ def argmax(x: array, /, *, axis: Optional[int] = None, keepdims: bool = False) -
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = helper.process_args(args, kwargs)
     result = einexpr.einarray(
-        x.a.__array_namespace__().argmax(*processed_args, **processed_kwargs), 
+        einexpr.backends.get_array_api_backend(array=x.a).argmax(*processed_args, **processed_kwargs), 
         dims=out_dims, 
         ambiguous_dims=ambiguous_dims)
     return result
@@ -59,7 +59,7 @@ def argmin(x: array, /, *, axis: Optional[int] = None, keepdims: bool = False) -
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = helper.process_args(args, kwargs)
     result = einexpr.einarray(
-        x.a.__array_namespace__().argmin(*processed_args, **processed_kwargs), 
+        einexpr.backends.get_array_api_backend(array=x.a).argmin(*processed_args, **processed_kwargs), 
         dims=out_dims, 
         ambiguous_dims=ambiguous_dims)
     return result
@@ -117,7 +117,7 @@ def where(condition: array, x1: array, x2: array, /) -> array:
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = helper.process_args(args, kwargs)
     result = einexpr.einarray(
-        x2.a.__array_namespace__().where(*processed_args, **processed_kwargs), 
+        einexpr.backends.get_array_api_backend(array=x2.a).where(*processed_args, **processed_kwargs), 
         dims=out_dims, 
         ambiguous_dims=ambiguous_dims)
     return result

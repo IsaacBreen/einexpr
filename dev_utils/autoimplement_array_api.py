@@ -98,7 +98,7 @@ class ImplementFunctions(m.MatcherDecoratableTransformer):
             f'out_dims = einexpr.dimension_utils.{implementation_helper_name}.calculate_output_dims(args, kwargs)',
             f'ambiguous_dims = einexpr.dimension_utils.{implementation_helper_name}.calculate_output_ambiguous_dims(args, kwargs)',
             f'processed_args, processed_kwargs = einexpr.dimension_utils.{implementation_helper_name}.process_args(args, kwargs)',
-            f'result = einarray(\n    {array_param_name}.a.__array_namespace__().{func_name}(*processed_args, **processed_kwargs), \n    dims=out_dims, \n    ambiguous_dims=ambiguous_dims)',
+            f'result = einarray(\n    einexpr.backends.get_array_api_backend(array={array_param_name}).{func_name}(*processed_args, **processed_kwargs), \n    dims=out_dims, \n    ambiguous_dims=ambiguous_dims)',
             f'return result',
         ]
         

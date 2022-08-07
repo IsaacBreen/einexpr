@@ -29,7 +29,7 @@ def astype(x: array, dtype: dtype, /, *, copy: bool = True) -> array:
         an array having the specified data type. The returned array must have the same shape as ``x``.
     """
     return einexpr.einarray(
-        x.a.__array_namespace__().astype(x.a, dtype, copy=copy),
+        einexpr.backends.get_array_api_backend(array=x.a).astype(x.a, dtype, copy=copy),
         dims=x.dimspec,
         ambiguous_dims=x.ambiguous_dims)
 
@@ -50,7 +50,7 @@ def can_cast(from_: Union[dtype, array], to: dtype, /) -> bool:
         ``True`` if the cast can occur according to :ref:`type-promotion` rules; otherwise, ``False``.
     """
     if isinstance(from_, einexpr.einarray):
-        return from_.a.__array_namespace__().can_cast(from_.a, to)
+        return einexpr.backends.get_array_api_backend(array=from_.a).can_cast(from_.a, to)
     else:
         raise TypeError("can_cast() only accepts einarray objects. Use your backend's can_cast() function instead.")
 
@@ -138,7 +138,7 @@ def result_type(*arrays_and_dtypes: Union[array, dtype]) -> dtype:
     # Use the array namspace first array API-conformant array.
     for x in arrays_and_dtypes:
         if einexpr.backends.conforms_to_array_api(x):
-            return x.__array_namespace__().result_type(*arrays_and_dtypes)
+            return einexpr.backends.get_array_api_backend(array=x.a).result_type(*arrays_and_dtypes)
     # If all arrays are dtypes, raise an error.
     raise TypeError("result_type() only accepts einarray objects. Use your backend's result_type() function instead.")
 

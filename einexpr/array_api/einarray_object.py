@@ -44,7 +44,7 @@ class einarray():
         # ARRAY
         if backend is not None or not einexpr.backends.conforms_to_array_api(self.a):
             # Convert the array to the backend specified by the backend argument.
-            self.a = einexpr.backends.get_array_api_backend(backend).asarray(self.a)
+            self.a = einexpr.backends.get_array_api_backend(name=backend).asarray(self.a)
         # DIMS
         if not isinstance(self.dimspec, einexpr.array_api.dimension.DimensionSpecification):
             self.dimspec = einexpr.dimension_utils.process_dims_declaration(self.dimspec, self.a.shape)
@@ -184,7 +184,7 @@ class einarray():
         if self.ndim < 2:
             raise ValueError("The array must have at least two dimensions.")
         return einarray(
-            self.a.__array_namespace__().mT,
+            einexpr.backends.get_array_api_backend(array=self.a).mT,
             dims=(*self.dimspec[:-2], self.dimspec[-1], self.dimspec[-2]),
             ambiguous_dims=self.ambiguous_dims)
 
@@ -257,7 +257,7 @@ class einarray():
         if self.ndim != 2:
             raise ValueError(f"The array must be two-dimensional.")
         return einarray(
-            self.a.__array_namespace__().T,
+            einexpr.backends.get_array_api_backend(array=self.a).T,
             dims=(self.dimspec[1], self.dimspec[0]),
             ambiguous_dims=self.ambiguous_dims)
 
