@@ -666,10 +666,38 @@ def test_tutorial():
     assert np.all(np.matmul(X, Y) == x[i, k])
 
 
-def test_torch(X):
+def test_torch():
     import torch
     
     assert isinstance(einexpr.ones((1,2,3), backend='torch').a, torch.Tensor)
     
-    X = einexpr.einarray(torch.ones(X.shape, dtype=torch.float32))
+    X = einexpr.einarray(torch.ones((1,2,3), dtype=torch.float32))
     X ** X
+
+
+def test_numpy():
+    import numpy as np
+    
+    assert isinstance(einexpr.asarray(np.ones((1,2,3))).a, np.ndarray)
+    einexpr.asarray(np.ones((1,2,3)))['i']
+    assert isinstance(einexpr.ones((1,2,3), backend='numpy').a, np.ndarray)
+
+
+def test_transformer():
+    import einexpr as ei
+    
+    b,t,i,h,j = 2,3,4,5,6
+    x = ei.ones((b,t,i), dims='b t i')
+    Q = ei.ones((h,i,j), dims='h i j')
+    K = ei.ones((h,i,j), dims='h i j')
+    V = ei.ones((h,i,j), dims='h i j')
+    
+    q = x['b t i'] * Q['h i j']
+    k = x['b t i'] * K['h i j']
+    v = x['b t i'] * V['h i j']
+    
+    a = q['b h t'] * k['b h t->t_attend']
+    a = ei.exp(a['b h t t_attend']) / ei.exp(a['b h t->_t t_attend'])
+    
+    y = a['b h t t_attend'] * v['b h t->t_attend j']
+    y = y['b t (h j)']
