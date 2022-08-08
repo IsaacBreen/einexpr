@@ -8,9 +8,11 @@ warnings.filterwarnings("ignore", category=RuntimeWarning, message="overflow enc
 import pprint
 import string
 from collections import namedtuple
-from typing import List
+from typing import List, Tuple
 
 import einexpr
+from einexpr import AbsorbingDimension
+
 import numpy as np
 import numpy.array_api as npa
 import pytest
@@ -81,6 +83,56 @@ class ArrayNamespaceCaller:
     
     def __str__(self):
         return f"ArrayNamespaceCaller({self.name})"
+
+
+class Matcher:
+    pass
+
+
+class IsInstance(Matcher):
+    def __init__(self, T: type | Tuple[type, ...]):
+        self.T = T
+        
+    def matches(self, other) -> bool:
+        if isinstance(other, Matcher):
+            return self.matches_type(other.type())
+        else:
+            return isinstance(other, self.T)
+    
+    def matches_type(self, T: type | Tuple[type]) -> bool:
+        return issubclass(T, self.T)
+    
+    def type(self):
+        return self.T
+    
+    def __eq__(self, other):
+        return isinstance(other, IsInstance)
+    
+    def __repr__(self):
+        return 'IsInstance({})'.format(self.T.__name__)
+
+
+def assert_match(pattern1, *values):
+    def _assert_match(pattern1, value):
+        if isinstance(pattern1, Matcher):
+            return pattern1.matches(value)
+        elif isinstance(value, Matcher):
+            return value.matches(pattern1)
+        elif isinstance(pattern1, tuple) and isinstance(value, tuple):
+            return all(_assert_match(p1, p2) for p1, p2 in zip(pattern1, value))
+        elif isinstance(pattern1, list) and isinstance(value, list):
+            return all(_assert_match(p1, p2) for p1, p2 in zip(pattern1, value))
+        elif isinstance(pattern1, dict) and isinstance(value, dict):
+            if len(pattern1) != len(value):
+                return False
+            elif set(pattern1.keys()) != set(value.keys()):
+                return False
+            else:
+                return all(_assert_match(pattern1[k], value[k]) for k in pattern1)
+        else:
+            return pattern1 == value
+    return all(_assert_match(pattern1, value) for value in values)
+
 
 
 unary_arithmetic_magics_str = {
@@ -382,7 +434,7 @@ def test_random_expr(seed, random_expr_json, random_expr_value, random_einexpr):
 def test_list_to_einarray():
     x = einexpr.einarray([1,2,3], dims='i')
     y = x+x
-    assert ('i',) == y.dims
+    assert_match(('i',), y.dims)
 
 
 @pytest.mark.xfail
@@ -465,8 +517,8 @@ def test_reshape():
 
 def test_named_axis(X):
     X = einexpr.einarray(X, dims='i j')
-    assert einexpr.sum(X, axis='i').dims == einexpr.sum(X, axis=0).dims == ('j',)
-    assert einexpr.sum(X, axis='j').dims == einexpr.sum(X, axis=1).dims == ('i',)
+    assert_match(einexpr.sum(X, axis='i').dims, einexpr.sum(X, axis=0).dims, ('j',))
+    assert_match(einexpr.sum(X, axis='j').dims, einexpr.sum(X, axis=1).dims, ('i',))
     
     Y = X['(i j)']
     assert Y.dims == (('i', 'j'),)
@@ -510,31 +562,23 @@ def test_positional_dims(X):
     Z = einexpr.einarray(X, dims='i j')
     
     
-    assert len(R := (X*X).dims) == 2 and all(isinstance(dim, einexpr.dimension.AbsorbingDimension) for dim in R)
-    assert len(R := (X*Y).dims) == 2 and all(isinstance(dim, einexpr.dimension.AbsorbingDimension) for dim in R)
+    assert len(R := (X*X).dims) == 2 and all(isinstance(dim, AbsorbingDimension) for dim in R)
+    assert len(R := (X*Y).dims) == 2 and all(isinstance(dim, AbsorbingDimension) for dim in R)
     assert (X*Z).dims == ('i', 'j')
-
-
-# TODO: This is a terrible hack and should be fixed. To see why, try the following:
-# print(AbsorbingDimensionMatcher() == einexpr.array_api.dimension.AbsorbingDimension())  # True
-# print(einexpr.array_api.dimension.AbsorbingDimension() == AbsorbingDimensionMatcher())  # False
-class AbsorbingDimensionMatcher:
-    def __eq__(self, other):
-        return isinstance(other, einexpr.AbsorbingDimension)
 
 
 def test_positional_dims_and_rename(X):
     X = einexpr.einarray(X)
 
-    assert ('i', AbsorbingDimensionMatcher()) == X['i _'].dims
-    assert (AbsorbingDimensionMatcher(), 'n') == X['_ _->n'].dims
-    assert ('i', 'n') == X['_->i j->n'].dims
+    assert_match(('i', IsInstance(AbsorbingDimension)), X['i _'].dims)
+    assert_match((IsInstance(AbsorbingDimension), 'n'), X['_ _->n'].dims)
+    assert_match(('i', 'n'), X['_->i j->n'].dims)
 
 
 def test_positional_dims_and_ellipsis_and_rename(X):
     X = einexpr.einarray(X)
 
-    assert (AbsorbingDimensionMatcher(), 'n') == X['... _->n'].dims
+    assert_match((IsInstance(AbsorbingDimension), 'n'), X['... _->n'].dims)
 
 
 def test_first_class_dims(X):
@@ -549,34 +593,34 @@ def test_first_class_dims(X):
 def test_tricky_reshapes_l1():
     x = einexpr.ones((2,3,4), dims='_ _ k')
     
-    assert ('k', 'i', AbsorbingDimensionMatcher()) == x['k i _'].dims
-    assert ('k', 'i', AbsorbingDimensionMatcher()) == x['k i ...'].dims
+    assert_match(('k', 'i', IsInstance(AbsorbingDimension)), x['k i _'].dims)
+    assert_match(('k', 'i', IsInstance(AbsorbingDimension)), x['k i ...'].dims)
     
-    assert ('i', 'j', 'k') == x['i j _'].dims
-    assert ('i', 'j', 'k') == x['i j ...'].dims
+    assert_match(('i', 'j', 'k'), x['i j _'].dims)
+    assert_match(('i', 'j', 'k'), x['i j ...'].dims)
     
-    assert ('i', AbsorbingDimensionMatcher(), 'k') == x['i _ _'].dims
-    assert ('i', AbsorbingDimensionMatcher(), 'k') == x['i ... _'].dims
-    assert ('i', 'k', 'j') == x['i ... j'].dims
+    assert_match(('i', IsInstance(AbsorbingDimension), 'k'), x['i _ _'].dims)
+    assert_match(('i', IsInstance(AbsorbingDimension), 'k'), x['i ... _'].dims)
+    assert_match(('i', 'k', 'j'), x['i ... j'].dims)
 
-    assert (AbsorbingDimensionMatcher(), 'k', 'i') == x['... i'].dims
-    assert ('i', AbsorbingDimensionMatcher(), 'k') == x['i ...'].dims
+    assert_match((IsInstance(AbsorbingDimension), 'k', 'i'), x['... i'].dims)
+    assert_match(('i', IsInstance(AbsorbingDimension), 'k'), x['i ...'].dims)
 
 
 def test_tricky_reshapes_l2():
     x = einexpr.ones((2,3,4), dims='i j k')
     x = x['(i j k)']
-    assert ('i', ('j', 'k')) == x['i ...'].dims
-    assert ('j', ('i', 'k')) == x['j ...'].dims
-    assert ('k', ('i', 'j')) == x['k ...'].dims
+    assert_match(('i', ('j', 'k')), x['i ...'].dims)
+    assert_match(('j', ('i', 'k')), x['j ...'].dims)
+    assert_match(('k', ('i', 'j')), x['k ...'].dims)
     
-    assert (('j', 'k'), 'i') == x['... i'].dims
-    assert (('i', 'k'), 'j') == x['... j'].dims
-    assert (('i', 'j'), 'k') == x['... k'].dims
+    assert_match((('j', 'k'), 'i'), x['... i'].dims)
+    assert_match((('i', 'k'), 'j'), x['... j'].dims)
+    assert_match((('i', 'j'), 'k'), x['... k'].dims)
     
-    assert ('k', ('j',), 'i') == x['k ... i'].dims
-    assert ('k', ('i',), 'j') == x['k ... j'].dims
-    assert ('i', ('k',), 'j') == x['i ... j'].dims
+    assert_match(('k', ('j',), 'i'), x['k ... i'].dims)
+    assert_match(('k', ('i',), 'j'), x['k ... j'].dims)
+    assert_match(('i', ('k',), 'j'), x['i ... j'].dims)
     
     x = einexpr.ones((2,3,4,5,6,7,8,9,10), dims='i j k l m n o p q')
     x = x['i j k (l m n) o p q']
