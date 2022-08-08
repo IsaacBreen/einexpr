@@ -377,10 +377,12 @@ def ones(shape: Union[int, Tuple[int, ...]], *, dtype: Optional[dtype] = None, d
     """
     if backend is None:
         backend_module = einexpr.backends.get_array_api_backend()
-    if isinstance(backend, str):
+    elif isinstance(backend, str):
         backend_module = einexpr.backends.get_array_api_backend(name=backend)
-    elif not isinstance(backend_module, ModuleType):
-        raise TypeError(f"If specified, backend must be a module or a string, not {type(backend_module)}")
+    elif isinstance(backend, ModuleType):
+        backend_module = backend
+    else:
+        raise TypeError(f"If specified, backend must be a module or a string, not {type(backend)}")
     return einexpr.einarray(backend_module.ones(shape, dtype=dtype, device=device), dims=dims, backend=backend)
 
 
