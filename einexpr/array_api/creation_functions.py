@@ -35,11 +35,15 @@ def arange(start: Union[int, float], /, stop: Optional[Union[int, float]] = None
     """
     if backend is None:
         backend_module = einexpr.backends.get_array_api_backend()
-    if isinstance(backend, str):
+    elif isinstance(backend, str):
         backend_module = einexpr.backends.get_array_api_backend(name=backend)
-    elif not isinstance(backend_module, ModuleType):
-        raise TypeError(f"If specified, backend must be a module or a string, not {type(backend_module)}")
+    elif isinstance(backend, ModuleType):
+        backend_module = backend
+    else:
+        raise TypeError(f"If specified, backend must be a module or a string, not {type(backend)}")
     return einexpr.einarray(backend_module.arange(start, stop, step, dtype=dtype, device=device), dims=dims, backend=backend)
+
+
 def asarray(obj: Union[array, bool, int, float, complex, NestedSequence, SupportsBufferProtocol], /, *, dtype: Optional[dtype] = None, device: Optional[device] = None, copy: Optional[bool] = None, dims: DimensionSpecification = None, backend: Union[ModuleType, str] = None) -> array:
     r"""
     Convert the input to an array.
@@ -84,6 +88,7 @@ def asarray(obj: Union[array, bool, int, float, complex, NestedSequence, Support
     """
     return einexpr.einarray(obj, dims=dims)
 
+
 def empty(shape: Union[int, Tuple[int, ...]], *, dtype: Optional[dtype] = None, device: Optional[device] = None, dims: DimensionSpecification = None, backend: Union[ModuleType, str] = None) -> array:
     """
     Returns an uninitialized array having a specified `shape`.
@@ -104,11 +109,15 @@ def empty(shape: Union[int, Tuple[int, ...]], *, dtype: Optional[dtype] = None, 
     """
     if backend is None:
         backend_module = einexpr.backends.get_array_api_backend()
-    if isinstance(backend, str):
+    elif isinstance(backend, str):
         backend_module = einexpr.backends.get_array_api_backend(name=backend)
-    elif not isinstance(backend_module, ModuleType):
-        raise TypeError(f"If specified, backend must be a module or a string, not {type(backend_module)}")
+    elif isinstance(backend, ModuleType):
+        backend_module = backend
+    else:
+        raise TypeError(f"If specified, backend must be a module or a string, not {type(backend)}")
     return einexpr.einarray(backend_module.empty(shape, dtype=dtype, device=device), dims=dims, backend=backend)
+
+
 def empty_like(x: array, /, *, dtype: Optional[dtype] = None, device: Optional[device] = None, dims: DimensionSpecification = None, backend: Union[ModuleType, str] = None) -> array:
     """
     Returns an uninitialized array with the same ``shape`` as an input array ``x``.
@@ -168,10 +177,12 @@ def eye(n_rows: int, n_cols: Optional[int] = None, /, *, k: int = 0, dtype: Opti
     """
     if backend is None:
         backend_module = einexpr.backends.get_array_api_backend()
-    if isinstance(backend, str):
+    elif isinstance(backend, str):
         backend_module = einexpr.backends.get_array_api_backend(name=backend)
-    elif not isinstance(backend_module, ModuleType):
-        raise TypeError(f"If specified, backend must be a module or a string, not {type(backend_module)}")
+    elif isinstance(backend, ModuleType):
+        backend_module = backend
+    else:
+        raise TypeError(f"If specified, backend must be a module or a string, not {type(backend)}")
     return einexpr.einarray(backend_module.eye(n_rows, n_cols=n_cols, k=k, dtype=dtype, device=device), dims=dims, backend=backend)
 
 
@@ -196,10 +207,12 @@ def from_dlpack(x: object, /, dims: DimensionSpecification = None, backend: Unio
     """
     if backend is None:
         backend_module = einexpr.backends.get_array_api_backend()
-    if isinstance(backend, str):
+    elif isinstance(backend, str):
         backend_module = einexpr.backends.get_array_api_backend(name=backend)
-    elif not isinstance(backend_module, ModuleType):
-        raise TypeError(f"If specified, backend must be a module or a string, not {type(backend_module)}")
+    elif isinstance(backend, ModuleType):
+        backend_module = backend
+    else:
+        raise TypeError(f"If specified, backend must be a module or a string, not {type(backend)}")
     return einexpr.einarray(backend_module.from_dlpack(x), dims=dims, backend=backend)
 
 
@@ -234,10 +247,12 @@ def full(shape: Union[int, Tuple[int, ...]], fill_value: Union[bool, int, float,
     """
     if backend is None:
         backend_module = einexpr.backends.get_array_api_backend()
-    if isinstance(backend, str):
+    elif isinstance(backend, str):
         backend_module = einexpr.backends.get_array_api_backend(name=backend)
-    elif not isinstance(backend_module, ModuleType):
-        raise TypeError(f"If specified, backend must be a module or a string, not {type(backend_module)}")
+    elif isinstance(backend, ModuleType):
+        backend_module = backend
+    else:
+        raise TypeError(f"If specified, backend must be a module or a string, not {type(backend)}")
     return einexpr.einarray(backend_module.full(shape, fill_value, dtype=dtype, device=device), dims=dims, backend=backend)
 
 
@@ -319,10 +334,12 @@ def linspace(start: Union[int, float], stop: Union[int, float], /, num: int, *, 
     """
     if backend is None:
         backend_module = einexpr.backends.get_array_api_backend()
-    if isinstance(backend, str):
+    elif isinstance(backend, str):
         backend_module = einexpr.backends.get_array_api_backend(name=backend)
-    elif not isinstance(backend_module, ModuleType):
-        raise TypeError(f"If specified, backend must be a module or a string, not {type(backend_module)}")
+    elif isinstance(backend, ModuleType):
+        backend_module = backend
+    else:
+        raise TypeError(f"If specified, backend must be a module or a string, not {type(backend)}")
     return einexpr.einarray(backend_module.linspace(start, stop, num, dtype=dtype, device=device, endpoint=endpoint), dims=dims, backend=backend)
 
 
@@ -456,6 +473,7 @@ def tril(x: array, /, *, k: int = 0, dims: DimensionSpecification = None, backen
         ambiguous_dims=ambiguous_dims)
     return result
 
+
 def triu(x: array, /, *, k: int = 0, dims: DimensionSpecification = None, backend: Union[ModuleType, str] = None) -> array:
     """
     Returns the upper triangular part of a matrix (or a stack of matrices) ``x``.
@@ -491,6 +509,7 @@ def triu(x: array, /, *, k: int = 0, dims: DimensionSpecification = None, backen
         ambiguous_dims=ambiguous_dims)
     return result
 
+
 def zeros(shape: Union[int, Tuple[int, ...]], *, dtype: Optional[dtype] = None, device: Optional[device] = None, dims: DimensionSpecification = None, backend: Union[ModuleType, str] = None) -> array:
     """
     Returns a new array having a specified ``shape`` and filled with zeros.
@@ -511,11 +530,14 @@ def zeros(shape: Union[int, Tuple[int, ...]], *, dtype: Optional[dtype] = None, 
     """
     if backend is None:
         backend_module = einexpr.backends.get_array_api_backend()
-    if isinstance(backend, str):
+    elif isinstance(backend, str):
         backend_module = einexpr.backends.get_array_api_backend(name=backend)
-    elif not isinstance(backend_module, ModuleType):
-        raise TypeError(f"If specified, backend must be a module or a string, not {type(backend_module)}")
+    elif isinstance(backend, ModuleType):
+        backend_module = backend
+    else:
+        raise TypeError(f"If specified, backend must be a module or a string, not {type(backend)}")
     return einexpr.einarray(backend_module.zeros(shape, dtype=dtype, device=device), dims=dims, backend=backend)    
+
 
 def zeros_like(x: array, /, *, dtype: Optional[dtype] = None, device: Optional[device] = None, dims: DimensionSpecification = None, backend: Union[ModuleType, str] = None) -> array:
     """
