@@ -1,4 +1,5 @@
 array-api
+ivy
 poetry.lock
 local
 einexpr/external_apis
