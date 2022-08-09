@@ -8,7 +8,7 @@
 </p>
 
 
-# Introduction
+# Quick intro
 
 `einexpr` brings Einstein summation notation to Python.
 
