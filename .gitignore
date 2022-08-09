@@ -3,6 +3,7 @@ ivy
 poetry.lock
 local
 einexpr/external_apis
+ivy
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
