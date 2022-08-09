@@ -80,9 +80,15 @@ assert Z['i (j k)'].dims == ('i', ('j', 'k'))
 
 ### Backends
 
-Generally, `einexpr` stores the arrays you pass to it as an attribute in their raw format. The only exceptions are when you pass an array of type `NestedSequence[bool | int | float]` such as a (potentially nested) list of integers (e.g. `[[1,2],[3,4]]`), which `einexpr` will call the default backend's `asarray` method on, or when you pass another object that neither implements `__array_namespace__()` nor belongs to one of the backends supported by Ivy.
+Generally, `einexpr` stores the arrays you pass to it as an attribute in their raw format. The are two exceptions: when you pass an array of type `NestedSequence[bool | int | float]` such as a (potentially nested) list of integers (e.g. `[[1,2],[3,4]]`)`, and when you pass another object that neither implements `__array_namespace__()` nor belongs to one of the backends supported by Ivy. In either case, `einexpr` will convert it using the `asarray` method of the default backend.
 
-To specify a backend explicitly, use the `backend` keyword argument and `einexpr` will convert the array argument using the backend's `asarray` method.
+The default backend is NumPy, if it is installed. If not, `einexpr` will search for array API standard complying libraries (excluding Ivy) that live in the same Python environment as itself. If there is exactly one, it will use that one. If both of these default backend selection methods fall through, an `einexpr` will throw an error and the user will need to set a default backend like so:
+
+```python
+ei.set_default_backend('torch')
+```
+
+To specify a backend explicitly for a given array, use the `backend` keyword argument. `einexpr` will then convert the array argument into the backend's array type using its `asarray` method.
 
 ```python
 ei.asarray([1,2,3], backend='torch')
