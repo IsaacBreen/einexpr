@@ -78,11 +78,15 @@ assert Z['i (j k)'].dims == ('i', ('j', 'k'))
 ...
 ```
 
-There are two ways to choose which backend to use: use the `backend` keyword argument or pass an array of the desired type.
+### Backends
+
+Generally, `einexpr` stores the arrays you pass to it as an attribute in their raw format. The only exceptions are when you pass an array of type `NestedSequence[bool | int | float]` such as a (potentially nested) list of integers (e.g. `[[1,2],[3,4]]`), which `einexpr` will call the default backend's `asarray` method on, or when you pass another object that neither implements `__array_namespace__()` nor belongs to one of the backends supported by Ivy.
+
+To specify a backend explicitly, use the `backend` keyword argument and `einexpr` will convert the array argument using the backend's `asarray` method.
 
 ```python
-ei.array([1,2,3], backend='torch')
-ei.array(torch.asarray([1,2,3]))
+ei.asarray([1,2,3], backend='torch')
+ei.asarray(torch.asarray([1,2,3]))
 ```
 
 # Installation
