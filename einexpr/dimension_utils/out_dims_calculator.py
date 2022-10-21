@@ -3,7 +3,7 @@ from click import Argument
 import einexpr
 
 
-backend_array_types = dict()
+backend_array_types = {}
 backend_dim_kwargs_to_resolve = ['dim', 'axis']
 
 function_registry = []
@@ -157,7 +157,7 @@ class SingleArgumentMultipleDimensionReduction:
         _axis = []
         array_dims = get_dims(array)
         # Convert all integer axes into AtomicDimensions
-        for i, dim in enumerate(axis):
+        for dim in axis:
             if isinstance(dim, (list, tuple, einexpr.array_api.dimension.AtomicDimension, einexpr.array_api.dimension.AbsorbingDimension)):
                 _axis.append(dim)
             elif isinstance(dim, int):
@@ -178,8 +178,7 @@ class SingleArgumentMultipleDimensionReduction:
         array: einexpr.einarray = args[0]
         named_axis = SingleArgumentMultipleDimensionReduction._calculate_named_axis(args, kwargs)
         array_dims = einexpr.dimension_utils.isolate_dims(get_dims(array), named_axis)
-        axis = tuple(array_dims.index(dim) for dim in named_axis)
-        return axis
+        return tuple(array_dims.index(dim) for dim in named_axis)
     
     @staticmethod
     def process_args(args, kwargs):
@@ -201,15 +200,15 @@ class SingleArgumentMultipleDimensionReduction:
         output_dims = einexpr.dimension_utils.parse_dims(output_dims)
         sizes = einexpr.dimension_utils.gather_sizes(get_dimspec(array))
         sizes = {dim: size for dim, size in sizes.items() if einexpr.utils.tree_contains(output_dims, dim)}
-        dimspec = einexpr.array_api.dimension.DimensionSpecification(output_dims, sizes)
-        return dimspec
+        return einexpr.array_api.dimension.DimensionSpecification(output_dims, sizes)
     
     @staticmethod
     def calculate_output_ambiguous_dims(args, kwargs):
         args, kwargs = ArgumentHelper.prepreprocess_args(args, kwargs)
         axis = SingleArgumentMultipleDimensionReduction._calculate_integer_axis(args, kwargs)
-        ambiguous_out_dims = get_ambiguous_dims(args[0]) - {dim for i, dim in enumerate(get_dims(args[0])) if i in axis}
-        return ambiguous_out_dims
+        return get_ambiguous_dims(args[0]) - {
+            dim for i, dim in enumerate(get_dims(args[0])) if i in axis
+        }
 
 
 class SingleArgumentSingleDimensionReduction(SingleArgumentMultipleDimensionReduction):
@@ -257,8 +256,15 @@ class Concatenation:
         axis_num = get_dims(args[0][0]).index(axes[0])
         # Align the arrays. Use the shape of the first array as the template.
         aligned_args = [args[0][0]]
-        for axis, arg in zip(axes[1:], args[0][1:]):
-            aligned_args.append(arg[tuple(dim if dim != axes[0] else axis for dim in get_dims(args[0][0]))])
+        aligned_args.extend(
+            arg[
+                tuple(
+                    dim if dim != axes[0] else axis for dim in get_dims(args[0][0])
+                )
+            ]
+            for axis, arg in zip(axes[1:], args[0][1:])
+        )
+
         raw_aligned_args = [get_raw(arg) for arg in aligned_args]
         return (raw_aligned_args, *args[1:]), {**kwargs, 'axis': axis_num}
 
@@ -271,8 +277,7 @@ class Concatenation:
             arg_dims_set = set(get_dims(arg)) - {axis}
             if arg_dims_set != out_dims_set:
                 raise ValueError(f"Arrays must have all the same dimensions except those concatentated over. The first input array {args[0][0]} has non-concatenated dimensions {out_dims_set}, while the input array {arg} has non-concatenated dimensions {arg_dims_set}.")
-        out_dims = [dim if dim != axes[0] else tuple(axes) for dim in get_dims(args[0][0])]
-        return out_dims
+        return [dim if dim != axes[0] else tuple(axes) for dim in get_dims(args[0][0])]
         
     @staticmethod
     def calculate_output_ambiguous_dims(args, kwargs):

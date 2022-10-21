@@ -14,10 +14,9 @@ def apply_transexpand(array: RawArray, transexpansion: List[int]) -> RawArray:
     """
     if not transexpansion:
         return array
-    else:
-        transposition = [i for i in transexpansion if i is not None]
-        expansion = tuple(None if i is None else slice(None) for i in transexpansion)
-        return einexpr.backends.get_array_api_backend(array=array).permute_dims(array, transposition)[expansion]
+    transposition = [i for i in transexpansion if i is not None]
+    expansion = tuple(None if i is None else slice(None) for i in transexpansion)
+    return einexpr.backends.get_array_api_backend(array=array).permute_dims(array, transposition)[expansion]
 
 
 def reshape(array: RawArray, shape: Tuple[int, ...]) -> RawArray:
@@ -74,18 +73,18 @@ def align_arrays(*arrays: 'einexpr.einarray', return_output_dims: bool = False) 
     """
     if not arrays:
         return [], [] if return_output_dims else []
-    else:
-        # Calculate the output dimensions
-        out_dims = einexpr.dimension_utils.get_final_aligned_dims(*(einexpr.dimension_utils.get_dims(array) for array in arrays))
-        # Calculate and apply the transpositions and expansions necessesary to align the arrays to the output dimensions
-        raw_aligned_arrays = []
-        for array in arrays:
-            if isinstance(einexpr.dimension_utils.get_raw(array), (int, float)):
-                raw_aligned_arrays.append(einexpr.dimension_utils.get_raw(array))
-            else:
-                transexpand = einexpr.dimension_utils.calculate_transexpand(einexpr.dimension_utils.get_dims(array), out_dims)
-                raw_aligned_arrays.append(apply_transexpand(einexpr.dimension_utils.get_raw(array), transexpand))
-        if return_output_dims:
-            return raw_aligned_arrays, out_dims
+    # Calculate the output dimensions
+    out_dims = einexpr.dimension_utils.get_final_aligned_dims(*(einexpr.dimension_utils.get_dims(array) for array in arrays))
+    # Calculate and apply the transpositions and expansions necessesary to align the arrays to the output dimensions
+    raw_aligned_arrays = []
+    for array in arrays:
+        if isinstance(einexpr.dimension_utils.get_raw(array), (int, float)):
+            raw_aligned_arrays.append(einexpr.dimension_utils.get_raw(array))
         else:
-            return raw_aligned_arrays
+            transexpand = einexpr.dimension_utils.calculate_transexpand(einexpr.dimension_utils.get_dims(array), out_dims)
+            raw_aligned_arrays.append(apply_transexpand(einexpr.dimension_utils.get_raw(array), transexpand))
+    return (
+        (raw_aligned_arrays, out_dims)
+        if return_output_dims
+        else raw_aligned_arrays
+    )

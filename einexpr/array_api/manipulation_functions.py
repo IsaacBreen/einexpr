@@ -61,11 +61,13 @@ def concat(arrays: Union[Tuple[array, ...], List[array]], /, *, axis: Optional[i
     out_dims = helper.calculate_output_dims(args, kwargs)
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = helper.process_args(args, kwargs)
-    result = einexpr.einarray(
-        einexpr.backends.get_array_api_backend(array=arrays[0].a).concat(*processed_args, **processed_kwargs), 
-        dims=out_dims, 
-        ambiguous_dims=ambiguous_dims)
-    return result
+    return einexpr.einarray(
+        einexpr.backends.get_array_api_backend(array=arrays[0].a).concat(
+            *processed_args, **processed_kwargs
+        ),
+        dims=out_dims,
+        ambiguous_dims=ambiguous_dims,
+    )
 
 
 def expand_dims(x: array, /, *, axis: int = 0) -> array:
@@ -109,11 +111,13 @@ def flip(x: array, /, *, axis: Optional[Union[int, Tuple[int, ...]]] = None) -> 
     out_dims = helper.calculate_output_dims(args, kwargs)
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = helper.process_args(args, kwargs)
-    result = einexpr.einarray(
-        einexpr.backends.get_array_api_backend(array=x.a).flip(*processed_args, **processed_kwargs), 
-        dims=out_dims, 
-        ambiguous_dims=ambiguous_dims)
-    return result
+    return einexpr.einarray(
+        einexpr.backends.get_array_api_backend(array=x.a).flip(
+            *processed_args, **processed_kwargs
+        ),
+        dims=out_dims,
+        ambiguous_dims=ambiguous_dims,
+    )
 
 def permute_dims(x: array, /, axes: Tuple[int, ...]) -> array:
     """

@@ -73,7 +73,7 @@ def process_trees(einexpr_tree, template_tree):
     elif isinstance(einexpr_tree, cst.Module) and isinstance(template_tree, cst.Module):
         einexpr_tree.visit(einexpr_collector)
         template_tree.visit(template_collector)
-    
+
     # Check that all functions are implemented with the correct signatures
     for name in set(einexpr_collector.functions) & set(template_collector.functions):
         einexpr_func = einexpr_collector.functions[name]
@@ -82,25 +82,25 @@ def process_trees(einexpr_tree, template_tree):
             raise Exception(f"Parameters of function {name} do not match. Expected: {template_func.params}, got: {einexpr_func.params}")
         if einexpr_func.returns != template_func.returns and einexpr_func.returns and not einexpr_func.returns.deep_equals(template_func.returns):
             raise Exception(f"Returns of function {name} do not match. Expected: {template_func.returns}, got: {einexpr_func.returns}")
-    
+
     # Insert the signature and docstring of any unimplemented functions and set the function body to raise a NotImplementedError
     for name in set(template_collector.functions) - set(einexpr_collector.functions):
         template_func = template_collector.functions[name]
         template_func.body.body = list(template_func.body.body)
         template_func.body.body.append(cst.parse_statement("raise NotImplementedError"))
         einexpr_tree.body.append(template_func)
-        
+
     # Insert any missing classes
     for name in set(template_collector.classes) - set(einexpr_collector.classes):
         template_class = template_collector.classes[name]
         einexpr_tree.body.append(template_class)
-    
+
     # Recurse over classes
     for name in set(einexpr_collector.classes) & set(template_collector.classes):
         einexpr_class = einexpr_collector.classes[name]
         template_class = template_collector.classes[name]
         process_trees(einexpr_class, template_class)
-        
+
     return einexpr_tree
 
 class RaiseNotImplementedVisitor(m.MatcherDecoratableTransformer):

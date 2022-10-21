@@ -49,7 +49,7 @@ class ImplementFunctions(m.MatcherDecoratableTransformer):
         # TODO: this assert will fail if the function is on a single line. Replace the Raise instead.
         assert isinstance(raise_node := updated_node.body.body[-1].body[0], cst.Raise) and (raise_node.exc.value == "NotImplementedError" or raise_node.exc.func.value == "NotImplementedError"), f"Expected raise NotImplementedError, got {raise_node}"
         func_name = original_node.name.value
-        
+
         if func_name in single_arg_elementwise_function_names:
             implementation_helper_name = 'SingleArgumentElementwise'
         elif func_name in multiple_arg_elementwise_function_names:
@@ -62,22 +62,22 @@ class ImplementFunctions(m.MatcherDecoratableTransformer):
             implementation_helper_name = 'Concatenation'
         else:
             return updated_node
-        
+
         # If the return type is not `array`, don't implement it - warn the user.
         return_annotation = updated_node.returns.annotation.value
         if return_annotation != "array":
             print(f"    ⚠️  WARNING: Expected a return type of 'array' for function {func_name!r}; got {return_annotation}")
             return updated_node
-        
+
         # self.implementation_helper_names_used.add(implementation_helper_name)
-        
+
         params = updated_node.params
         posonly_args = [param.name.value for param in params.posonly_params]
         kwonly_args = [param.name.value for param in params.kwonly_params]
-        
-        posonly_args_str = '(' + ' '.join(arg + ',' for arg in posonly_args) + ')'
+
+        posonly_args_str = '(' + ' '.join(f'{arg},' for arg in posonly_args) + ')'
         kwonly_args_str = '{' + ', '.join(f"'{name}': {name}" for name in kwonly_args) + '}'
-        
+
         array_param_name = None
         for param in params.posonly_params:
             if isinstance(param.annotation, cst.Tuple):
@@ -90,7 +90,7 @@ class ImplementFunctions(m.MatcherDecoratableTransformer):
         if array_param_name is None:
             print(f"    ⚠️  WARNING: Expected a parameter of type 'array' in posonly_args for function {func_name!r}; got annotations {[param.annotation.annotation.value for param in params.posonly_params]}")
             return updated_node
-        
+
 
         implementation_lines = [
             f'args = {posonly_args_str}',
@@ -99,9 +99,10 @@ class ImplementFunctions(m.MatcherDecoratableTransformer):
             f'ambiguous_dims = einexpr.dimension_utils.{implementation_helper_name}.calculate_output_ambiguous_dims(args, kwargs)',
             f'processed_args, processed_kwargs = einexpr.dimension_utils.{implementation_helper_name}.process_args(args, kwargs)',
             f'result = einarray(\n    einexpr.backends.get_array_api_backend(array={array_param_name}).{func_name}(*processed_args, **processed_kwargs), \n    dims=out_dims, \n    ambiguous_dims=ambiguous_dims)',
-            f'return result',
+            'return result',
         ]
-        
+
+
         implementation_expressions = [cst.parse_statement(line) for line in implementation_lines]
 
         print(f"    Implementing {func_name} with {implementation_helper_name}")
@@ -123,6 +124,8 @@ def add_reflected_operators(code):
     qualified_names_by_node = wrapper.resolve(cst.metadata.QualifiedNameProvider)
     all_qualified_names = {qualified_name.name for qualified_names in qualified_names_by_node.values() for qualified_name in qualified_names}
 
+
+
     class OperatorReflector(m.MatcherDecoratableTransformer):
         @m.leave(m.FunctionDef(name=m.OneOf(*(m.Name(value=f'__{op}__') for op in operators_to_reflect))))
         def reflect_operator(self, original_node: cst.FunctionDef, updated_node: cst.FunctionDef):
@@ -138,19 +141,19 @@ def add_reflected_operators(code):
             assert original_comment.split()[0] in ['"""', "'''"], f"Expected comment to start with ''' or '\"\"', got {original_comment}"
             comment_start = original_comment.split('\n')[0]
             comment_body = '\n'.join(original_comment.split('\n')[1:])
-            indent = re.search(r'\s*', comment_body).group(0)
+            indent = re.search(r'\s*', comment_body)[0]
             new_comment = f'{comment_start}\n{indent}Reflection of {op_name}. Original comments:\n\n{comment_body}'
             reflected_node = updated_node
             # Replace the comment string
             reflected_node = reflected_node.deep_replace(original_comment_node, original_comment_node.with_changes(value=new_comment))
-            # Replace all instances of the symbol of the operator with the reflected operator
             class ReplaceOperator(m.MatcherDecoratableTransformer):
                 @m.leave(m.Name(value=op_name))
                 def replace_operator(self, original_node: cst.Name, updated_node: cst.Name):
                     return updated_node.with_changes(value=reflected_op_name)
-            
+
             reflected_node = reflected_node.visit(ReplaceOperator())
             return cst.FlattenSentinel([original_node, cst.EmptyLine(), reflected_node])
+
 
     tree = wrapper.module.visit(OperatorReflector())
     return tree.code

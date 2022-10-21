@@ -47,7 +47,7 @@ def calculate_ambiguous_final_aligned_dims(
 ) -> Set[einexpr.array_api.dimension.NestedDimension]:
     aligned_dims = get_each_aligned_dims(*dims)
     scs = list(einexpr.utils.get_all_scs_with_unique_elems(*aligned_dims))
-    if len(scs) == 0:
+    if not scs:
         raise ValueError(f"No valid alignments for the given dimensions {dims}.")
     first_broadcasted_dims = np.array(scs[0])
     ambiguous_positions = np.zeros((len(first_broadcasted_dims),), dtype=bool)
@@ -96,9 +96,7 @@ class TreeToReshapeDimension(Transformer):
         return einexpr.array_api.dimension.DimensionReplacement(original, replacement)
 
     def irreplacable_dim(self, value) -> einexpr.array_api.dimension.NestedDimension:
-        if isinstance(value, str):
-            return value
-        elif isinstance(value, tuple):
+        if isinstance(value, (str, tuple)):
             return value
         else:
             raise ValueError(f"Unexpected value {value}.")
@@ -194,7 +192,7 @@ def parse_dims(dims_raw: einexpr.array_api.dimension.NestedDimension) -> Tuple[e
             return einexpr.array_api.dimension.AbsorbingDimension()
         else:
             raise ValueError(f"Unexpected value {dims_raw}.")
-    
+
     dims = helper(dims_raw)
     if isinstance(dims, einexpr.utils.ExpandSentinel):
         dims = tuple(dims.content)
@@ -250,9 +248,7 @@ def process_dims_declaration(dims_raw: str | Tuple[einexpr.array_api.dimension.B
         dims = dims[:i_ellipsis] + tuple(einexpr.array_api.dimension.AbsorbingDimension() for _ in range(len_ellipsis)) + dims[i_ellipsis + 1:]
     if len(dims) != len(shape):
         raise einexpr.exceptions.InternalError("DimensionSpecification tuple size does not match shape tuple size.")
-    if len(dims) != len(shape):
-        raise ValueError(f"Declaration {dims_raw} has wrong number of dimensions. Expected {len(shape)}, got {len(dims)}.")
-    dim_sizes = {dim: size for dim, size in zip(dims, shape)}
+    dim_sizes = dict(zip(dims, shape))
     dims = einexpr.array_api.dimension.DimensionSpecification(dims, sizes=dim_sizes)
     return dims
 
@@ -383,9 +379,16 @@ def resolve_positional_dims(dimensions_tuples):
             for dimensions_to_absorb in dimensions_tuples:
                 if _absorbing_dimensions is dimensions_to_absorb:
                     continue
-                if ... not in absorbing_dimensions and ... not in dimensions_to_absorb:
-                    if len(absorbing_dimensions) != len(dimensions_to_absorb):
-                        raise ValueError(f"Dimension tuples without ellipses must have the same lengths: {absorbing_dimensions!r} != {dimensions_to_absorb!r}.")
+                if (
+                    ... not in absorbing_dimensions
+                    and ... not in dimensions_to_absorb
+                    and len(absorbing_dimensions) != len(dimensions_to_absorb)
+                ):
+                    raise ValueError(f"Dimension tuples without ellipses must have the same lengths: {absorbing_dimensions!r} != {dimensions_to_absorb!r}.")
+                elif (
+                    ... not in absorbing_dimensions
+                    and ... not in dimensions_to_absorb
+                ):
                     absorbing_dimensions = tuple(dimension_to_absorb if absorbing_dimension is None else absorbing_dimension for absorbing_dimension, dimension_to_absorb in zip(absorbing_dimensions, dimensions_to_absorb))
                 else:
                     dimensions_to_absorb = tuple(dimension_to_absorb for dimension_to_absorb in dimensions_to_absorb if dimension_to_absorb is not None)
@@ -436,7 +439,7 @@ def resolve_positional_dims(dimensions_tuples):
                                     break
                                 else:
                                     absorbing_dimensions[-i] = dimension_to_absorb
-                    elif ... in absorbing_dimensions and ... in dimensions_to_absorb:
+                    elif ... in absorbing_dimensions:
                         i_absorbing_dimensions_ellipsis = absorbing_dimensions.index(...)
                         absorbing_dimensions_lhs = absorbing_dimensions[:i_absorbing_dimensions_ellipsis]
                         absorbing_dimensions_rhs = absorbing_dimensions[i_absorbing_dimensions_ellipsis + 1:]
@@ -460,14 +463,18 @@ def resolve_positional_dims(dimensions_tuples):
                                 else:
                                     absorbing_dimensions[-i] = dimension_to_absorb
                     else:
-                        raise einexpr.exceptions.InternalError(f"Should never get here.")
+                        raise einexpr.exceptions.InternalError("Should never get here.")
             _dimensions_tuples.append(absorbing_dimensions)
         dimensions_tuples = _dimensions_tuples
-        len_dimensions = None
-        for dimensions in dimensions_tuples:
-            if ... not in dimensions:
-                len_dimensions = len(dimensions)
-                break
+        len_dimensions = next(
+            (
+                len(dimensions)
+                for dimensions in dimensions_tuples
+                if ... not in dimensions
+            ),
+            None,
+        )
+
         _dimensions_tuples = []
 
         if len_dimensions is None:

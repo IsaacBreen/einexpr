@@ -27,11 +27,13 @@ def argmax(x: array, /, *, axis: Optional[int] = None, keepdims: bool = False) -
     out_dims = helper.calculate_output_dims(args, kwargs)
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = helper.process_args(args, kwargs)
-    result = einexpr.einarray(
-        einexpr.backends.get_array_api_backend(array=x.a).argmax(*processed_args, **processed_kwargs), 
-        dims=out_dims, 
-        ambiguous_dims=ambiguous_dims)
-    return result
+    return einexpr.einarray(
+        einexpr.backends.get_array_api_backend(array=x.a).argmax(
+            *processed_args, **processed_kwargs
+        ),
+        dims=out_dims,
+        ambiguous_dims=ambiguous_dims,
+    )
 
 def argmin(x: array, /, *, axis: Optional[int] = None, keepdims: bool = False) -> array:
     """
@@ -58,11 +60,13 @@ def argmin(x: array, /, *, axis: Optional[int] = None, keepdims: bool = False) -
     out_dims = helper.calculate_output_dims(args, kwargs)
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = helper.process_args(args, kwargs)
-    result = einexpr.einarray(
-        einexpr.backends.get_array_api_backend(array=x.a).argmin(*processed_args, **processed_kwargs), 
-        dims=out_dims, 
-        ambiguous_dims=ambiguous_dims)
-    return result
+    return einexpr.einarray(
+        einexpr.backends.get_array_api_backend(array=x.a).argmin(
+            *processed_args, **processed_kwargs
+        ),
+        dims=out_dims,
+        ambiguous_dims=ambiguous_dims,
+    )
 
 def nonzero(x: array, /) -> Tuple[array, ...]:
     """
@@ -116,10 +120,12 @@ def where(condition: array, x1: array, x2: array, /) -> array:
     out_dims = helper.calculate_output_dims(args, kwargs)
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = helper.process_args(args, kwargs)
-    result = einexpr.einarray(
-        einexpr.backends.get_array_api_backend(array=x2.a).where(*processed_args, **processed_kwargs), 
-        dims=out_dims, 
-        ambiguous_dims=ambiguous_dims)
-    return result
+    return einexpr.einarray(
+        einexpr.backends.get_array_api_backend(array=x2.a).where(
+            *processed_args, **processed_kwargs
+        ),
+        dims=out_dims,
+        ambiguous_dims=ambiguous_dims,
+    )
 
 __all__ = ['argmax', 'argmin', 'nonzero', 'where']

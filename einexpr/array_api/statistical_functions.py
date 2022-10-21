@@ -36,11 +36,13 @@ def max(x: array, /, *, axis: Optional[Union[int, Tuple[int, ...]]] = None, keep
     out_dims = helper.calculate_output_dims(args, kwargs)
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = helper.process_args(args, kwargs)
-    result = einexpr.einarray(
-        einexpr.backends.get_array_api_backend(array=x.a).max(*processed_args, **processed_kwargs), 
-        dims=out_dims, 
-        ambiguous_dims=ambiguous_dims)
-    return result
+    return einexpr.einarray(
+        einexpr.backends.get_array_api_backend(array=x.a).max(
+            *processed_args, **processed_kwargs
+        ),
+        dims=out_dims,
+        ambiguous_dims=ambiguous_dims,
+    )
 
 def mean(x: array, /, *, axis: Optional[Union[int, Tuple[int, ...]]] = None, keepdims: bool = False) -> array:
     """
@@ -77,11 +79,13 @@ def mean(x: array, /, *, axis: Optional[Union[int, Tuple[int, ...]]] = None, kee
     out_dims = helper.calculate_output_dims(args, kwargs)
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = helper.process_args(args, kwargs)
-    result = einexpr.einarray(
-        einexpr.backends.get_array_api_backend(array=x.a).mean(*processed_args, **processed_kwargs), 
-        dims=out_dims, 
-        ambiguous_dims=ambiguous_dims)
-    return result
+    return einexpr.einarray(
+        einexpr.backends.get_array_api_backend(array=x.a).mean(
+            *processed_args, **processed_kwargs
+        ),
+        dims=out_dims,
+        ambiguous_dims=ambiguous_dims,
+    )
 
 def min(x: array, /, *, axis: Optional[Union[int, Tuple[int, ...]]] = None, keepdims: bool = False) -> array:
     """
@@ -117,11 +121,13 @@ def min(x: array, /, *, axis: Optional[Union[int, Tuple[int, ...]]] = None, keep
     out_dims = helper.calculate_output_dims(args, kwargs)
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = helper.process_args(args, kwargs)
-    result = einexpr.einarray(
-        einexpr.backends.get_array_api_backend(array=x.a).min(*processed_args, **processed_kwargs), 
-        dims=out_dims, 
-        ambiguous_dims=ambiguous_dims)
-    return result
+    return einexpr.einarray(
+        einexpr.backends.get_array_api_backend(array=x.a).min(
+            *processed_args, **processed_kwargs
+        ),
+        dims=out_dims,
+        ambiguous_dims=ambiguous_dims,
+    )
 
 def prod(x: array, /, *, axis: Optional[Union[int, Tuple[int, ...]]] = None, dtype: Optional[dtype] = None, keepdims: bool = False) -> array:
     """
@@ -171,11 +177,13 @@ def prod(x: array, /, *, axis: Optional[Union[int, Tuple[int, ...]]] = None, dty
     out_dims = helper.calculate_output_dims(args, kwargs)
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = helper.process_args(args, kwargs)
-    result = einexpr.einarray(
-        einexpr.backends.get_array_api_backend(array=x.a).prod(*processed_args, **processed_kwargs), 
-        dims=out_dims, 
-        ambiguous_dims=ambiguous_dims)
-    return result
+    return einexpr.einarray(
+        einexpr.backends.get_array_api_backend(array=x.a).prod(
+            *processed_args, **processed_kwargs
+        ),
+        dims=out_dims,
+        ambiguous_dims=ambiguous_dims,
+    )
 
 def std(x: array, /, *, axis: Optional[Union[int, Tuple[int, ...]]] = None, correction: Union[int, float] = 0.0, keepdims: bool = False) -> array:
     """
@@ -214,11 +222,13 @@ def std(x: array, /, *, axis: Optional[Union[int, Tuple[int, ...]]] = None, corr
     out_dims = helper.calculate_output_dims(args, kwargs)
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = helper.process_args(args, kwargs)
-    result = einexpr.einarray(
-        einexpr.backends.get_array_api_backend(array=x.a).std(*processed_args, **processed_kwargs), 
-        dims=out_dims, 
-        ambiguous_dims=ambiguous_dims)
-    return result
+    return einexpr.einarray(
+        einexpr.backends.get_array_api_backend(array=x.a).std(
+            *processed_args, **processed_kwargs
+        ),
+        dims=out_dims,
+        ambiguous_dims=ambiguous_dims,
+    )
 
 def sum(x: array, /, *, axis: Optional[Union[int, Tuple[int, ...]]] = None, dtype: Optional[dtype] = None, keepdims: bool = False) -> array:
     """
@@ -268,11 +278,13 @@ def sum(x: array, /, *, axis: Optional[Union[int, Tuple[int, ...]]] = None, dtyp
     out_dims = helper.calculate_output_dims(args, kwargs)
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = helper.process_args(args, kwargs)
-    result = einexpr.einarray(
-        einexpr.backends.get_array_api_backend(array=x.a).sum(*processed_args, **processed_kwargs), 
+    return einexpr.einarray(
+        einexpr.backends.get_array_api_backend(array=x.a).sum(
+            *processed_args, **processed_kwargs
+        ),
         dims=out_dims,
-        ambiguous_dims=ambiguous_dims)
-    return result
+        ambiguous_dims=ambiguous_dims,
+    )
 
 def var(x: array, /, *, axis: Optional[Union[int, Tuple[int, ...]]] = None, correction: Union[int, float] = 0.0, keepdims: bool = False) -> array:
     """
@@ -312,10 +324,12 @@ def var(x: array, /, *, axis: Optional[Union[int, Tuple[int, ...]]] = None, corr
     out_dims = helper.calculate_output_dims(args, kwargs)
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = helper.process_args(args, kwargs)
-    result = einexpr.einarray(
-        einexpr.backends.get_array_api_backend(array=x.a).var(*processed_args, **processed_kwargs), 
-        dims=out_dims, 
-        ambiguous_dims=ambiguous_dims)
-    return result
+    return einexpr.einarray(
+        einexpr.backends.get_array_api_backend(array=x.a).var(
+            *processed_args, **processed_kwargs
+        ),
+        dims=out_dims,
+        ambiguous_dims=ambiguous_dims,
+    )
 
 __all__ = ['max', 'mean', 'min', 'prod', 'std', 'sum', 'var']

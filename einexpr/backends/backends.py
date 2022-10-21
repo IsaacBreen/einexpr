@@ -61,19 +61,18 @@ def get_array_api_backend(*, name: Optional[str] = None, array: Optional['RawArr
     """
     if _BACKENDS is None:
         _discover_array_api_entry_points()
-    if sum(1 for x in [name, array] if x is not None) > 1:
+    if sum(x is not None for x in [name, array]) > 1:
         raise ValueError("Can only specify one of name or array.")
     if name is not None:
         if name in _BACKENDS:
             return _BACKENDS[name].load()
-        else:
-            if name in ('numpy', 'torch', 'jax', 'tensorflow', 'mxnet', 'ivy'):
-                # Try to import Ivy using importlib
-                ivy_spec = importlib.util.find_spec("ivy")
-                if ivy_spec is not None:
-                    import ivy
-                    return ivy
-            raise Exception(f"No array API backend with the name '{name}' found.")
+        if name in ('numpy', 'torch', 'jax', 'tensorflow', 'mxnet', 'ivy'):
+            # Try to import Ivy using importlib
+            ivy_spec = importlib.util.find_spec("ivy")
+            if ivy_spec is not None:
+                import ivy
+                return ivy
+        raise Exception(f"No array API backend with the name '{name}' found.")
     if array is not None:
         if isinstance(array, (tuple, list)):
             array = array[0]
@@ -84,7 +83,7 @@ def get_array_api_backend(*, name: Optional[str] = None, array: Optional['RawArr
                 if ivy_spec is not None:
                     import ivy
                     return ivy
-            raise Exception(f"The given array does not conform to the array API standard.")
+            raise Exception("The given array does not conform to the array API standard.")
         return array.__array_namespace__()
     else:
         # Return the default array API.
@@ -101,7 +100,7 @@ def get_asarray(*, name: Optional[str] = None, array: Optional['RawArray' | Tupl
         _discover_array_api_entry_points()
     if all(x is None for x in [name, array]):
         return get_array_api_backend().asarray
-    if sum(1 for x in [name, array] if x is not None) > 1:
+    if sum(x is not None for x in [name, array]) > 1:
         raise ValueError("Can only specify one of name or array.")
     if array is not None:
         if conforms_to_array_api(array, strict=True):
@@ -114,7 +113,7 @@ def get_asarray(*, name: Optional[str] = None, array: Optional['RawArray' | Tupl
                 import ivy
                 module = importlib.import_module(array_spec.name)
                 return lambda *args, **kwargs: module.asarray(ivy.to_native(*args, **kwargs))
-        raise Exception(f"The given array does not conform to the array API standard.")
+        raise Exception("The given array does not conform to the array API standard.")
     elif name is not None:
         if name in _BACKENDS:
             return _BACKENDS[name].load().asarray

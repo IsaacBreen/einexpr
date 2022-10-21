@@ -44,14 +44,14 @@ def analyse_array_api():
         module = cst.parse_module(file)
         wrapper = repo_manager.get_metadata_wrapper_for_path(file)
         fqnames_by_node = wrapper.resolve(FullyQualifiedNameProvider)
-        fqnames_by_node_by_type = dict()
+        fqnames_by_node_by_type = {}
         for k, v in fqnames_by_node.items():
-            fqnames_by_node_by_type.setdefault(type(k), dict())[k] = v
+            fqnames_by_node_by_type.setdefault(type(k), {})[k] = v
         # Print all functions
         print(f'{cf.bold("Functions implemented in")} {file}')
-        for function_def, fqnames_by_node in fqnames_by_node_by_type.get(cst.FunctionDef, dict()).items():
+        for function_def, fqnames_by_node in fqnames_by_node_by_type.get(cst.FunctionDef, {}).items():
             for fqname in fqnames_by_node:
-                params_str = '(' + module.code_for_node(function_def.params) + ')'
+                params_str = f'({module.code_for_node(function_def.params)})'
                 function_name_padded = fqname.name + params_str + ' ' * max(FUNCTION_NAME_PADDING - len(function_def.name.value), 1)
                 if function_is_implemented(function_def):
                     print(f'    ✅  {function_name_padded}')

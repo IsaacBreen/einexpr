@@ -143,11 +143,13 @@ def empty_like(x: array, /, *, dtype: Optional[dtype] = None, device: Optional[d
     out_dims = helper.calculate_output_dims(args, kwargs)
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = helper.process_args(args, kwargs)
-    result = einexpr.einarray(
-        einexpr.backends.get_array_api_backend(array=x.a).full_like(*processed_args, **processed_kwargs), 
-        dims=out_dims, 
-        ambiguous_dims=ambiguous_dims)
-    return result
+    return einexpr.einarray(
+        einexpr.backends.get_array_api_backend(array=x.a).full_like(
+            *processed_args, **processed_kwargs
+        ),
+        dims=out_dims,
+        ambiguous_dims=ambiguous_dims,
+    )
 
 
 def eye(n_rows: int, n_cols: Optional[int] = None, /, *, k: int = 0, dtype: Optional[dtype] = None, device: Optional[device] = None, dims: DimensionSpecification = None, backend: Union[ModuleType, str] = None) -> array:
@@ -290,11 +292,13 @@ def full_like(x: array, /, fill_value: Union[bool, int, float, complex], *, dtyp
     out_dims = helper.calculate_output_dims(args, kwargs)
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = helper.process_args(args, kwargs)
-    result = einexpr.einarray(
-        einexpr.backends.get_array_api_backend(array=x.a).full_like(*processed_args, **processed_kwargs), 
-        dims=out_dims, 
-        ambiguous_dims=ambiguous_dims)
-    return result
+    return einexpr.einarray(
+        einexpr.backends.get_array_api_backend(array=x.a).full_like(
+            *processed_args, **processed_kwargs
+        ),
+        dims=out_dims,
+        ambiguous_dims=ambiguous_dims,
+    )
 
 
 def linspace(start: Union[int, float], stop: Union[int, float], /, num: int, *, dtype: Optional[dtype] = None, device: Optional[device] = None, endpoint: bool = True, dims: DimensionSpecification = None, backend: Union[ModuleType, str] = None) -> array:
@@ -431,11 +435,13 @@ def ones_like(x: array, /, *, dtype: Optional[dtype] = None, device: Optional[de
     out_dims = helper.calculate_output_dims(args, kwargs)
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = helper.process_args(args, kwargs)
-    result = einexpr.einarray(
-        einexpr.backends.get_array_api_backend(array=x.a).ones_like(*processed_args, **processed_kwargs), 
-        dims=out_dims, 
-        ambiguous_dims=ambiguous_dims)
-    return result
+    return einexpr.einarray(
+        einexpr.backends.get_array_api_backend(array=x.a).ones_like(
+            *processed_args, **processed_kwargs
+        ),
+        dims=out_dims,
+        ambiguous_dims=ambiguous_dims,
+    )
 
 
 def tril(x: array, /, *, k: int = 0, dims: DimensionSpecification = None, backend: Union[ModuleType, str] = None) -> array:
@@ -467,11 +473,13 @@ def tril(x: array, /, *, k: int = 0, dims: DimensionSpecification = None, backen
     out_dims = helper.calculate_output_dims(args, kwargs)
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = helper.process_args(args, kwargs)
-    result = einexpr.einarray(
-        einexpr.backends.get_array_api_backend(array=x.a).tril(*processed_args, **processed_kwargs), 
-        dims=out_dims, 
-        ambiguous_dims=ambiguous_dims)
-    return result
+    return einexpr.einarray(
+        einexpr.backends.get_array_api_backend(array=x.a).tril(
+            *processed_args, **processed_kwargs
+        ),
+        dims=out_dims,
+        ambiguous_dims=ambiguous_dims,
+    )
 
 
 def triu(x: array, /, *, k: int = 0, dims: DimensionSpecification = None, backend: Union[ModuleType, str] = None) -> array:
@@ -503,11 +511,13 @@ def triu(x: array, /, *, k: int = 0, dims: DimensionSpecification = None, backen
     out_dims = helper.calculate_output_dims(args, kwargs)
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = helper.process_args(args, kwargs)
-    result = einexpr.einarray(
-        einexpr.backends.get_array_api_backend(array=x.a).triu(*processed_args, **processed_kwargs), 
-        dims=out_dims, 
-        ambiguous_dims=ambiguous_dims)
-    return result
+    return einexpr.einarray(
+        einexpr.backends.get_array_api_backend(array=x.a).triu(
+            *processed_args, **processed_kwargs
+        ),
+        dims=out_dims,
+        ambiguous_dims=ambiguous_dims,
+    )
 
 
 def zeros(shape: Union[int, Tuple[int, ...]], *, dtype: Optional[dtype] = None, device: Optional[device] = None, dims: DimensionSpecification = None, backend: Union[ModuleType, str] = None) -> array:
@@ -564,10 +574,12 @@ def zeros_like(x: array, /, *, dtype: Optional[dtype] = None, device: Optional[d
     out_dims = helper.calculate_output_dims(args, kwargs)
     ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
     processed_args, processed_kwargs = helper.process_args(args, kwargs)
-    result = einexpr.einarray(
-        einexpr.backends.get_array_api_backend(array=x.a).zeros_like(*processed_args, **processed_kwargs), 
-        dims=out_dims, 
-        ambiguous_dims=ambiguous_dims)
-    return result
+    return einexpr.einarray(
+        einexpr.backends.get_array_api_backend(array=x.a).zeros_like(
+            *processed_args, **processed_kwargs
+        ),
+        dims=out_dims,
+        ambiguous_dims=ambiguous_dims,
+    )
 
 __all__ = ['arange', 'asarray', 'empty', 'empty_like', 'eye', 'from_dlpack', 'full', 'full_like', 'linspace', 'meshgrid', 'ones', 'ones_like', 'tril', 'triu', 'zeros', 'zeros_like']

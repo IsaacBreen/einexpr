@@ -142,17 +142,12 @@ def make_detailed_array_api_compliance_report(backend: str) -> str:
             ivy_parameters = {param.name.value: tree.code_for_node(param) for param in ivy_function.params.params + ivy_function.params.kwonly_params}
             backend_parameters = {param.name.value: tree.code_for_node(param) for param in backend_function.params.params}
             # Build the row
-            for parameter_name in ivy_parameters:
-                ivy_parameter_type = ivy_parameters[parameter_name]
+            for parameter_name, ivy_parameter_type in ivy_parameters.items():
                 if parameter_name not in backend_parameters:
                     report += f"| {name} | ❌ | {parameter_name} | ✅ | ❌ |\n"
                     continue
                 backend_parameter_type = backend_parameters[parameter_name]
                 report += f"| {name} | ✅ | {parameter_name} | ✅ | ✅ |\n"
-                # if ivy_parameter_type != backend_parameter_type:
-                    # report += f"| {name} | ✅ | {parameter_name} | {ivy_parameter_type} | {backend_parameter_type} |\n"
-                # else:
-                    # report += f"| {name} | ❌ | {parameter_name} | {ivy_parameter_type} | {backend_parameter_type} |\n"
                 name = ""
             for parameter_name in backend_parameters:
                 if parameter_name not in ivy_parameters:

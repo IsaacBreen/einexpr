@@ -109,7 +109,7 @@ class IsInstance(Matcher):
         return isinstance(other, IsInstance)
     
     def __repr__(self):
-        return 'IsInstance({})'.format(self.T.__name__)
+        return f'IsInstance({self.T.__name__})'
 
 
 def assert_match(pattern1, *values):
@@ -321,7 +321,11 @@ def json_eval(expr_json, non_collapsable_indices, index_names: List[str], index_
     # non_collapsable_indices).
     if expr_json["type"] == "leaf":
         # TODO: is the below line necessary?
-        var_normshaped = np.einsum(f"{''.join(i for i in expr_json['shape'])}->{''.join(i for i in index_names if i in expr_json['indices'])}", expr_json["value"])
+        var_normshaped = np.einsum(
+            f"{''.join(expr_json['shape'])}->{''.join(i for i in index_names if i in expr_json['indices'])}",
+            expr_json["value"],
+        )
+
         expand_indices = [n for n, i in enumerate(index_names) if i not in expr_json["indices"]]
         return npa.expand_dims(npa.asarray(var_normshaped), axis=expand_indices)
     elif expr_json["type"] == "unary_op":

@@ -23,13 +23,14 @@ def enhanced_decorator(decorator_to_enhance):
     def enchanced_decorator(*args, **kwargs):
         if len(args) == 1 and (callable(args[0]) or isinstance(args[0], type)) and not kwargs:
             return decorator_to_enhance(args[0])
-        elif len(args) == 0:
+        elif not args:
             def decorator_wrapper(func):
                 return decorator_to_enhance(func, **kwargs)
             return decorator_wrapper
         else:
             raise TypeError(
                 f"Enhanced decorator takes either a one positional argument (the function or class to decorate) or zero or more keyword arguments. Got positional arguments {args} and keyword arguments {kwargs}.")
+
     return enchanced_decorator
 
 
@@ -38,24 +39,36 @@ def deprecated(item, /, *, message=None):
     """
     Use this decorator to mark functions and classes as deprecated. It will emit a warning upon use of the deprecated item.
     """
-    message = "" if message is None else ' ' + message
+    message = "" if message is None else f' {message}'
     if isinstance(item, type):
         # Warn whenever the class is instantiated or subclassed
+
+
+
         class DeprecatedClass(item):
             def __new__(cls, *args, **kwargs):
-                warnings.warn(f"Instantiation of deprecated class {item.__name__}." + message, DeprecationWarning)
+                warnings.warn(
+                    f"Instantiation of deprecated class {item.__name__}.{message}",
+                    DeprecationWarning,
+                )
+
                 return super().__new__(cls)
-            
+
             def __init_subclass__(cls, **kwargs):
-                warnings.warn(f"Subclassing of deprecated class {item.__name__}." + message, DeprecationWarning)
+                warnings.warn(
+                    f"Subclassing of deprecated class {item.__name__}.{message}",
+                    DeprecationWarning,
+                )
+
                 super().__init_subclass__(**kwargs)
-                
+
             def __repr__(self):
                 return f"<Deprecated {super().__repr__()}>"
-            
+
             def __str__(self):
                 return super().__str__()
-                
+
+
         # Wrap all instances of classmethod and staticmethod to emit a warning
         # TODO: this doesn't work for some reason... 
         for name, method in inspect.getmembers(item, inspect.isfunction):
@@ -63,18 +76,22 @@ def deprecated(item, /, *, message=None):
                 setattr(DeprecatedClass, name, classmethod(deprecated(message=message)(method.__func__)))
             elif isinstance(method, staticmethod):
                 setattr(DeprecatedClass, name, staticmethod(deprecated(message=message)(method.__func__)))
-            
+
         DeprecatedClass.__deprecated__ = True
         return DeprecatedClass
     elif callable(item):
         @functools.wraps(item)
         def new_func(*args, **kwargs):
             warnings.simplefilter('always', DeprecationWarning)  # turn off filter
-            warnings.warn(f"Call to deprecated function {item.__name__}." + message,
-                        category=DeprecationWarning,
-                        stacklevel=2)
+            warnings.warn(
+                f"Call to deprecated function {item.__name__}.{message}",
+                category=DeprecationWarning,
+                stacklevel=2,
+            )
+
             warnings.simplefilter('default', DeprecationWarning)  # reset filter
             return item(*args, **kwargs)
+
     else:
         raise TypeError(f"deprecated decorator takes either a function or class. Got argument {item} of type {type(item)}.")
     return new_func
@@ -167,21 +184,19 @@ def SCSLength(X, Y, m, n, lookup):
     # initialize the first column of the lookup table
     for i in range(m + 1):
         lookup[i][0] = i
- 
+
     # initialize the first row of the lookup table
     for j in range(n + 1):
         lookup[0][j] = j
- 
+
     # fill the lookup table in a bottom-up manner
-    for i in range(1, m + 1):
- 
-        for j in range(1, n + 1):
+    for i, j in itertools.product(range(1, m + 1), range(1, n + 1)):
             # if the current character of `X` and `Y` matches
-            if X[i - 1] == Y[j - 1]:
-                lookup[i][j] = lookup[i - 1][j - 1] + 1
-            # otherwise, if the current character of `X` and `Y` don't match
-            else:
-                lookup[i][j] = min(lookup[i - 1][j] + 1, lookup[i][j - 1] + 1)
+        lookup[i][j] = (
+            lookup[i - 1][j - 1] + 1
+            if X[i - 1] == Y[j - 1]
+            else min(lookup[i - 1][j] + 1, lookup[i][j - 1] + 1)
+        )
  
  
 # Function to find all shortest common supersequence of string `X` and `Y`
@@ -189,10 +204,10 @@ def get_all_scs_with_unique_elems_pairwise(X, Y):
  
     m = len(X)
     n = len(Y)
- 
+
     # lookup[i][j] stores the length of SCS of substring `X[0…i-1]` and `Y[0…j-1]`
-    lookup = [[0 for x in range(n + 1)] for y in range(m + 1)]
- 
+    lookup = [[0 for _ in range(n + 1)] for _ in range(m + 1)]
+
     # fill lookup table
     SCSLength(X, Y, m, n, lookup)
 
@@ -323,7 +338,17 @@ def pytree_mapreduce(tree, map_func=lambda x: x, reduce_func=lambda x: x):
     Mapreduce a tree of Python objects.
     """
     if isinstance(tree, list):
-        return reduce_func(list(_item for item in tree if not isinstance(_item := pytree_mapreduce(item, map_func, reduce_func), RemoveSentinel)))
+        return reduce_func(
+            [
+                _item
+                for item in tree
+                if not isinstance(
+                    _item := pytree_mapreduce(item, map_func, reduce_func),
+                    RemoveSentinel,
+                )
+            ]
+        )
+
     elif isinstance(tree, tuple):
         return reduce_func(tuple(_item for item in tree if not isinstance(_item := pytree_mapreduce(item, map_func, reduce_func), RemoveSentinel)))
     elif isinstance(tree, dict):
@@ -378,10 +403,7 @@ def deep_iter(iterable: Iterable, /, *, dict_mode: Literal['keys', 'values', 'bo
             yield from deep_iter(iterable.values(), dict_mode=dict_mode, yield_iterables=yield_iterables)
     elif isinstance(iterable, Iterable):
         for item in iterable:
-            if item is iterable:
-                # Avoid infinite recursion for iterables that yield themselves (e.g. strings of length 1) by skipping the item
-                pass
-            else:
+            if item is not iterable:
                 if isinstance(item, Iterable):
                     yield from deep_iter(item, dict_mode=dict_mode, yield_iterables=yield_iterables)
                 else:
@@ -394,10 +416,7 @@ def tree_contains(tree, item):
     """
     if tree == item:
         return True
-    for _item in deep_iter(tree, yield_iterables=True):
-        if _item == item:
-            return True
-    return False
+    return any(_item == item for _item in deep_iter(tree, yield_iterables=True))
 
 
 def deprecated_guard(func):

@@ -57,12 +57,18 @@ class einarray():
         else:
             if not einexpr.backends.conforms_to_array_api(self.a):
                 raise ValueError(f"{self.a} does not conform to the Python array API standard")
-            if self.a.ndim != len(self.dimspec) and not isinstance(self.a, einexpr.backends.PseudoRawArray):
-                if len(self.dimspec) == 0:
-                    raise ValueError(f"The number ({self.a.ndim}) of dimensions in the array does not match the number ({len(self.dimspec)}) of dimensions passed to the constructor. Did you forget to pass the dimensions? e.g. `einexpr.einarray(a, dims=({', '.join('d' + str(i) for i in range(a.ndim))}))`")
+            if (
+                self.a.ndim != len(self.dimspec)
+                and not isinstance(self.a, einexpr.backends.PseudoRawArray)
+                and len(self.dimspec) == 0
+            ):
+                raise ValueError(
+                    f"The number ({self.a.ndim}) of dimensions in the array does not match the number ({len(self.dimspec)}) of dimensions passed to the constructor. Did you forget to pass the dimensions? e.g. `einexpr.einarray(a, dims=({', '.join(f'd{str(i)}' for i in range(a.ndim))}))`"
+                )
+
         # Check that none of the the dimensions are deprecated
         dim_sizes = dim_sizes or {}
-        dim_sizes |= {dim: size for dim, size in zip(self.dimspec, self.a.shape)}
+        dim_sizes |= dict(zip(self.dimspec, self.a.shape))
         if isinstance(self.dimspec, einexpr.array_api.dimension.DimensionSpecification):
             dim_sizes |= self.dimspec.sizes
             self.dimspec = einexpr.array_api.dimension.DimensionSpecification(self.dims, dim_sizes)
@@ -110,7 +116,10 @@ class einarray():
             current_dims_after_absorption, dims_before_replacements = einexpr.dimension_utils.resolve_positional_dims(((*self.dims, ...), (*dims_before_replacements, ...)))
             current_dims_after_absorption, dims_before_replacements = current_dims_after_absorption[:-1], dims_before_replacements[:-1]
         else:
-            raise einexpr.exceptions.InternalError(f"ARBITRARY_POSITIONAL_BINDING_DIRECTION must be one of 'left-to-right' or 'right-to-left'")
+            raise einexpr.exceptions.InternalError(
+                "ARBITRARY_POSITIONAL_BINDING_DIRECTION must be one of 'left-to-right' or 'right-to-left'"
+            )
+
         current_dimspec_after_absorption = self.dimspec.with_dimensions(current_dims_after_absorption)
         dimspec_before_replacements = einexpr.array_api.dimension.DimensionSpecification(
             dims_before_replacements,
@@ -131,9 +140,7 @@ class einarray():
         Extract the dimensions in ``dims`` into the first level if they are part of a composite dimension.
         """
         new_dims = einexpr.dimension_utils.isolate_dims(self.dims, dims, split_mode=split_mode)
-        if new_dims == self.dimspec:
-            return self
-        return self.coerce(new_dims)
+        return self if new_dims == self.dimspec else self.coerce(new_dims)
     
     @property
     def dims(self) -> Tuple[einexpr.array_api.dimension.BaseDimension, ...]:
@@ -258,7 +265,7 @@ class einarray():
            Limiting the transpose to two-dimensional arrays (matrices) deviates from the NumPy et al practice of reversing all axes for arrays having more than two-dimensions. This is intentional, as reversing all axes was found to be problematic (e.g., conflicting with the mathematical definition of a transpose which is limited to matrices; not operating on batches of matrices; et cetera). In order to reverse all axes, one is recommended to use the functional ``permute_dims`` interface found in this specification.
         """
         if self.ndim != 2:
-            raise ValueError(f"The array must be two-dimensional.")
+            raise ValueError("The array must be two-dimensional.")
         return einarray(
             einexpr.backends.get_array_api_backend(array=self.a).T,
             dims=(self.dimspec[1], self.dimspec[0]),
@@ -300,11 +307,11 @@ class einarray():
         out_dims = helper.calculate_output_dims(args, kwargs)
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
         processed_args, processed_kwargs = helper.process_args(args, kwargs)
-        result = einexpr.einarray(
-            type(processed_args[0]).__abs__(*processed_args, **processed_kwargs), 
-            dims=out_dims, 
-            ambiguous_dims=ambiguous_dims)
-        return result
+        return einexpr.einarray(
+            type(processed_args[0]).__abs__(*processed_args, **processed_kwargs),
+            dims=out_dims,
+            ambiguous_dims=ambiguous_dims,
+        )
 
     def __add__(self: array, other: Union[int, float, array], /) -> array:
         """
@@ -358,11 +365,11 @@ class einarray():
         out_dims = helper.calculate_output_dims(args, kwargs)
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
         processed_args, processed_kwargs = helper.process_args(args, kwargs)
-        result = einexpr.einarray(
-            type(processed_args[0]).__add__(*processed_args, **processed_kwargs), 
-            dims=out_dims, 
-            ambiguous_dims=ambiguous_dims)
-        return result
+        return einexpr.einarray(
+            type(processed_args[0]).__add__(*processed_args, **processed_kwargs),
+            dims=out_dims,
+            ambiguous_dims=ambiguous_dims,
+        )
     
     def __radd__(self: array, other: Union[int, float, array], /) -> array:
         """
@@ -416,11 +423,11 @@ class einarray():
         out_dims = helper.calculate_output_dims(args, kwargs)
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
         processed_args, processed_kwargs = helper.process_args(args, kwargs)
-        result = einexpr.einarray(
-            type(processed_args[0]).__radd__(*processed_args, **processed_kwargs), 
-            dims=out_dims, 
-            ambiguous_dims=ambiguous_dims)
-        return result
+        return einexpr.einarray(
+            type(processed_args[0]).__radd__(*processed_args, **processed_kwargs),
+            dims=out_dims,
+            ambiguous_dims=ambiguous_dims,
+        )
 
     def __and__(self: array, other: Union[int, bool, array], /) -> array:
         """
@@ -449,11 +456,11 @@ class einarray():
         out_dims = helper.calculate_output_dims(args, kwargs)
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
         processed_args, processed_kwargs = helper.process_args(args, kwargs)
-        result = einexpr.einarray(
-            type(processed_args[0]).__and__(*processed_args, **processed_kwargs), 
-            dims=out_dims, 
-            ambiguous_dims=ambiguous_dims)
-        return result
+        return einexpr.einarray(
+            type(processed_args[0]).__and__(*processed_args, **processed_kwargs),
+            dims=out_dims,
+            ambiguous_dims=ambiguous_dims,
+        )
     
 
     def __rand__(self: array, other: Union[int, bool, array], /) -> array:
@@ -485,11 +492,11 @@ class einarray():
         out_dims = helper.calculate_output_dims(args, kwargs)
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
         processed_args, processed_kwargs = helper.process_args(args, kwargs)
-        result = einexpr.einarray(
-            type(processed_args[0]).__rand__(*processed_args, **processed_kwargs), 
-            dims=out_dims, 
-            ambiguous_dims=ambiguous_dims)
-        return result
+        return einexpr.einarray(
+            type(processed_args[0]).__rand__(*processed_args, **processed_kwargs),
+            dims=out_dims,
+            ambiguous_dims=ambiguous_dims,
+        )
 
     def __array_namespace__(self: array, /, *, api_version: Optional[str] = None) -> Any:
         """
@@ -635,11 +642,11 @@ class einarray():
         out_dims = helper.calculate_output_dims(args, kwargs)
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
         processed_args, processed_kwargs = helper.process_args(args, kwargs)
-        result = einexpr.einarray(
-            type(processed_args[0]).__eq__(*processed_args, **processed_kwargs), 
-            dims=out_dims, 
-            ambiguous_dims=ambiguous_dims)
-        return result
+        return einexpr.einarray(
+            type(processed_args[0]).__eq__(*processed_args, **processed_kwargs),
+            dims=out_dims,
+            ambiguous_dims=ambiguous_dims,
+        )
 
     def __float__(self: array, /) -> float:
         """
@@ -723,11 +730,13 @@ class einarray():
         out_dims = helper.calculate_output_dims(args, kwargs)
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
         processed_args, processed_kwargs = helper.process_args(args, kwargs)
-        result = einexpr.einarray(
-            type(processed_args[0]).__floordiv__(*processed_args, **processed_kwargs), 
-            dims=out_dims, 
-            ambiguous_dims=ambiguous_dims)
-        return result
+        return einexpr.einarray(
+            type(processed_args[0]).__floordiv__(
+                *processed_args, **processed_kwargs
+            ),
+            dims=out_dims,
+            ambiguous_dims=ambiguous_dims,
+        )
 
     def __rfloordiv__(self: array, other: Union[int, float, array], /) -> array:
         """
@@ -797,11 +806,13 @@ class einarray():
         out_dims = helper.calculate_output_dims(args, kwargs)
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
         processed_args, processed_kwargs = helper.process_args(args, kwargs)
-        result = einexpr.einarray(
-            type(processed_args[0]).__rfloordiv__(*processed_args, **processed_kwargs), 
-            dims=out_dims, 
-            ambiguous_dims=ambiguous_dims)
-        return result
+        return einexpr.einarray(
+            type(processed_args[0]).__rfloordiv__(
+                *processed_args, **processed_kwargs
+            ),
+            dims=out_dims,
+            ambiguous_dims=ambiguous_dims,
+        )
 
     def __ge__(self: array, other: Union[int, float, array], /) -> array:
         """
@@ -830,11 +841,11 @@ class einarray():
         out_dims = helper.calculate_output_dims(args, kwargs)
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
         processed_args, processed_kwargs = helper.process_args(args, kwargs)
-        result = einexpr.einarray(
-            type(processed_args[0]).__ge__(*processed_args, **processed_kwargs), 
-            dims=out_dims, 
-            ambiguous_dims=ambiguous_dims)
-        return result
+        return einexpr.einarray(
+            type(processed_args[0]).__ge__(*processed_args, **processed_kwargs),
+            dims=out_dims,
+            ambiguous_dims=ambiguous_dims,
+        )
 
     # TODO: type hint is wrong
     def __getitem__(self: array, key: Union[int, slice, EllipsisType, Tuple[Union[int, slice, EllipsisType], ...], array, einexpr.array_api.dimension.NestedDimension, Tuple[einexpr.array_api.dimension.NestedDimension, ...]], /) -> array:
@@ -884,11 +895,11 @@ class einarray():
         out_dims = helper.calculate_output_dims(args, kwargs)
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
         processed_args, processed_kwargs = helper.process_args(args, kwargs)
-        result = einexpr.einarray(
-            type(processed_args[0]).__gt__(*processed_args, **processed_kwargs), 
-            dims=out_dims, 
-            ambiguous_dims=ambiguous_dims)
-        return result
+        return einexpr.einarray(
+            type(processed_args[0]).__gt__(*processed_args, **processed_kwargs),
+            dims=out_dims,
+            ambiguous_dims=ambiguous_dims,
+        )
 
     def __index__(self: array, /) -> int:
         """
@@ -950,11 +961,13 @@ class einarray():
         out_dims = helper.calculate_output_dims(args, kwargs)
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
         processed_args, processed_kwargs = helper.process_args(args, kwargs)
-        result = einexpr.einarray(
-            type(processed_args[0]).__invert__(*processed_args, **processed_kwargs), 
-            dims=out_dims, 
-            ambiguous_dims=ambiguous_dims)
-        return result
+        return einexpr.einarray(
+            type(processed_args[0]).__invert__(
+                *processed_args, **processed_kwargs
+            ),
+            dims=out_dims,
+            ambiguous_dims=ambiguous_dims,
+        )
 
     def __le__(self: array, other: Union[int, float, array], /) -> array:
         """
@@ -983,11 +996,11 @@ class einarray():
         out_dims = helper.calculate_output_dims(args, kwargs)
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
         processed_args, processed_kwargs = helper.process_args(args, kwargs)
-        result = einexpr.einarray(
-            type(processed_args[0]).__le__(*processed_args, **processed_kwargs), 
-            dims=out_dims, 
-            ambiguous_dims=ambiguous_dims)
-        return result
+        return einexpr.einarray(
+            type(processed_args[0]).__le__(*processed_args, **processed_kwargs),
+            dims=out_dims,
+            ambiguous_dims=ambiguous_dims,
+        )
 
     def __lshift__(self: array, other: Union[int, array], /) -> array:
         """
@@ -1016,11 +1029,13 @@ class einarray():
         out_dims = helper.calculate_output_dims(args, kwargs)
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
         processed_args, processed_kwargs = helper.process_args(args, kwargs)
-        result = einexpr.einarray(
-            type(processed_args[0]).__lshift__(*processed_args, **processed_kwargs), 
-            dims=out_dims, 
-            ambiguous_dims=ambiguous_dims)
-        return result
+        return einexpr.einarray(
+            type(processed_args[0]).__lshift__(
+                *processed_args, **processed_kwargs
+            ),
+            dims=out_dims,
+            ambiguous_dims=ambiguous_dims,
+        )
     
     def __rlshift__(self: array, other: Union[int, array], /) -> array:
         """
@@ -1051,11 +1066,13 @@ class einarray():
         out_dims = helper.calculate_output_dims(args, kwargs)
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
         processed_args, processed_kwargs = helper.process_args(args, kwargs)
-        result = einexpr.einarray(
-            type(processed_args[0]).__rlshift__(*processed_args, **processed_kwargs), 
-            dims=out_dims, 
-            ambiguous_dims=ambiguous_dims)
-        return result
+        return einexpr.einarray(
+            type(processed_args[0]).__rlshift__(
+                *processed_args, **processed_kwargs
+            ),
+            dims=out_dims,
+            ambiguous_dims=ambiguous_dims,
+        )
 
     def __lt__(self: array, other: Union[int, float, array], /) -> array:
         """
@@ -1084,11 +1101,11 @@ class einarray():
         out_dims = helper.calculate_output_dims(args, kwargs)
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
         processed_args, processed_kwargs = helper.process_args(args, kwargs)
-        result = einexpr.einarray(
-            type(processed_args[0]).__lt__(*processed_args, **processed_kwargs), 
-            dims=out_dims, 
-            ambiguous_dims=ambiguous_dims)
-        return result
+        return einexpr.einarray(
+            type(processed_args[0]).__lt__(*processed_args, **processed_kwargs),
+            dims=out_dims,
+            ambiguous_dims=ambiguous_dims,
+        )
 
     def __matmul__(self: array, other: array, /) -> array:
         """
@@ -1235,11 +1252,11 @@ class einarray():
         out_dims = helper.calculate_output_dims(args, kwargs)
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
         processed_args, processed_kwargs = helper.process_args(args, kwargs)
-        result = einexpr.einarray(
-            type(processed_args[0]).__mod__(*processed_args, **processed_kwargs), 
-            dims=out_dims, 
-            ambiguous_dims=ambiguous_dims)
-        return result
+        return einexpr.einarray(
+            type(processed_args[0]).__mod__(*processed_args, **processed_kwargs),
+            dims=out_dims,
+            ambiguous_dims=ambiguous_dims,
+        )
     
 
     def __rmod__(self: array, other: Union[int, float, array], /) -> array:
@@ -1302,11 +1319,11 @@ class einarray():
         out_dims = helper.calculate_output_dims(args, kwargs)
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
         processed_args, processed_kwargs = helper.process_args(args, kwargs)
-        result = einexpr.einarray(
-            type(processed_args[0]).__rmod__(*processed_args, **processed_kwargs), 
-            dims=out_dims, 
-            ambiguous_dims=ambiguous_dims)
-        return result
+        return einexpr.einarray(
+            type(processed_args[0]).__rmod__(*processed_args, **processed_kwargs),
+            dims=out_dims,
+            ambiguous_dims=ambiguous_dims,
+        )
 
     def __mul__(self: array, other: Union[int, float, array], /) -> array:
         """
@@ -1353,11 +1370,11 @@ class einarray():
         out_dims = helper.calculate_output_dims(args, kwargs)
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
         processed_args, processed_kwargs = helper.process_args(args, kwargs)
-        result = einexpr.einarray(
-            type(processed_args[0]).__mul__(*processed_args, **processed_kwargs), 
-            dims=out_dims, 
-            ambiguous_dims=ambiguous_dims)
-        return result
+        return einexpr.einarray(
+            type(processed_args[0]).__mul__(*processed_args, **processed_kwargs),
+            dims=out_dims,
+            ambiguous_dims=ambiguous_dims,
+        )
     
 
     def __rmul__(self: array, other: Union[int, float, array], /) -> array:
@@ -1407,11 +1424,11 @@ class einarray():
         out_dims = helper.calculate_output_dims(args, kwargs)
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
         processed_args, processed_kwargs = helper.process_args(args, kwargs)
-        result = einexpr.einarray(
-            type(processed_args[0]).__rmul__(*processed_args, **processed_kwargs), 
-            dims=out_dims, 
-            ambiguous_dims=ambiguous_dims)
-        return result
+        return einexpr.einarray(
+            type(processed_args[0]).__rmul__(*processed_args, **processed_kwargs),
+            dims=out_dims,
+            ambiguous_dims=ambiguous_dims,
+        )
 
     def __ne__(self: array, other: Union[int, float, bool, array], /) -> array:
         """
@@ -1440,11 +1457,11 @@ class einarray():
         out_dims = helper.calculate_output_dims(args, kwargs)
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
         processed_args, processed_kwargs = helper.process_args(args, kwargs)
-        result = einexpr.einarray(
-            type(processed_args[0]).__ne__(*processed_args, **processed_kwargs), 
-            dims=out_dims, 
-            ambiguous_dims=ambiguous_dims)
-        return result
+        return einexpr.einarray(
+            type(processed_args[0]).__ne__(*processed_args, **processed_kwargs),
+            dims=out_dims,
+            ambiguous_dims=ambiguous_dims,
+        )
 
     def __neg__(self: array, /) -> array:
         """
@@ -1477,11 +1494,11 @@ class einarray():
         out_dims = helper.calculate_output_dims(args, kwargs)
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
         processed_args, processed_kwargs = helper.process_args(args, kwargs)
-        result = einexpr.einarray(
-            type(processed_args[0]).__neg__(*processed_args, **processed_kwargs), 
-            dims=out_dims, 
-            ambiguous_dims=ambiguous_dims)
-        return result
+        return einexpr.einarray(
+            type(processed_args[0]).__neg__(*processed_args, **processed_kwargs),
+            dims=out_dims,
+            ambiguous_dims=ambiguous_dims,
+        )
 
     def __or__(self: array, other: Union[int, bool, array], /) -> array:
         """
@@ -1510,11 +1527,11 @@ class einarray():
         out_dims = helper.calculate_output_dims(args, kwargs)
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
         processed_args, processed_kwargs = helper.process_args(args, kwargs)
-        result = einexpr.einarray(
-            type(processed_args[0]).__or__(*processed_args, **processed_kwargs), 
-            dims=out_dims, 
-            ambiguous_dims=ambiguous_dims)
-        return result
+        return einexpr.einarray(
+            type(processed_args[0]).__or__(*processed_args, **processed_kwargs),
+            dims=out_dims,
+            ambiguous_dims=ambiguous_dims,
+        )
     
     def __ror__(self: array, other: Union[int, bool, array], /) -> array:
         """
@@ -1545,11 +1562,11 @@ class einarray():
         out_dims = helper.calculate_output_dims(args, kwargs)
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
         processed_args, processed_kwargs = helper.process_args(args, kwargs)
-        result = einexpr.einarray(
-            type(processed_args[0]).__ror__(*processed_args, **processed_kwargs), 
-            dims=out_dims, 
-            ambiguous_dims=ambiguous_dims)
-        return result
+        return einexpr.einarray(
+            type(processed_args[0]).__ror__(*processed_args, **processed_kwargs),
+            dims=out_dims,
+            ambiguous_dims=ambiguous_dims,
+        )
 
     def __pos__(self: array, /) -> array:
         """
@@ -1576,11 +1593,11 @@ class einarray():
         out_dims = helper.calculate_output_dims(args, kwargs)
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
         processed_args, processed_kwargs = helper.process_args(args, kwargs)
-        result = einexpr.einarray(
-            type(processed_args[0]).__pos__(*processed_args, **processed_kwargs), 
-            dims=out_dims, 
-            ambiguous_dims=ambiguous_dims)
-        return result
+        return einexpr.einarray(
+            type(processed_args[0]).__pos__(*processed_args, **processed_kwargs),
+            dims=out_dims,
+            ambiguous_dims=ambiguous_dims,
+        )
 
     def __pow__(self: array, other: Union[int, float, array], /) -> array:
         """
@@ -1643,11 +1660,11 @@ class einarray():
         out_dims = helper.calculate_output_dims(args, kwargs)
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
         processed_args, processed_kwargs = helper.process_args(args, kwargs)
-        result = einexpr.einarray(
-            type(processed_args[0]).__pow__(*processed_args, **processed_kwargs), 
-            dims=out_dims, 
-            ambiguous_dims=ambiguous_dims)
-        return result
+        return einexpr.einarray(
+            type(processed_args[0]).__pow__(*processed_args, **processed_kwargs),
+            dims=out_dims,
+            ambiguous_dims=ambiguous_dims,
+        )
     
     def __rpow__(self: array, other: Union[int, float, array], /) -> array:
         """
@@ -1712,11 +1729,11 @@ class einarray():
         out_dims = helper.calculate_output_dims(args, kwargs)
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
         processed_args, processed_kwargs = helper.process_args(args, kwargs)
-        result = einexpr.einarray(
-            type(processed_args[0]).__rpow__(*processed_args, **processed_kwargs), 
-            dims=out_dims, 
-            ambiguous_dims=ambiguous_dims)
-        return result
+        return einexpr.einarray(
+            type(processed_args[0]).__rpow__(*processed_args, **processed_kwargs),
+            dims=out_dims,
+            ambiguous_dims=ambiguous_dims,
+        )
 
     def __rshift__(self: array, other: Union[int, array], /) -> array:
         """
@@ -1745,11 +1762,13 @@ class einarray():
         out_dims = helper.calculate_output_dims(args, kwargs)
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
         processed_args, processed_kwargs = helper.process_args(args, kwargs)
-        result = einexpr.einarray(
-            type(processed_args[0]).__rshift__(*processed_args, **processed_kwargs), 
-            dims=out_dims, 
-            ambiguous_dims=ambiguous_dims)
-        return result
+        return einexpr.einarray(
+            type(processed_args[0]).__rshift__(
+                *processed_args, **processed_kwargs
+            ),
+            dims=out_dims,
+            ambiguous_dims=ambiguous_dims,
+        )
 
     def __rrshift__(self: array, other: Union[int, array], /) -> array:
         """
@@ -1780,11 +1799,13 @@ class einarray():
         out_dims = helper.calculate_output_dims(args, kwargs)
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
         processed_args, processed_kwargs = helper.process_args(args, kwargs)
-        result = einexpr.einarray(
-            type(processed_args[0]).__rrshift__(*processed_args, **processed_kwargs), 
-            dims=out_dims, 
-            ambiguous_dims=ambiguous_dims)
-        return result
+        return einexpr.einarray(
+            type(processed_args[0]).__rrshift__(
+                *processed_args, **processed_kwargs
+            ),
+            dims=out_dims,
+            ambiguous_dims=ambiguous_dims,
+        )
 
     def __setitem__(self: array, key: Union[int, slice, ellipsis, Tuple[Union[int, slice, ellipsis], ...], array], value: Union[int, float, bool, array], /) -> None:
         """
@@ -1837,11 +1858,11 @@ class einarray():
         out_dims = helper.calculate_output_dims(args, kwargs)
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
         processed_args, processed_kwargs = helper.process_args(args, kwargs)
-        result = einexpr.einarray(
-            type(processed_args[0]).__sub__(*processed_args, **processed_kwargs), 
-            dims=out_dims, 
-            ambiguous_dims=ambiguous_dims)
-        return result
+        return einexpr.einarray(
+            type(processed_args[0]).__sub__(*processed_args, **processed_kwargs),
+            dims=out_dims,
+            ambiguous_dims=ambiguous_dims,
+        )
 
     def __rsub__(self: array, other: Union[int, float, array], /) -> array:
         """
@@ -1870,11 +1891,11 @@ class einarray():
         out_dims = helper.calculate_output_dims(args, kwargs)
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
         processed_args, processed_kwargs = helper.process_args(args, kwargs)
-        result = einexpr.einarray(
-            type(processed_args[0]).__rsub__(*processed_args, **processed_kwargs), 
-            dims=out_dims, 
-            ambiguous_dims=ambiguous_dims)
-        return result
+        return einexpr.einarray(
+            type(processed_args[0]).__rsub__(*processed_args, **processed_kwargs),
+            dims=out_dims,
+            ambiguous_dims=ambiguous_dims,
+        )
 
     def __truediv__(self: array, other: Union[int, float, array], /) -> array:
         """
@@ -1935,11 +1956,13 @@ class einarray():
         out_dims = helper.calculate_output_dims(args, kwargs)
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
         processed_args, processed_kwargs = helper.process_args(args, kwargs)
-        result = einexpr.einarray(
-            type(processed_args[0]).__truediv__(*processed_args, **processed_kwargs), 
-            dims=out_dims, 
-            ambiguous_dims=ambiguous_dims)
-        return result
+        return einexpr.einarray(
+            type(processed_args[0]).__truediv__(
+                *processed_args, **processed_kwargs
+            ),
+            dims=out_dims,
+            ambiguous_dims=ambiguous_dims,
+        )
 
     def __rtruediv__(self: array, other: Union[int, float, array], /) -> array:
         """
@@ -2002,11 +2025,13 @@ class einarray():
         out_dims = helper.calculate_output_dims(args, kwargs)
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
         processed_args, processed_kwargs = helper.process_args(args, kwargs)
-        result = einexpr.einarray(
-            type(processed_args[0]).__rtruediv__(*processed_args, **processed_kwargs), 
-            dims=out_dims, 
-            ambiguous_dims=ambiguous_dims)
-        return result
+        return einexpr.einarray(
+            type(processed_args[0]).__rtruediv__(
+                *processed_args, **processed_kwargs
+            ),
+            dims=out_dims,
+            ambiguous_dims=ambiguous_dims,
+        )
 
     def __xor__(self: array, other: Union[int, bool, array], /) -> array:
         """
@@ -2035,11 +2060,11 @@ class einarray():
         out_dims = helper.calculate_output_dims(args, kwargs)
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
         processed_args, processed_kwargs = helper.process_args(args, kwargs)
-        result = einexpr.einarray(
-            type(processed_args[0]).__xor__(*processed_args, **processed_kwargs), 
-            dims=out_dims, 
-            ambiguous_dims=ambiguous_dims)
-        return result
+        return einexpr.einarray(
+            type(processed_args[0]).__xor__(*processed_args, **processed_kwargs),
+            dims=out_dims,
+            ambiguous_dims=ambiguous_dims,
+        )
 
     def __rxor__(self: array, other: Union[int, bool, array], /) -> array:
         """
@@ -2070,11 +2095,11 @@ class einarray():
         out_dims = helper.calculate_output_dims(args, kwargs)
         ambiguous_dims = helper.calculate_output_ambiguous_dims(args, kwargs)
         processed_args, processed_kwargs = helper.process_args(args, kwargs)
-        result = einexpr.einarray(
-            type(processed_args[0]).__rxor__(*processed_args, **processed_kwargs), 
-            dims=out_dims, 
-            ambiguous_dims=ambiguous_dims)
-        return result
+        return einexpr.einarray(
+            type(processed_args[0]).__rxor__(*processed_args, **processed_kwargs),
+            dims=out_dims,
+            ambiguous_dims=ambiguous_dims,
+        )
 
     def to_device(self: array, device: Device, /, *, stream: Optional[Union[int, Any]] = None) -> array:
         """
